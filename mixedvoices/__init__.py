@@ -3,12 +3,6 @@ from mixedvoices.db import Database
 from psycopg2.extras import Json
 
 
-class Recording:
-    def __init__(self, id, filename, version_id):
-        self.id = id
-        self.filename = filename
-        self.version_id = version_id
-
 class Version:
     def __init__(self, id, name, project_id, metadata):
         self.id = id
@@ -29,12 +23,19 @@ class Version:
                 conn.commit()
                 
                 # Make request to processing server
-                requests.post(
+                response = requests.post(
                     'http://localhost:5001/process_recording',
                     json={'recording_id': recording_id}
                 )
                 
-                return Recording(recording_id, filename, self.id)
+                if response.status_code == 200:
+                    task_data = response.json()
+                    return {
+                        'recording_id': recording_id,
+                        'task_id': task_data['task_id']
+                    }
+                else:
+                    raise Exception("Failed to queue processing task")
 
 class Project:
     def __init__(self, id, name):
