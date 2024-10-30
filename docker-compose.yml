@@ -33,23 +33,32 @@ services:
     environment:
       DATABASE_URL: postgresql://postgres:postgres@db/mixedvoices
       REDIS_URL: redis://redis:6379/0
+      FLASK_APP: mixedvoices.server
+      FLASK_DEBUG: 1
+      FLASK_RUN_HOST: "0.0.0.0"  # Important: Allow external connections
+      FLASK_RUN_PORT: 5001
+    volumes:
+      - .:/app
     depends_on:
       db:
         condition: service_healthy
       redis:
         condition: service_healthy
+    command: python -m flask run --host=0.0.0.0 --port=5001
 
   worker:
     build: .
-    command: celery -A mixedvoices.tasks worker --loglevel=info
     environment:
       DATABASE_URL: postgresql://postgres:postgres@db/mixedvoices
       REDIS_URL: redis://redis:6379/0
+    volumes:
+      - .:/app
     depends_on:
       db:
         condition: service_healthy
       redis:
         condition: service_healthy
+    command: celery -A mixedvoices.tasks worker --loglevel=info
 
 volumes:
   postgres_data:

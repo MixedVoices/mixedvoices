@@ -1,16 +1,26 @@
 # mixedvoices/server.py
 from flask import Flask, request, jsonify
-from  mixedvoices.db import Database
-from mixedvoices.tasks import process_recording
+from .db import Database
+from .tasks import process_recording
 import os
 
 app = Flask(__name__)
 database_url = os.getenv('DATABASE_URL', 'postgresql://postgres:postgres@localhost/mixedvoices')
 db = Database(connection_string=database_url)
 
+# Enable CORS for development
+# @app.after_request
+# def after_request(response):
+#     response.headers.add('Access-Control-Allow-Origin', '*')
+#     response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
+#     response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE')
+#     return response
+
 @app.route('/process_recording', methods=['POST'])
 def handle_recording():
     recording_id = request.json.get('recording_id')
+    if not recording_id:
+        return jsonify({"error": "recording_id is required"}), 400
     
     # Queue the task
     task = process_recording.delay(recording_id)
@@ -36,3 +46,6 @@ def task_status(task_id):
 @app.route('/health', methods=['GET'])
 def health_check():
     return jsonify({"status": "healthy"}), 200
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=5001)
