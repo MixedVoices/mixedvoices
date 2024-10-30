@@ -1,0 +1,11 @@
+# docker-compose.prod.yml (production overrides)
+services:
+  web:
+    build:
+      target: production
+    environment:
+      FLASK_DEBUG: 0
+    
+  worker:
+    build:
+      target: production

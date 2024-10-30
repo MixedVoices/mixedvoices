@@ -7,7 +7,7 @@ services:
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: mixedvoices
     ports:
-      - "5432:5432"  # Expose PostgreSQL port
+      - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -27,18 +27,17 @@ services:
       retries: 5
 
   web:
-    build: .
+    build:
+      context: .
+      target: base  # This will be overridden in prod
     ports:
       - "5001:5001"
     environment:
       DATABASE_URL: postgresql://postgres:postgres@db/mixedvoices
       REDIS_URL: redis://redis:6379/0
       FLASK_APP: mixedvoices.server
-      FLASK_DEBUG: 1
-      FLASK_RUN_HOST: "0.0.0.0"  # Important: Allow external connections
+      FLASK_RUN_HOST: "0.0.0.0"
       FLASK_RUN_PORT: 5001
-    volumes:
-      - .:/app
     depends_on:
       db:
         condition: service_healthy
@@ -47,12 +46,12 @@ services:
     command: python -m flask run --host=0.0.0.0 --port=5001
 
   worker:
-    build: .
+    build:
+      context: .
+      target: base  # This will be overridden in prod
     environment:
       DATABASE_URL: postgresql://postgres:postgres@db/mixedvoices
       REDIS_URL: redis://redis:6379/0
-    volumes:
-      - .:/app
     depends_on:
       db:
         condition: service_healthy

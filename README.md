@@ -4,9 +4,31 @@
 
 1. Install Docker and Docker Compose
 2. Clone this repository
-3. Run:
+3. Make .sh files executable
 ```bash
-docker-compose up
+chmod +x dev.sh prod.sh
+```
+3. For dev build, run:
+```bash
+# Start development environment
+./dev.sh up --build -d
+
+# View logs
+./dev.sh logs -f
+
+# Stop development environment
+./dev.sh down
+```
+4. For prod build, run:
+```bash
+# Start production environment
+./prod.sh up --build -d
+
+# View logs
+./prod.sh logs -f
+
+# Stop production environment
+./prod.sh down
 ```
 
 The server will be available at http://localhost:5001
