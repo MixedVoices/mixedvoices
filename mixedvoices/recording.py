@@ -19,10 +19,12 @@ class Recording:
 
     @property
     def path(self):
-        return os.path.join(ALL_PROJECTS_FOLDER, self.project_id, self.version_id, "recordings", self.recording_id, "info.json")
+        return os.path.join(ALL_PROJECTS_FOLDER, self.project_id, self.version_id, "recordings", self.recording_id)
 
     def save(self):
-        with open(self.path, 'w') as f:
+        os.makedirs(self.path, exist_ok=True)
+        save_path = os.path.join(self.path, "info.json")
+        with open(save_path, 'w') as f:
             d = {
                 "created_at": self.created_at,
                 "audio_path": self.audio_path,

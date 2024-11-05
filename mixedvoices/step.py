@@ -1,10 +1,13 @@
 from itertools import count
 from uuid import uuid4
 from mixedvoices.constants import ALL_PROJECTS_FOLDER
-from mixedvoices.recording import Recording
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 import json
 import os
+
+if TYPE_CHECKING:
+    from mixedvoices.recording import Recording
+
 
 class Step:
     def __init__(self, name, version_id, project_id, recording_ids: Optional[list] = None, number_of_successful_calls: int = 0, previous_step_id: Optional[str] = None, next_step_ids: Optional[list] = None, step_id: Optional[str] = None):
@@ -29,15 +32,17 @@ class Step:
     
     @property
     def path(self):
-        return os.path.join(ALL_PROJECTS_FOLDER, self.project_id, self.version_id, "steps", self.step_id, "info.json")
+        return os.path.join(ALL_PROJECTS_FOLDER, self.project_id, self.version_id, "steps", self.step_id)
 
-    def record_usage(self, recording: Recording, is_final_step, is_successful):
+    def record_usage(self, recording: "Recording", is_final_step, is_successful):
         self.recording_ids.append(recording.recording_id)
         if is_final_step and is_successful:
             self.number_of_successful_calls += 1
 
     def save(self):
-        with open(self.path, 'w') as f:
+        os.makedirs(self.path, exist_ok=True)
+        save_path = os.path.join(self.path, "info.json")
+        with open(save_path, 'w') as f:
             d = {
                 'name': self.name,
                 'recording_ids': self.recording_ids,

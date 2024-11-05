@@ -19,7 +19,7 @@ class Version:
 
     @property
     def path(self):
-        return f"{ALL_PROJECTS_FOLDER}/{self.project_id}/{self.version_id}"
+        return os.path.join(ALL_PROJECTS_FOLDER, self.project_id, self.version_id)
 
     def load_recordings(self):
         self.recordings: Dict[str, Recording] = {}
@@ -47,7 +47,7 @@ class Version:
 
     def recursively_assign_steps(self, step: Step):
         step.next_steps = [self.steps[next_step_id] for next_step_id in step.next_step_ids]
-        step.previous_step = self.steps[step.previous_step_id]
+        step.previous_step = self.steps[step.previous_step_id] if step.previous_step_id is not None else None
         for next_step in step.next_steps:
             self.recursively_assign_steps(next_step)
 
@@ -64,8 +64,7 @@ class Version:
         output_audio_path = os.path.join(output_folder, file_name)
         os.makedirs(output_folder)
         os.system(f"cp {audio_path} {output_audio_path}")
-
-        recording = Recording(recording_id, output_audio_path)
+        recording = Recording(recording_id, output_audio_path, self.version_id, self.project_id)
         self.recordings[recording.recording_id] = recording
         process_recording(recording, self)
         return recording

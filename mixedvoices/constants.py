@@ -1,1 +1,1 @@
-ALL_PROJECTS_FOLDER = "/Users/abhinavtuli/Documents/MixedVoices/end2end/projects"
+ALL_PROJECTS_FOLDER = "/Users/abhinavtuli/Documents/MixedVoices/projects"

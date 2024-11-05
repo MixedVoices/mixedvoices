@@ -1,15 +1,16 @@
 
 
 import os
-from typing import List
+from typing import List, TYPE_CHECKING
 from mixedvoices.llm import script_to_step_names
-from mixedvoices.recording import Recording
 from mixedvoices.transcribe import transcribe_and_combine
-from mixedvoices.version import Version
 from mixedvoices.step import Step
 import librosa
 import soundfile as sf
 
+if TYPE_CHECKING:
+    from mixedvoices.version import Version
+    from mixedvoices.recording import Recording
 def separate_channels(input_file, output_folder):
     """
     Separate stereo audio file into left and right channels and save them as individual files.
@@ -23,17 +24,17 @@ def separate_channels(input_file, output_folder):
     # Separate channels
     left_channel, right_channel = y[0], y[1]
 
-    left_path = f"{output_folder}/left.wav"
-    right_path = f"{output_folder}/right.wav"
+    left_path = os.path.join(output_folder, "left.wav")
+    right_path = os.path.join(output_folder, "right.wav")
     sf.write(left_path, left_channel, sr)
     sf.write(right_path, right_channel, sr)
     return left_path, right_path
 
 
 
-def process_recording(recording: Recording, version: Version):
+def process_recording(recording: "Recording", version: "Version"):
     audio_path = recording.audio_path
-    output_folder = os.path.join(version.path, recording.recording_id)
+    output_folder = os.path.join(version.path, "recordings", recording.recording_id)
     user_audio_path, assistant_audio_path = separate_channels(audio_path, output_folder)
     combined_transcript = transcribe_and_combine(user_audio_path, assistant_audio_path)
     recording.combined_transcript = combined_transcript
