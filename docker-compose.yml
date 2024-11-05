@@ -29,7 +29,8 @@ services:
   web:
     build:
       context: .
-      target: base  # This will be overridden in prod
+      dockerfile: Dockerfile
+      target: base
     ports:
       - "5001:5001"
     environment:
@@ -38,6 +39,7 @@ services:
       FLASK_APP: mixedvoices.server
       FLASK_RUN_HOST: "0.0.0.0"
       FLASK_RUN_PORT: 5001
+      TRANSCRIPTION_SERVICE_URL: http://transcription-service:5002
     depends_on:
       db:
         condition: service_healthy
@@ -48,10 +50,12 @@ services:
   worker:
     build:
       context: .
-      target: base  # This will be overridden in prod
+      dockerfile: Dockerfile
+      target: base
     environment:
       DATABASE_URL: postgresql://postgres:postgres@db/mixedvoices
       REDIS_URL: redis://redis:6379/0
+      TRANSCRIPTION_SERVICE_URL: http://transcription-service:5002
     depends_on:
       db:
         condition: service_healthy
@@ -59,5 +63,19 @@ services:
         condition: service_healthy
     command: celery -A mixedvoices.tasks worker --loglevel=info
 
+  transcription-service:
+    build:
+      context: .
+      dockerfile: Dockerfile.transcription
+    ports:
+      - "5002:5002"
+    environment:
+      REDIS_URL: redis://redis:6379/0
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}  # Optional, for API fallback
+    volumes:
+      - model_cache:/root/.cache  # Cache for all ML models
+    command: python -m flask run --host=0.0.0.0 --port=5002
+
 volumes:
   postgres_data:
+  model_cache:

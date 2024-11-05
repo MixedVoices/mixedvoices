@@ -31,6 +31,11 @@ chmod +x dev.sh prod.sh
 ./prod.sh down
 ```
 
+With gpu enabled 
+```bash
+docker compose -f docker-compose.yml -f docker-compose.dev.yml -f docker-compose.gpu.yml up
+```
+
 The server will be available at http://localhost:5001
 
 ## Usage

@@ -1,0 +1,36 @@
+# Dockerfile.transcription
+FROM python:3.10-slim
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    ffmpeg \
+    git \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Install base service requirements
+RUN pip install --no-cache-dir \
+    flask \
+    redis \
+    openai \
+    pydantic
+
+# Clone the whisper-diarization repository first
+RUN git clone https://github.com/MahmoudAshraf97/whisper-diarization.git /app/whisper-diarization
+
+# Install Cython first (required by whisper-diarization)
+RUN pip install --no-cache-dir cython
+
+# Install whisper-diarization requirements using their files
+WORKDIR /app/whisper-diarization
+RUN pip install --no-cache-dir -c constraints.txt -r requirements.txt
+
+# Back to app directory
+WORKDIR /app
+
+# Copy our transcription service code
+COPY mixedvoices/transcription_service/ .
+
+EXPOSE 5002
