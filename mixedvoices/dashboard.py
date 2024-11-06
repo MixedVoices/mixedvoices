@@ -430,50 +430,46 @@ def main():
                 display_df["created_at"] = pd.to_datetime(display_df["created_at"], unit='s', utc=True)
                 display_df["created_at"] = display_df["created_at"].dt.strftime("%Y-%m-%d %H:%M:%S GMT")
                 
-                # Display table
-                st.dataframe(
-                    display_df[["id", "created_at", "is_successful", "summary"]],
-                    use_container_width=True,
-                    hide_index=True,
-                    column_config={
-                        "id": st.column_config.TextColumn(
-                            "Recording ID",
-                            help="Unique identifier for the recording",
-                        ),
-                        "created_at": st.column_config.TextColumn(
-                            "Created At",
-                            help="When the recording was created",
-                        ),
-                        "is_successful": st.column_config.CheckboxColumn(
-                            "Success",
-                            help="Whether the recording was successful",
-                            disabled=True,
-                        ),
-                        "summary": st.column_config.TextColumn(
-                            "Summary",
-                            help="Brief summary of the recording",
-                            width="large",
-                        ),
-                    }
-                )
-                
-                # Single-select radio buttons below the table
-                selected_id = st.radio(
-                    "Select Recording",
-                    options=display_df["id"].tolist(),
-                    format_func=lambda x: f"Recording {x[:8]}...",
-                    horizontal=True,
-                    label_visibility="collapsed"
-                )
+                # Add click handler using session state
+                def handle_click(recording_id):
+                    st.session_state.selected_recording_id = recording_id
+
+                # Display header row with divider
+                header_cols = st.columns([3, 2, 1, 4])
+                with header_cols[0]:
+                    st.markdown("**Recording ID**")
+                with header_cols[1]:
+                    st.markdown("**Created At**")
+                with header_cols[2]:
+                    st.markdown("**Success**")
+                with header_cols[3]:
+                    st.markdown("**Summary**")
+                st.divider()  # Add line after headers
+
+                # Display each recording with clickable ID
+                for idx, row in display_df.iterrows():
+                    cols = st.columns([3, 2, 1, 4])
+                    with cols[0]:
+                        if st.button(row['id'], key=f"btn_{row['id']}"):
+                            handle_click(row['id'])
+                    with cols[1]:
+                        st.write(row['created_at'])
+                    with cols[2]:
+                        st.write("✅" if row['is_successful'] else "❌")
+                    with cols[3]:
+                        st.write(row['summary'] if row['summary'] else "None")
+                    # Add a subtle divider between rows
+                    st.markdown("---")
                 
                 # Show selected recording details
-                if selected_id:
+                if st.session_state.selected_recording_id:
                     selected_recording = next(
-                        (r for r in recordings if r["id"] == selected_id),
+                        (r for r in recordings if r["id"] == st.session_state.selected_recording_id),
                         None
                     )
                     
                     if selected_recording:
+                        st.divider()
                         st.subheader(f"Recording Details: {selected_recording['id']}")
                         
                         col1, col2 = st.columns(2)
