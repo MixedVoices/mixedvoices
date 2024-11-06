@@ -36,3 +36,4 @@ docker-compose.override.yml
 *.swo
 
 experiments/*
+projects/*

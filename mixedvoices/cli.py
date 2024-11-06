@@ -3,7 +3,7 @@ import typer
 import webbrowser
 import threading
 from . import server
-from . import dashboard as db
+from dashboard.cli import run_dashboard
 
 cli = typer.Typer()
 
@@ -32,7 +32,7 @@ def dashboard(
     webbrowser.open(f"http://localhost:{dash_port}")
     
     # Run the Streamlit dashboard (this will block)
-    db.run_dashboard(dash_port)
+    run_dashboard(dash_port)
 
 if __name__ == "__main__":
     cli()
