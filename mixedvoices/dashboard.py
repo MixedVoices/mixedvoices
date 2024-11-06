@@ -9,7 +9,7 @@ import requests
 import plotly.graph_objects as go
 import json
 import networkx as nx
-from datetime import datetime
+from datetime import datetime, timezone
 
 def run_dashboard(port: int = 8501):
     """Run the Streamlit dashboard"""
@@ -188,7 +188,10 @@ def display_recording_details(recording: Dict, source: str = "main") -> None:
     
     col1, col2 = st.columns(2)
     with col1:
-        st.write("Created:", recording["created_at"])
+        created_time = datetime.fromtimestamp(
+            int(recording["created_at"])
+        ).strftime("%Y-%m-%d %H:%M:%S")
+        st.write("Created:", created_time)
         st.write("Status:", "✅ Successful" if recording["is_successful"] else "❌ Failed")
     with col2:
         st.write("Steps Traversed:", len(recording["step_ids"]))
@@ -414,32 +417,89 @@ def main():
             col2.metric("Successful", successful)
             col3.metric("Success Rate", f"{success_rate:.1f}%")
 
+            # Initialize session state for selected recording if not exists
+            if 'selected_recording_id' not in st.session_state:
+                st.session_state.selected_recording_id = None
+
             # Recordings table with selection
             st.subheader("All Recordings")
             recordings_df = pd.DataFrame(recordings)
             if not recordings_df.empty:
-                # Convert created_at to datetime and then to string for display
-                recordings_df["created_at"] = pd.to_datetime(recordings_df["created_at"])
+                # Convert created_at to datetime and format it in GMT
                 display_df = recordings_df.copy()
-                display_df["created_at"] = display_df["created_at"].dt.strftime("%Y-%m-%d %H:%M:%S")
+                display_df["created_at"] = pd.to_datetime(display_df["created_at"], unit='s', utc=True)
+                display_df["created_at"] = display_df["created_at"].dt.strftime("%Y-%m-%d %H:%M:%S GMT")
                 
-                selected_indices = st.data_editor(
-                    display_df[["id", "created_at", "is_successful", "summary"]]
-                    .sort_values("created_at", ascending=False),
+                # Display table
+                st.dataframe(
+                    display_df[["id", "created_at", "is_successful", "summary"]],
                     use_container_width=True,
                     hide_index=True,
                     column_config={
-                        "created_at": st.column_config.TextColumn("Created At"),
-                        "is_successful": st.column_config.CheckboxColumn("Success"),
-                        "summary": st.column_config.TextColumn("Summary", width="large"),
-                    },
-                    key="all_recordings"
-                ).index.tolist()
+                        "id": st.column_config.TextColumn(
+                            "Recording ID",
+                            help="Unique identifier for the recording",
+                        ),
+                        "created_at": st.column_config.TextColumn(
+                            "Created At",
+                            help="When the recording was created",
+                        ),
+                        "is_successful": st.column_config.CheckboxColumn(
+                            "Success",
+                            help="Whether the recording was successful",
+                            disabled=True,
+                        ),
+                        "summary": st.column_config.TextColumn(
+                            "Summary",
+                            help="Brief summary of the recording",
+                            width="large",
+                        ),
+                    }
+                )
                 
-                # If a recording is selected, show its details
-                if selected_indices:
-                    selected_recording = recordings[selected_indices[0]]
-                    display_recording_details(selected_recording, "main")
+                # Single-select radio buttons below the table
+                selected_id = st.radio(
+                    "Select Recording",
+                    options=display_df["id"].tolist(),
+                    format_func=lambda x: f"Recording {x[:8]}...",
+                    horizontal=True,
+                    label_visibility="collapsed"
+                )
+                
+                # Show selected recording details
+                if selected_id:
+                    selected_recording = next(
+                        (r for r in recordings if r["id"] == selected_id),
+                        None
+                    )
+                    
+                    if selected_recording:
+                        st.subheader(f"Recording Details: {selected_recording['id']}")
+                        
+                        col1, col2 = st.columns(2)
+                        with col1:
+                            # Convert timestamp to GMT
+                            created_time = datetime.fromtimestamp(
+                                int(selected_recording["created_at"]), 
+                                tz=timezone.utc
+                            ).strftime("%Y-%m-%d %H:%M:%S GMT")
+                            st.write("Created:", created_time)
+                            st.write("Status:", "✅ Successful" if selected_recording["is_successful"] else "❌ Failed")
+                        with col2:
+                            st.write("Steps Traversed:", len(selected_recording["step_ids"]))
+                        
+                        if selected_recording.get("combined_transcript"):
+                            with st.expander("View Transcript", expanded=True):
+                                st.text_area(
+                                    "Transcript",
+                                    selected_recording["combined_transcript"],
+                                    height=200,
+                                    key=f"transcript_main_{selected_recording['id']}"
+                                )
+                        
+                        if selected_recording.get("summary"):
+                            with st.expander("Call Summary"):
+                                st.write(selected_recording["summary"])
 
     # Upload Tab
     with tab3:
