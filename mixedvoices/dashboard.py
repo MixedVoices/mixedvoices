@@ -68,14 +68,14 @@ def create_interactive_flow(flow_data: Dict, is_recording_flow: bool = False) ->
             if i > 0:  # Connect to previous node
                 G.add_edge(steps[i-1]["id"], step["id"])
         
-        # Create a simple horizontal layout
+        # Create a simple vertical layout
         step_count = len(steps)
-        total_width = step_count - 1
+        total_height = step_count - 1
         pos = {}
         for i, step in enumerate(steps):
-            # Center the flow horizontally by subtracting half the total width
-            x = i - (total_width / 2)
-            pos[step["id"]] = (x, 0)
+            # Center the flow vertically by subtracting half the total height
+            y = -(i - (total_height / 2))  # Negative to flow top to bottom
+            pos[step["id"]] = (0, y)  # x is always 0 for center alignment
     else:
         # Track parent-child relationships for proper layout
         parent_child = {}
@@ -195,14 +195,6 @@ def create_interactive_flow(flow_data: Dict, is_recording_flow: bool = False) ->
             line_color='white'
         )
     )
-
-    # # Calculate axis ranges with padding
-    # x_min = min(node_x) if node_x else 0
-    # x_max = max(node_x) if node_x else 0
-    # x_padding = 1
-    # y_min = min(node_y) if node_y else 0
-    # y_max = max(node_y) if node_y else 0
-    # y_padding = 1 if is_recording_flow else 2
     
     # Create figure
     fig = go.Figure(
@@ -217,21 +209,20 @@ def create_interactive_flow(flow_data: Dict, is_recording_flow: bool = False) ->
                 showgrid=False, 
                 zeroline=False, 
                 showticklabels=False,
-                # range=[x_min - x_padding, x_max + x_padding]
             ),
             yaxis=dict(
                 showgrid=False, 
                 zeroline=False, 
                 showticklabels=False,
-                # range=[y_min - y_padding, y_max + y_padding] if not is_recording_flow else [-1, 1]
             ),
-            height=200 if is_recording_flow else 600,  # Smaller height for recording flow
+            height=600,
             width=None,  # Allow width to be responsive
             clickmode='event'
         )
     )
     
     return fig
+
 def display_recording_details(recording: Dict, source: str = "main") -> None:
     """Display detailed information about a recording"""
     st.subheader(f"Recording Details: {recording['id']}")
@@ -468,12 +459,8 @@ def main():
             col3.metric("Success Rate", f"{success_rate:.1f}%")
 
             # Function to show recording details in dialog
-            @st.dialog("Recording Details", width="large")
-            def show_recording_details(recording):
-                if st.button("Close"):
-                    st.session_state.pop('show_details', None)
-                    st.rerun()
-                
+            @st.dialog("Details", width="large")
+            def show_recording_details(recording):                
                 st.subheader(f"Recording ID: {recording['id']}")
                 
                 col1, col2 = st.columns(2)
