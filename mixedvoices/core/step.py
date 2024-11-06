@@ -6,7 +6,7 @@ import json
 import os
 
 if TYPE_CHECKING:
-    from mixedvoices.recording import Recording
+    from mixedvoices.core.recording import Recording
 
 
 class Step:

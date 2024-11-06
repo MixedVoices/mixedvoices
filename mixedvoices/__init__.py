@@ -1,4 +1,4 @@
-from mixedvoices.project import Project
+from mixedvoices.core.project import Project
 from mixedvoices.constants import ALL_PROJECTS_FOLDER
 import os
 

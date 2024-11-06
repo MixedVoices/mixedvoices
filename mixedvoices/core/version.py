@@ -1,8 +1,8 @@
 import os
 from typing import Dict, Any, Optional
-from mixedvoices.recording import Recording
+from mixedvoices.core.recording import Recording
 from mixedvoices.constants import ALL_PROJECTS_FOLDER
-from mixedvoices.step import Step
+from mixedvoices.core.step import Step
 import json
 
 from mixedvoices.utils import process_recording

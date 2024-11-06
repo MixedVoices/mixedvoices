@@ -1,7 +1,7 @@
 import os
 from typing import Dict, Any, Optional
 from mixedvoices.constants import ALL_PROJECTS_FOLDER
-from mixedvoices.version import Version
+from mixedvoices.core.version import Version
 
 class Project:
     def __init__(self, project_id: str):

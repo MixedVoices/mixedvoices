@@ -1,16 +1,14 @@
-
-
 import os
 from typing import List, TYPE_CHECKING
-from mixedvoices.llm import script_to_step_names
-from mixedvoices.transcribe import transcribe_and_combine
-from mixedvoices.step import Step
+from mixedvoices.processors.speech_analyzer import script_to_step_names
+from mixedvoices.processors.transcriber import transcribe_and_combine
+from mixedvoices.core.step import Step
 import librosa
 import soundfile as sf
 
 if TYPE_CHECKING:
-    from mixedvoices.version import Version
-    from mixedvoices.recording import Recording
+    from mixedvoices.core.version import Version
+    from mixedvoices.core.recording import Recording
 def separate_channels(input_file, output_folder):
     """
     Separate stereo audio file into left and right channels and save them as individual files.
