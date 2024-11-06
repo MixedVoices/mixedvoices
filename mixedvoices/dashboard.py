@@ -467,9 +467,54 @@ def main():
             col2.metric("Successful", successful)
             col3.metric("Success Rate", f"{success_rate:.1f}%")
 
-            # Initialize session state
-            if 'selected_recording_id' not in st.session_state:
-                st.session_state.selected_recording_id = None
+            # Function to show recording details in dialog
+            @st.dialog("Recording Details", width="large")
+            def show_recording_details(recording):
+                if st.button("Close"):
+                    st.session_state.pop('show_details', None)
+                    st.rerun()
+                
+                st.subheader(f"Recording ID: {recording['id']}")
+                
+                col1, col2 = st.columns(2)
+                with col1:
+                    created_time = datetime.fromtimestamp(
+                        int(recording["created_at"]),
+                        tz=timezone.utc
+                    ).strftime("%-I:%M%p %-d %B %Y")
+                    st.write("Created:", created_time)
+                    st.write("Status:", "✅ Successful" if recording["is_successful"] else "❌ Failed")
+                with col2:
+                    summary = recording.get("summary") or "N/A"
+                    st.write("Summary:", summary)
+                
+                # Display flow visualization for this recording
+                st.subheader("Recording Flow")
+                recording_flow = fetch_api_data(
+                    f"projects/{st.session_state.current_project}/versions/{st.session_state.current_version}"
+                    f"/recordings/{recording['id']}/flow"
+                )
+                
+                if recording_flow and recording_flow.get("steps"):
+                    fig = create_interactive_flow(recording_flow, is_recording_flow=True)
+                    st.plotly_chart(
+                        fig,
+                        use_container_width=True,
+                        config={'displayModeBar': False},
+                        key=f"flow_chart_{recording['id']}"
+                    )
+                else:
+                    st.warning("No flow data available for this recording")
+
+                # Display transcript
+                if recording.get("combined_transcript"):
+                    with st.expander("View Transcript", expanded=False):
+                        st.text_area(
+                            "Transcript",
+                            recording["combined_transcript"],
+                            height=200,
+                            key=f"transcript_dialog_{recording['id']}"
+                        )
 
             # Create DataFrame and format dates
             recordings_df = pd.DataFrame(recordings)
@@ -477,40 +522,6 @@ def main():
             display_df["created_at"] = pd.to_datetime(display_df["created_at"], unit='s', utc=True)
             display_df["created_at"] = display_df["created_at"].dt.strftime("%-I:%M%p %-d %B %Y")
 
-            # Custom CSS
-            st.markdown("""
-                <style>
-                    .clickable-id {
-                        color: #FF4B4B !important;
-                        text-decoration: underline;
-                        background: none;
-                        border: none;
-                        padding: 0;
-                        cursor: pointer;
-                    }
-                    .clickable-id:hover {
-                        opacity: 0.8;
-                    }
-                    .stButton button {
-                        background: none;
-                        border: none;
-                        padding: 0;
-                        color: #FF4B4B;
-                        text-decoration: underline;
-                        width: auto !important;
-                    }
-                    .stButton button:hover {
-                        background: none !important;
-                        border: none !important;
-                        color: #FF4B4B !important;
-                        opacity: 0.8;
-                    }
-                </style>
-            """, unsafe_allow_html=True)
-
-            # Recordings table
-            st.subheader("All Recordings")
-            
             # Table header
             header_cols = st.columns([3, 2, 1, 4])
             with header_cols[0]:
@@ -528,7 +539,7 @@ def main():
                 cols = st.columns([3, 2, 1, 4])
                 with cols[0]:
                     if st.button(row['id'], key=f"id_btn_{row['id']}", help="Click to view details"):
-                        st.session_state.selected_recording_id = row['id']
+                        show_recording_details(recordings[idx])
                 with cols[1]:
                     st.write(row['created_at'])
                 with cols[2]:
@@ -536,58 +547,6 @@ def main():
                 with cols[3]:
                     st.write(row['summary'] if row['summary'] else "None")
                 st.markdown("<hr style='margin: 0; padding: 0; background-color: #333; height: 1px;'>", unsafe_allow_html=True)
-
-            # Show selected recording details
-            if st.session_state.selected_recording_id:
-                selected_recording = next(
-                    (r for r in recordings if r["id"] == st.session_state.selected_recording_id),
-                    None
-                )
-                
-                if selected_recording:
-                    st.markdown("<div style='margin-top: 2rem;'></div>", unsafe_allow_html=True)
-                    st.subheader(f"Recording Details: {selected_recording['id']}")
-                    
-                    col1, col2 = st.columns(2)
-                    with col1:
-                        created_time = datetime.fromtimestamp(
-                            int(selected_recording["created_at"]),
-                            tz=timezone.utc
-                        ).strftime("%-I:%M%p %-d %B %Y")
-                        st.write("Created:", created_time)
-                        st.write("Status:", "✅ Successful" if selected_recording["is_successful"] else "❌ Failed")
-                    with col2:
-                        summary = selected_recording.get("summary") or "N/A"
-                        st.write("Summary:", summary)
-                    
-                    # Display flow visualization for this recording
-                    st.subheader("Recording Flow")
-                    # Fetch flow data for this specific recording
-                    recording_flow = fetch_api_data(
-                        f"projects/{st.session_state.current_project}/versions/{st.session_state.current_version}"
-                        f"/recordings/{selected_recording['id']}/flow"
-                    )
-                    
-                    if recording_flow and recording_flow.get("steps"):
-                        fig = create_interactive_flow(recording_flow, is_recording_flow=True)
-                        st.plotly_chart(
-                            fig,
-                            use_container_width=True,
-                            config={'displayModeBar': False},
-                            key=f"flow_chart_{selected_recording['id']}"
-                        )
-                    else:
-                        st.warning("No flow data available for this recording")
-
-                    # Display transcript
-                    if selected_recording.get("combined_transcript"):
-                        with st.expander("View Transcript", expanded=False):
-                            st.text_area(
-                                "Transcript",
-                                selected_recording["combined_transcript"],
-                                height=200,
-                                key=f"transcript_main_{selected_recording['id']}"
-                            )
 
     # Upload Tab
     with tab3:
