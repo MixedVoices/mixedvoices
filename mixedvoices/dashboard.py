@@ -45,64 +45,92 @@ def post_api_data(endpoint: str, data: Dict, server_port: int = 8000) -> Dict:
         st.error(f"Error posting data to API: {str(e)}")
         return {}
 
-def create_interactive_flow(flow_data: Dict) -> go.Figure:
-    """Create an interactive flow visualization with clickable nodes"""
+def create_interactive_flow(flow_data: Dict, is_recording_flow: bool = False) -> go.Figure:
+    """Create an interactive flow visualization with clickable nodes
+    
+    Args:
+        flow_data: Dict containing either:
+            - Full flow data with steps, success rates, etc.
+            - Recording flow data with simplified steps array
+        is_recording_flow: bool indicating if this is a single recording flow
+    """
     G = nx.DiGraph()
     
-    # Track parent-child relationships for proper layout
-    parent_child = {}
-    for step in flow_data["steps"]:
-        G.add_node(step["id"], name=step["name"], data=step)
-        for next_step_id in step["next_step_ids"]:
-            G.add_edge(step["id"], next_step_id)
-            if next_step_id not in parent_child:
-                parent_child[next_step_id] = []
-            parent_child[next_step_id].append(step["id"])
-    
-    # Find root nodes (nodes with no parents)
-    root_nodes = [node for node in G.nodes() if node not in parent_child]
-    
-    # Assign levels using BFS
-    levels = {node: -1 for node in G.nodes()}
-    current_level = 0
-    current_nodes = root_nodes
-    while current_nodes:
-        next_nodes = []
-        for node in current_nodes:
-            if levels[node] == -1:  # Not visited yet
-                levels[node] = current_level
-                next_nodes.extend(list(G.successors(node)))
-        current_nodes = next_nodes
-        current_level += 1
-    
-    # Position nodes
-    max_level = max(levels.values())
-    nodes_by_level = {}
-    for node, level in levels.items():
-        if level not in nodes_by_level:
-            nodes_by_level[level] = []
-        nodes_by_level[level].append(node)
-    
-    # Calculate positions with straight-line layout for paths
-    pos = {}
-    for level in range(max_level + 1):
-        nodes = nodes_by_level[level]
+    if is_recording_flow:
+        # For recording flow, create a simple linear path
+        steps = flow_data.get("steps", [])
+        if not steps:
+            return go.Figure()  # Return empty figure if no steps
+            
+        # Add nodes and edges
+        for i, step in enumerate(steps):
+            G.add_node(step["id"], name=step["name"], data=step)
+            if i > 0:  # Connect to previous node
+                G.add_edge(steps[i-1]["id"], step["id"])
         
-        # Special handling for branching paths
-        if len(nodes) == 1:
-            # For single nodes, maintain the x-position of their parent if possible
-            node = nodes[0]
-            parent_nodes = parent_child.get(node, [])
-            if parent_nodes and parent_nodes[0] in pos:
-                pos[node] = (pos[parent_nodes[0]][0], -level)
+        # Create a simple horizontal layout
+        step_count = len(steps)
+        total_width = step_count - 1
+        pos = {}
+        for i, step in enumerate(steps):
+            # Center the flow horizontally by subtracting half the total width
+            x = i - (total_width / 2)
+            pos[step["id"]] = (x, 0)
+    else:
+        # Track parent-child relationships for proper layout
+        parent_child = {}
+        for step in flow_data["steps"]:
+            G.add_node(step["id"], name=step["name"], data=step)
+            for next_step_id in step["next_step_ids"]:
+                G.add_edge(step["id"], next_step_id)
+                if next_step_id not in parent_child:
+                    parent_child[next_step_id] = []
+                parent_child[next_step_id].append(step["id"])
+        
+        # Find root nodes (nodes with no parents)
+        root_nodes = [node for node in G.nodes() if node not in parent_child]
+        
+        # Assign levels using BFS
+        levels = {node: -1 for node in G.nodes()}
+        current_level = 0
+        current_nodes = root_nodes
+        while current_nodes:
+            next_nodes = []
+            for node in current_nodes:
+                if levels[node] == -1:  # Not visited yet
+                    levels[node] = current_level
+                    next_nodes.extend(list(G.successors(node)))
+            current_nodes = next_nodes
+            current_level += 1
+        
+        # Position nodes
+        max_level = max(levels.values())
+        nodes_by_level = {}
+        for node, level in levels.items():
+            if level not in nodes_by_level:
+                nodes_by_level[level] = []
+            nodes_by_level[level].append(node)
+        
+        # Calculate positions with straight-line layout for paths
+        pos = {}
+        for level in range(max_level + 1):
+            nodes = nodes_by_level[level]
+
+            # Special handling for branching paths
+            if len(nodes) == 1:
+                # For single nodes, maintain the x-position of their parent if possible
+                node = nodes[0]
+                parent_nodes = parent_child.get(node, [])
+                if parent_nodes and parent_nodes[0] in pos:
+                    pos[node] = (pos[parent_nodes[0]][0], -level)
+                else:
+                    pos[node] = (0, -level)
             else:
-                pos[node] = (0, -level)
-        else:
-            # For multiple nodes at the same level, space them evenly
-            total_width = len(nodes) - 1
-            for i, node in enumerate(sorted(nodes)):
-                x = i - total_width/2
-                pos[node] = (x, -level)
+                # For multiple nodes at the same level, space them evenly
+                total_width = len(nodes) - 1
+                for i, node in enumerate(sorted(nodes)):
+                    x = i - total_width/2
+                    pos[node] = (x, -level)
     
     # Create edge trace
     edge_x, edge_y = [], []
@@ -131,20 +159,24 @@ def create_interactive_flow(flow_data: Dict) -> go.Figure:
         node_y.append(y)
         
         node_data = G.nodes[node]['data']
-        node_ids.append(node)
+        node_ids.append(node_data["id"])
         
-        success_rate = (node_data["number_of_successful_calls"] / node_data["number_of_calls"] * 100 
-                       if node_data["number_of_calls"] > 0 else 0)
+        if is_recording_flow:
+            # For recording flow, use a neutral color and simple hover text
+            color = '#4B89DC'  # A pleasant blue
+            hover = f"Step: {node_data['name']}"
+        else:
+            # For full flow, calculate success rate and color
+            success_rate = (node_data["number_of_successful_calls"] / node_data["number_of_calls"] * 100 
+                          if node_data["number_of_calls"] > 0 else 0)
+            color = '#198754' if success_rate >= 80 else '#fd7e14' if success_rate >= 60 else '#dc3545'
+            hover = (f"Step: {node_data['name']}<br>"
+                    f"Total: {node_data['number_of_calls']}<br>"
+                    f"Success: {node_data['number_of_successful_calls']}<br>"
+                    f"Rate: {success_rate:.1f}%")
         
-        color = '#198754' if success_rate >= 80 else '#fd7e14' if success_rate >= 60 else '#dc3545'
         node_colors.append(color)
-        
         node_text.append(node_data["name"])
-        
-        hover = (f"Step: {node_data['name']}<br>"
-                f"Total: {node_data['number_of_calls']}<br>"
-                f"Success: {node_data['number_of_successful_calls']}<br>"
-                f"Rate: {success_rate:.1f}%")
         hover_text.append(hover)
     
     node_trace = go.Scatter(
@@ -163,25 +195,43 @@ def create_interactive_flow(flow_data: Dict) -> go.Figure:
             line_color='white'
         )
     )
+
+    # # Calculate axis ranges with padding
+    # x_min = min(node_x) if node_x else 0
+    # x_max = max(node_x) if node_x else 0
+    # x_padding = 1
+    # y_min = min(node_y) if node_y else 0
+    # y_max = max(node_y) if node_y else 0
+    # y_padding = 1 if is_recording_flow else 2
     
-    # Create figure with clickable nodes
+    # Create figure
     fig = go.Figure(
         data=[edge_trace, node_trace],
         layout=go.Layout(
             showlegend=False,
             hovermode='closest',
-            margin=dict(b=20, l=5, r=5, t=40),
+            margin=dict(b=5, l=5, r=5, t=5),
             plot_bgcolor='rgba(0,0,0,0)',
             paper_bgcolor='rgba(0,0,0,0)',
-            xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
-            yaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
-            height=600,
-            clickmode='event'  # Enable click events
+            xaxis=dict(
+                showgrid=False, 
+                zeroline=False, 
+                showticklabels=False,
+                # range=[x_min - x_padding, x_max + x_padding]
+            ),
+            yaxis=dict(
+                showgrid=False, 
+                zeroline=False, 
+                showticklabels=False,
+                # range=[y_min - y_padding, y_max + y_padding] if not is_recording_flow else [-1, 1]
+            ),
+            height=200 if is_recording_flow else 600,  # Smaller height for recording flow
+            width=None,  # Allow width to be responsive
+            clickmode='event'
         )
     )
     
     return fig
-
 def display_recording_details(recording: Dict, source: str = "main") -> None:
     """Display detailed information about a recording"""
     st.subheader(f"Recording Details: {recording['id']}")
@@ -190,7 +240,7 @@ def display_recording_details(recording: Dict, source: str = "main") -> None:
     with col1:
         created_time = datetime.fromtimestamp(
             int(recording["created_at"])
-        ).strftime("%Y-%m-%d %H:%M:%S")
+        ).strftime("%-I:%M%p %-d %B %Y")
         st.write("Created:", created_time)
         st.write("Status:", "✅ Successful" if recording["is_successful"] else "❌ Failed")
     with col2:
@@ -242,7 +292,7 @@ def handle_node_click(flow_data: Dict, selected_point: Dict, fetch_api_data) -> 
                     if not recordings_df.empty:
                         recordings_df["created_at"] = pd.to_datetime(recordings_df["created_at"])
                         display_df = recordings_df.copy()
-                        display_df["created_at"] = display_df["created_at"].dt.strftime("%Y-%m-%d %H:%M:%S")
+                        display_df["created_at"] = display_df["created_at"].dt.strftime("%-I:%M%p %-d %B %Y")
                         
                         selected_indices = st.data_editor(
                             display_df[["id", "created_at", "is_successful", "summary"]]
@@ -425,7 +475,7 @@ def main():
             recordings_df = pd.DataFrame(recordings)
             display_df = recordings_df.copy()
             display_df["created_at"] = pd.to_datetime(display_df["created_at"], unit='s', utc=True)
-            display_df["created_at"] = display_df["created_at"].dt.strftime("%Y-%m-%d %H:%M:%S GMT")
+            display_df["created_at"] = display_df["created_at"].dt.strftime("%-I:%M%p %-d %B %Y")
 
             # Custom CSS
             st.markdown("""
@@ -503,24 +553,41 @@ def main():
                         created_time = datetime.fromtimestamp(
                             int(selected_recording["created_at"]),
                             tz=timezone.utc
-                        ).strftime("%Y-%m-%d %H:%M:%S GMT")
+                        ).strftime("%-I:%M%p %-d %B %Y")
                         st.write("Created:", created_time)
                         st.write("Status:", "✅ Successful" if selected_recording["is_successful"] else "❌ Failed")
                     with col2:
-                        st.write("Steps Traversed:", len(selected_recording["step_ids"]))
+                        summary = selected_recording.get("summary") or "N/A"
+                        st.write("Summary:", summary)
+                    
+                    # Display flow visualization for this recording
+                    st.subheader("Recording Flow")
+                    # Fetch flow data for this specific recording
+                    recording_flow = fetch_api_data(
+                        f"projects/{st.session_state.current_project}/versions/{st.session_state.current_version}"
+                        f"/recordings/{selected_recording['id']}/flow"
+                    )
+                    
+                    if recording_flow and recording_flow.get("steps"):
+                        fig = create_interactive_flow(recording_flow, is_recording_flow=True)
+                        st.plotly_chart(
+                            fig,
+                            use_container_width=True,
+                            config={'displayModeBar': False},
+                            key=f"flow_chart_{selected_recording['id']}"
+                        )
+                    else:
+                        st.warning("No flow data available for this recording")
 
+                    # Display transcript
                     if selected_recording.get("combined_transcript"):
-                        with st.expander("View Transcript", expanded=True):
+                        with st.expander("View Transcript", expanded=False):
                             st.text_area(
                                 "Transcript",
                                 selected_recording["combined_transcript"],
                                 height=200,
                                 key=f"transcript_main_{selected_recording['id']}"
                             )
-                    
-                    if selected_recording.get("summary"):
-                        with st.expander("Call Summary"):
-                            st.write(selected_recording["summary"])
 
     # Upload Tab
     with tab3:

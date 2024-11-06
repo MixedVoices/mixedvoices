@@ -108,6 +108,27 @@ async def get_version_flow(project_name: str, version_name: str):
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+    
+@app.get("/api/projects/{project_name}/versions/{version_name}/recordings/{recording_id}/flow")
+async def get_recording_flow(project_name: str, version_name: str, recording_id: str):
+    """Get the flow chart data for a recording"""
+    try:
+        project = mixedvoices.load_project(project_name)
+        version = project.load_version(version_name)
+        recording = version.recordings[recording_id]
+        
+        steps_data = []
+        for step_id in recording.step_ids:
+            step = version.steps[step_id]
+            steps_data.append({
+                "id": step.step_id,
+                "name": step.name,
+            })
+        return {"steps": steps_data}
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/projects/{project_name}/versions/{version_name}/recordings")
 async def list_recordings(project_name: str, version_name: str):
