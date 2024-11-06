@@ -417,84 +417,110 @@ def main():
             col2.metric("Successful", successful)
             col3.metric("Success Rate", f"{success_rate:.1f}%")
 
-            # Initialize session state for selected recording if not exists
+            # Initialize session state
             if 'selected_recording_id' not in st.session_state:
                 st.session_state.selected_recording_id = None
 
-            # Recordings table with selection
-            st.subheader("All Recordings")
+            # Create DataFrame and format dates
             recordings_df = pd.DataFrame(recordings)
-            if not recordings_df.empty:
-                # Convert created_at to datetime and format it in GMT
-                display_df = recordings_df.copy()
-                display_df["created_at"] = pd.to_datetime(display_df["created_at"], unit='s', utc=True)
-                display_df["created_at"] = display_df["created_at"].dt.strftime("%Y-%m-%d %H:%M:%S GMT")
+            display_df = recordings_df.copy()
+            display_df["created_at"] = pd.to_datetime(display_df["created_at"], unit='s', utc=True)
+            display_df["created_at"] = display_df["created_at"].dt.strftime("%Y-%m-%d %H:%M:%S GMT")
 
-                # Display header row with divider
+            # Custom CSS
+            st.markdown("""
+                <style>
+                    .clickable-id {
+                        color: #FF4B4B !important;
+                        text-decoration: underline;
+                        background: none;
+                        border: none;
+                        padding: 0;
+                        cursor: pointer;
+                    }
+                    .clickable-id:hover {
+                        opacity: 0.8;
+                    }
+                    .stButton button {
+                        background: none;
+                        border: none;
+                        padding: 0;
+                        color: #FF4B4B;
+                        text-decoration: underline;
+                        width: auto !important;
+                    }
+                    .stButton button:hover {
+                        background: none !important;
+                        border: none !important;
+                        color: #FF4B4B !important;
+                        opacity: 0.8;
+                    }
+                </style>
+            """, unsafe_allow_html=True)
+
+            # Recordings table
+            st.subheader("All Recordings")
+            
+            # Table header
+            header_cols = st.columns([3, 2, 1, 4])
+            with header_cols[0]:
+                st.markdown("**Recording ID**")
+            with header_cols[1]:
+                st.markdown("**Created At**")
+            with header_cols[2]:
+                st.markdown("**Success**")
+            with header_cols[3]:
+                st.markdown("**Summary**")
+            st.markdown("<hr style='margin: 0; padding: 0; background-color: #333; height: 1px;'>", unsafe_allow_html=True)
+
+            # Table rows
+            for idx, row in display_df.iterrows():
                 cols = st.columns([3, 2, 1, 4])
                 with cols[0]:
-                    st.markdown("<div style='text-align: center; font-weight: bold; border-right: 1px solid #333;'>Recording ID</div>", unsafe_allow_html=True)
+                    if st.button(row['id'], key=f"id_btn_{row['id']}", help="Click to view details"):
+                        st.session_state.selected_recording_id = row['id']
                 with cols[1]:
-                    st.markdown("<div style='text-align: center; font-weight: bold; border-right: 1px solid #333;'>Created At</div>", unsafe_allow_html=True)
+                    st.write(row['created_at'])
                 with cols[2]:
-                    st.markdown("<div style='text-align: center; font-weight: bold; border-right: 1px solid #333;'>Success</div>", unsafe_allow_html=True)
+                    st.write("✅" if row['is_successful'] else "❌")
                 with cols[3]:
-                    st.markdown("<div style='text-align: center; font-weight: bold;'>Summary</div>", unsafe_allow_html=True)
-                st.markdown("<hr style='margin: 0; padding: 0; background-color: #333; height: 2px;'>", unsafe_allow_html=True)
+                    st.write(row['summary'] if row['summary'] else "None")
+                st.markdown("<hr style='margin: 0; padding: 0; background-color: #333; height: 1px;'>", unsafe_allow_html=True)
 
-                # Display each recording with clickable ID
-                for idx, row in display_df.iterrows():
-                    cols = st.columns([3, 2, 1, 4])
-                    with cols[0]:
-                        if st.button(
-                            row['id'],
-                            key=f"id_btn_{row['id']}",
-                            use_container_width=True,
-                            type="secondary"
-                        ):
-                            st.session_state.selected_recording_id = row['id']
-                    with cols[1]:
-                        st.markdown(f"<div style='text-align: center; border-right: 1px solid #333;'>{row['created_at']}</div>", unsafe_allow_html=True)
-                    with cols[2]:
-                        st.markdown(f"<div style='text-align: center; border-right: 1px solid #333;'>{'✅' if row['is_successful'] else '❌'}</div>", unsafe_allow_html=True)
-                    with cols[3]:
-                        st.markdown(f"<div style='text-align: center;'>{row['summary'] if row['summary'] else 'None'}</div>", unsafe_allow_html=True)
-                    st.markdown("<hr style='margin: 0; padding: 0; background-color: #333; height: 1px;'>", unsafe_allow_html=True)
-
-                # Show selected recording details after the table
-                if st.session_state.selected_recording_id:
-                    selected_recording = next(
-                        (r for r in recordings if r["id"] == st.session_state.selected_recording_id),
-                        None
-                    )
+            # Show selected recording details
+            if st.session_state.selected_recording_id:
+                selected_recording = next(
+                    (r for r in recordings if r["id"] == st.session_state.selected_recording_id),
+                    None
+                )
+                
+                if selected_recording:
+                    st.markdown("<div style='margin-top: 2rem;'></div>", unsafe_allow_html=True)
+                    st.subheader(f"Recording Details: {selected_recording['id']}")
                     
-                    if selected_recording:
-                        st.markdown("<hr style='margin: 20px 0; background-color: #333;'>", unsafe_allow_html=True)
-                        st.subheader(f"Recording Details: {selected_recording['id']}")
-                        
-                        col1, col2 = st.columns(2)
-                        with col1:
-                            created_time = datetime.fromtimestamp(
-                                int(selected_recording["created_at"]),
-                                tz=timezone.utc
-                            ).strftime("%Y-%m-%d %H:%M:%S GMT")
-                            st.write("Created:", created_time)
-                            st.write("Status:", "✅ Successful" if selected_recording["is_successful"] else "❌ Failed")
-                        with col2:
-                            st.write("Steps Traversed:", len(selected_recording["step_ids"]))
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        created_time = datetime.fromtimestamp(
+                            int(selected_recording["created_at"]),
+                            tz=timezone.utc
+                        ).strftime("%Y-%m-%d %H:%M:%S GMT")
+                        st.write("Created:", created_time)
+                        st.write("Status:", "✅ Successful" if selected_recording["is_successful"] else "❌ Failed")
+                    with col2:
+                        st.write("Steps Traversed:", len(selected_recording["step_ids"]))
 
-                        if selected_recording.get("combined_transcript"):
-                            with st.expander("View Transcript", expanded=True):
-                                st.text_area(
-                                    "Transcript",
-                                    selected_recording["combined_transcript"],
-                                    height=200,
-                                    key=f"transcript_main_{selected_recording['id']}"
-                                )
-                        
-                        if selected_recording.get("summary"):
-                            with st.expander("Call Summary"):
-                                st.write(selected_recording["summary"])
+                    if selected_recording.get("combined_transcript"):
+                        with st.expander("View Transcript", expanded=True):
+                            st.text_area(
+                                "Transcript",
+                                selected_recording["combined_transcript"],
+                                height=200,
+                                key=f"transcript_main_{selected_recording['id']}"
+                            )
+                    
+                    if selected_recording.get("summary"):
+                        with st.expander("Call Summary"):
+                            st.write(selected_recording["summary"])
 
     # Upload Tab
     with tab3:
