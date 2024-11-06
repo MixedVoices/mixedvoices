@@ -2,15 +2,14 @@ import streamlit as st
 import pandas as pd
 from pathlib import Path
 import typer
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
 import sys
 import streamlit.web.cli as stcli
 import requests
-import plotly.express as px
 import plotly.graph_objects as go
-from datetime import datetime
 import json
 import networkx as nx
+from datetime import datetime
 
 def run_dashboard(port: int = 8501):
     """Run the Streamlit dashboard"""
@@ -46,92 +45,108 @@ def post_api_data(endpoint: str, data: Dict, server_port: int = 8000) -> Dict:
         st.error(f"Error posting data to API: {str(e)}")
         return {}
 
-def create_flow_visualization(flow_data):
-    """Create an interactive flow visualization using Plotly"""
+def create_interactive_flow(flow_data: Dict) -> go.Figure:
+    """Create an interactive flow visualization with clickable nodes"""
     G = nx.DiGraph()
     
-    # Add nodes and identify root nodes (nodes with no incoming edges)
-    nodes_with_incoming = set()
+    # Track parent-child relationships for proper layout
+    parent_child = {}
     for step in flow_data["steps"]:
-        G.add_node(step["name"])
+        G.add_node(step["id"], name=step["name"], data=step)
         for next_step_id in step["next_step_ids"]:
-            next_step = next((s["name"] for s in flow_data["steps"] if s["id"] == next_step_id), None)
-            if next_step:
-                G.add_edge(step["name"], next_step)
-                nodes_with_incoming.add(next_step)
+            G.add_edge(step["id"], next_step_id)
+            if next_step_id not in parent_child:
+                parent_child[next_step_id] = []
+            parent_child[next_step_id].append(step["id"])
     
-    root_nodes = [node for node in G.nodes() if node not in nodes_with_incoming]
+    # Find root nodes (nodes with no parents)
+    root_nodes = [node for node in G.nodes() if node not in parent_child]
     
-    # Use hierarchical layout
-    pos = nx.spring_layout(G, k=2, iterations=50)
+    # Assign levels using BFS
+    levels = {node: -1 for node in G.nodes()}
+    current_level = 0
+    current_nodes = root_nodes
+    while current_nodes:
+        next_nodes = []
+        for node in current_nodes:
+            if levels[node] == -1:  # Not visited yet
+                levels[node] = current_level
+                next_nodes.extend(list(G.successors(node)))
+        current_nodes = next_nodes
+        current_level += 1
     
-    # Adjust y-coordinates to create levels
-    levels = {}
-    for node in G.nodes():
-        # Calculate the longest path from any root to this node
-        max_dist = 0
-        for root in root_nodes:
-            try:
-                dist = len(nx.shortest_path(G, root, node)) - 1
-                max_dist = max(max_dist, dist)
-            except nx.NetworkXNoPath:
-                continue
-        levels[node] = max_dist
-    
-    # Normalize positions
+    # Position nodes
     max_level = max(levels.values())
-    for node in pos:
-        x, _ = pos[node]
-        level = levels[node]
-        # Reverse the y-coordinate to have flow from top to bottom
-        y = 1 - (level / max(1, max_level))
-        pos[node] = (x, y)
+    nodes_by_level = {}
+    for node, level in levels.items():
+        if level not in nodes_by_level:
+            nodes_by_level[level] = []
+        nodes_by_level[level].append(node)
+    
+    # Calculate positions with straight-line layout for paths
+    pos = {}
+    for level in range(max_level + 1):
+        nodes = nodes_by_level[level]
+        
+        # Special handling for branching paths
+        if len(nodes) == 1:
+            # For single nodes, maintain the x-position of their parent if possible
+            node = nodes[0]
+            parent_nodes = parent_child.get(node, [])
+            if parent_nodes and parent_nodes[0] in pos:
+                pos[node] = (pos[parent_nodes[0]][0], -level)
+            else:
+                pos[node] = (0, -level)
+        else:
+            # For multiple nodes at the same level, space them evenly
+            total_width = len(nodes) - 1
+            for i, node in enumerate(sorted(nodes)):
+                x = i - total_width/2
+                pos[node] = (x, -level)
     
     # Create edge trace
-    edge_x = []
-    edge_y = []
+    edge_x, edge_y = [], []
     for edge in G.edges():
         x0, y0 = pos[edge[0]]
         x1, y1 = pos[edge[1]]
         edge_x.extend([x0, x1, None])
         edge_y.extend([y0, y1, None])
-
+    
     edge_trace = go.Scatter(
         x=edge_x, y=edge_y,
         line=dict(width=1, color='#666'),
         hoverinfo='none',
         mode='lines'
     )
-
-    # Create node trace
-    node_x = []
-    node_y = []
-    node_colors = []
-    node_text = []
-    hover_text = []
     
-    for step in flow_data["steps"]:
-        x, y = pos[step["name"]]
+    # Create node trace
+    node_x, node_y = [], []
+    node_text, hover_text = [], []
+    node_ids = []
+    node_colors = []
+    
+    for node in G.nodes():
+        x, y = pos[node]
         node_x.append(x)
         node_y.append(y)
         
-        success_rate = (step["number_of_successful_calls"] / step["number_of_calls"] * 100 
-                       if step["number_of_calls"] > 0 else 0)
+        node_data = G.nodes[node]['data']
+        node_ids.append(node)
         
-        # Determine node color based on success rate
+        success_rate = (node_data["number_of_successful_calls"] / node_data["number_of_calls"] * 100 
+                       if node_data["number_of_calls"] > 0 else 0)
+        
         color = '#198754' if success_rate >= 80 else '#fd7e14' if success_rate >= 60 else '#dc3545'
         node_colors.append(color)
         
-        # Node label
-        node_text.append(step["name"])
+        node_text.append(node_data["name"])
         
-        # Hover text
-        hover = (f"Step: {step['name']}<br>"
-                f"Total Calls: {step['number_of_calls']}<br>"
-                f"Success Rate: {success_rate:.1f}%<br>"
-                f"Terminated: {step['number_of_terminated_calls']}")
+        hover = (f"Step: {node_data['name']}<br>"
+                f"Total: {node_data['number_of_calls']}<br>"
+                f"Success: {node_data['number_of_successful_calls']}<br>"
+                f"Rate: {success_rate:.1f}%")
         hover_text.append(hover)
-
+    
     node_trace = go.Scatter(
         x=node_x, y=node_y,
         mode='markers+text',
@@ -139,6 +154,7 @@ def create_flow_visualization(flow_data):
         text=node_text,
         textposition="bottom center",
         hovertext=hover_text,
+        customdata=node_ids,  # Store node IDs for click events
         marker=dict(
             showscale=False,
             color=node_colors,
@@ -147,31 +163,29 @@ def create_flow_visualization(flow_data):
             line_color='white'
         )
     )
-
-    # Create figure
-    fig = go.Figure(data=[edge_trace, node_trace],
-                   layout=go.Layout(
-                       showlegend=False,
-                       hovermode='closest',
-                       margin=dict(b=20,l=5,r=5,t=40),
-                       plot_bgcolor='rgba(0,0,0,0)',
-                       paper_bgcolor='rgba(0,0,0,0)',
-                       xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
-                       yaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
-                       height=600
-                   ))
+    
+    # Create figure with clickable nodes
+    fig = go.Figure(
+        data=[edge_trace, node_trace],
+        layout=go.Layout(
+            showlegend=False,
+            hovermode='closest',
+            margin=dict(b=20, l=5, r=5, t=40),
+            plot_bgcolor='rgba(0,0,0,0)',
+            paper_bgcolor='rgba(0,0,0,0)',
+            xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
+            yaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
+            height=600,
+            clickmode='event'  # Enable click events
+        )
+    )
     
     return fig
 
-def display_recording_details(recording, source="main"):
-    """Display detailed information about a recording
-    Args:
-        recording: The recording data to display
-        source: Source identifier to make keys unique ('main' or step ID)
-    """
+def display_recording_details(recording: Dict, source: str = "main") -> None:
+    """Display detailed information about a recording"""
     st.subheader(f"Recording Details: {recording['id']}")
     
-    # Basic information
     col1, col2 = st.columns(2)
     with col1:
         st.write("Created:", recording["created_at"])
@@ -179,20 +193,70 @@ def display_recording_details(recording, source="main"):
     with col2:
         st.write("Steps Traversed:", len(recording["step_ids"]))
     
-    # Transcript
     if recording.get("combined_transcript"):
         with st.expander("View Transcript", expanded=True):
             st.text_area(
-                "Transcript", 
-                recording["combined_transcript"], 
+                "Transcript",
+                recording["combined_transcript"],
                 height=200,
                 key=f"transcript_{source}_{recording['id']}"
             )
     
-    # Summary
     if recording.get("summary"):
         with st.expander("Call Summary"):
-            st.write(recording["summary"])  # Changed to write instead of text_area
+            st.write(recording["summary"])
+
+def handle_node_click(flow_data: Dict, selected_point: Dict, fetch_api_data) -> None:
+    """Handle node click events and display relevant information"""
+    if selected_point and selected_point.get("points"):
+        point = selected_point["points"][0]
+        node_id = point.get("customdata")
+        if node_id:
+            step_data = next((s for s in flow_data["steps"] if s["id"] == node_id), None)
+            if step_data:
+                st.subheader(f"Step Details: {step_data['name']}")
+                
+                col1, col2, col3 = st.columns(3)
+                with col1:
+                    st.metric("Total Calls", step_data["number_of_calls"])
+                with col2:
+                    st.metric("Successful Calls", step_data["number_of_successful_calls"])
+                with col3:
+                    success_rate = (step_data["number_of_successful_calls"] / 
+                                step_data["number_of_calls"] * 100 if step_data["number_of_calls"] > 0 else 0)
+                    st.metric("Success Rate", f"{success_rate:.1f}%")
+                
+                # Fetch and display recordings for this step
+                recordings = fetch_api_data(
+                    f"projects/{st.session_state.current_project}"
+                    f"/versions/{st.session_state.current_version}"
+                    f"/steps/{node_id}/recordings"
+                )
+                
+                if recordings.get("recordings"):
+                    st.subheader("Recordings at this Step")
+                    recordings_df = pd.DataFrame(recordings["recordings"])
+                    if not recordings_df.empty:
+                        recordings_df["created_at"] = pd.to_datetime(recordings_df["created_at"])
+                        display_df = recordings_df.copy()
+                        display_df["created_at"] = display_df["created_at"].dt.strftime("%Y-%m-%d %H:%M:%S")
+                        
+                        selected_indices = st.data_editor(
+                            display_df[["id", "created_at", "is_successful", "summary"]]
+                            .sort_values("created_at", ascending=False),
+                            use_container_width=True,
+                            hide_index=True,
+                            column_config={
+                                "created_at": st.column_config.TextColumn("Created At"),
+                                "is_successful": st.column_config.CheckboxColumn("Success"),
+                                "summary": st.column_config.TextColumn("Summary", width="large"),
+                            },
+                            key=f"recordings_table_{node_id}"
+                        ).index.tolist()
+                        
+                        if selected_indices:
+                            selected_recording = recordings["recordings"][selected_indices[0]]
+                            display_recording_details(selected_recording, f"step_{node_id}")
 
 def main():
     """Main Streamlit dashboard"""
@@ -208,8 +272,6 @@ def main():
         st.session_state.current_project = None
     if 'current_version' not in st.session_state:
         st.session_state.current_version = None
-    if 'selected_step' not in st.session_state:
-        st.session_state.selected_step = None
 
     # Sidebar
     with st.sidebar:
@@ -313,76 +375,25 @@ def main():
         )
         
         if flow_data.get("steps"):
-            # Interactive flow visualization
             st.subheader("Call Flow Visualization")
-            fig = create_flow_visualization(flow_data)
+            fig = create_interactive_flow(flow_data)
             
-            # Display the flow chart
-            st.plotly_chart(
-                fig, 
+            # Create a placeholder for selected node details
+            details_placeholder = st.empty()
+            
+            # Display the interactive flow chart
+            selected_point = st.plotly_chart(
+                fig,
                 use_container_width=True,
-                config={'displayModeBar': False}  # Hide the mode bar for cleaner look
+                config={'displayModeBar': False},
+                key="flow_chart"
             )
             
-            # Step selection dropdown
-            st.session_state.selected_step = st.selectbox(
-                "Select step to view details",
-                options=[step["name"] for step in flow_data["steps"]],
-                key="step_selector"
-            )
-            
-            # Step details and recordings
-            if st.session_state.selected_step:
-                step_data = next((s for s in flow_data["steps"] if s["name"] == st.session_state.selected_step), None)
-                if step_data:
-                    # Display step metrics
-                    st.subheader(f"Step Details: {step_data['name']}")
-                    col1, col2, col3 = st.columns(3)
-                    with col1:
-                        st.metric("Total Calls", step_data["number_of_calls"])
-                    with col2:
-                        st.metric("Successful Calls", step_data["number_of_successful_calls"])
-                    with col3:
-                        success_rate = (step_data["number_of_successful_calls"] / 
-                                    step_data["number_of_calls"] * 100 if step_data["number_of_calls"] > 0 else 0)
-                        st.metric("Success Rate", f"{success_rate:.1f}%")
-                    
-                    # Fetch and display recordings for this step
-                    recordings = fetch_api_data(
-                        f"projects/{st.session_state.current_project}/versions/{st.session_state.current_version}/steps/{step_data['id']}/recordings"
-                    )
-                    
-                    if recordings.get("recordings"):
-                        st.subheader("Recordings at this Step")
-                        recordings_df = pd.DataFrame(recordings["recordings"])
-                        if not recordings_df.empty:
-                            # Convert created_at to datetime and then to string for display
-                            recordings_df["created_at"] = pd.to_datetime(recordings_df["created_at"])
-                            display_df = recordings_df.copy()
-                            display_df["created_at"] = display_df["created_at"].dt.strftime("%Y-%m-%d %H:%M:%S")
-                            
-                            selected_recording = st.data_editor(
-                                display_df[["id", "created_at", "is_successful", "summary"]]
-                                .sort_values("created_at", ascending=False),
-                                use_container_width=True,
-                                hide_index=True,
-                                column_config={
-                                    "created_at": st.column_config.TextColumn("Created At"),
-                                    "is_successful": st.column_config.CheckboxColumn("Success"),
-                                    "summary": st.column_config.TextColumn("Summary", width="large"),
-                                },
-                                key=f"step_recordings_{step_data['id']}"
-                            )
-                            
-                            # If a recording is selected, show its details
-                            if selected_recording is not None and len(selected_recording) > 0:
-                                selected_id = selected_recording.iloc[0]["id"]
-                                selected_recording_data = next(
-                                    (r for r in recordings["recordings"] if r["id"] == selected_id), 
-                                    None
-                                )
-                                if selected_recording_data:
-                                    display_recording_details(selected_recording_data, f"step_{step_data['id']}")
+            # Handle node click events
+            if selected_point is not None:  # Check if selected_point exists
+                with details_placeholder:
+                    if isinstance(selected_point, dict) and "points" in selected_point:
+                        handle_node_click(flow_data, selected_point, fetch_api_data)
 
     # Recordings Tab
     with tab2:
@@ -412,7 +423,7 @@ def main():
                 display_df = recordings_df.copy()
                 display_df["created_at"] = display_df["created_at"].dt.strftime("%Y-%m-%d %H:%M:%S")
                 
-                selected_recording = st.data_editor(
+                selected_indices = st.data_editor(
                     display_df[["id", "created_at", "is_successful", "summary"]]
                     .sort_values("created_at", ascending=False),
                     use_container_width=True,
@@ -423,32 +434,34 @@ def main():
                         "summary": st.column_config.TextColumn("Summary", width="large"),
                     },
                     key="all_recordings"
-                )
+                ).index.tolist()
                 
                 # If a recording is selected, show its details
-                if selected_recording is not None and len(selected_recording) > 0:
-                    selected_id = selected_recording.iloc[0]["id"]
-                    selected_recording_data = next(
-                        (r for r in recordings if r["id"] == selected_id), 
-                        None
-                    )
-                    if selected_recording_data:
-                        display_recording_details(selected_recording_data, "main")
+                if selected_indices:
+                    selected_recording = recordings[selected_indices[0]]
+                    display_recording_details(selected_recording, "main")
 
     # Upload Tab
     with tab3:
+        st.subheader("Upload Recording")
         uploaded_file = st.file_uploader("Choose an audio file")
         if uploaded_file and st.button("Upload"):
             files = {"file": uploaded_file}
-            response = requests.post(
-                f"http://localhost:8000/api/projects/{st.session_state.current_project}/versions/{st.session_state.current_version}/recordings",
-                files=files
-            )
-            if response.status_code == 200:
+            try:
+                response = requests.post(
+                    f"http://localhost:8000/api/projects/{st.session_state.current_project}"
+                    f"/versions/{st.session_state.current_version}/recordings",
+                    files=files
+                )
+                response.raise_for_status()
                 st.success("Recording uploaded successfully!")
                 st.rerun()
-            else:
-                st.error("Error uploading recording")
+            except requests.RequestException as e:
+                st.error(f"Error uploading recording: {str(e)}")
+
+def cli():
+    """Command line interface function"""
+    typer.run(run_dashboard)
 
 if __name__ == "__main__":
     main()
