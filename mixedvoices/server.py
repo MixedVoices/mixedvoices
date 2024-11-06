@@ -10,14 +10,8 @@ import os
 import shutil
 from mixedvoices.constants import ALL_PROJECTS_FOLDER
 import mixedvoices
-import typer
-import webbrowser
-import pkg_resources
-import json
-
 
 app = FastAPI()
-cli = typer.Typer()
 
 # Enable CORS
 app.add_middleware(
@@ -35,167 +29,6 @@ class VersionCreate(BaseModel):
 
 class RecordingUpload(BaseModel):
     url: Optional[str] = None
-
-
-# HTML template with embedded JavaScript
-HTML_TEMPLATE = """
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MixedVoices</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/mermaid/10.6.1/mermaid.min.js"></script>
-</head>
-<body>
-    <div id="root"></div>
-    <script type="text/javascript">
-        const e = React.createElement;
-        
-        const App = () => {
-            const [projects, setProjects] = React.useState([]);
-            const [selectedProject, setSelectedProject] = React.useState(null);
-            const [versions, setVersions] = React.useState([]);
-            const [error, setError] = React.useState(null);
-            const [loading, setLoading] = React.useState(false);
-            const [view, setView] = React.useState('projects');
-            const [flowData, setFlowData] = React.useState(null);
-            const [newProjectName, setNewProjectName] = React.useState('');
-            const [newVersionData, setNewVersionData] = React.useState({ name: '', metadata: {} });
-            
-            const fetchProjects = async () => {
-                try {
-                    const response = await fetch('/api/projects');
-                    const data = await response.json();
-                    setProjects(data.projects);
-                } catch (err) {
-                    setError(err.message);
-                }
-            };
-
-            const fetchVersions = async (projectName) => {
-                try {
-                    const response = await fetch(`/api/projects/${projectName}/versions`);
-                    const data = await response.json();
-                    setVersions(data.versions);
-                } catch (err) {
-                    setError(err.message);
-                }
-            };
-
-            const createProject = async () => {
-                try {
-                    await fetch(`/api/projects?name=${encodeURIComponent(newProjectName)}`, {
-                        method: 'POST'
-                    });
-                    fetchProjects();
-                    setNewProjectName('');
-                } catch (err) {
-                    setError(err.message);
-                }
-            };
-
-            React.useEffect(() => {
-                fetchProjects();
-            }, []);
-
-            const Card = ({ children, onClick, className = '' }) => {
-                return e('div', {
-                    className: `p-4 border rounded-lg shadow-sm hover:shadow-md cursor-pointer ${className}`,
-                    onClick
-                }, children);
-            };
-
-            const ProjectsList = () => {
-                return e('div', { className: 'grid grid-cols-1 md:grid-cols-3 gap-4 p-4' },
-                    [
-                        ...projects.map(project => 
-                            e(Card, {
-                                key: project,
-                                onClick: () => {
-                                    setSelectedProject(project);
-                                    fetchVersions(project);
-                                    setView('versions');
-                                }
-                            }, e('h3', { className: 'text-lg font-medium' }, project))
-                        ),
-                        e(Card, {
-                            key: 'new',
-                            className: 'border-dashed',
-                            onClick: () => {
-                                const name = prompt('Enter project name:');
-                                if (name) {
-                                    setNewProjectName(name);
-                                    createProject();
-                                }
-                            }
-                        }, e('div', { className: 'text-center text-gray-500' }, '+ New Project'))
-                    ]
-                );
-            };
-
-            const VersionsList = () => {
-                return e('div', { className: 'p-4' }, [
-                    e('div', { className: 'mb-4 flex items-center' }, [
-                        e('button', {
-                            className: 'text-blue-500 hover:text-blue-700',
-                            onClick: () => setView('projects')
-                        }, '← Back'),
-                        e('h2', { className: 'ml-4 text-2xl font-bold' }, selectedProject)
-                    ]),
-                    e('div', { className: 'grid grid-cols-1 md:grid-cols-3 gap-4' },
-                        [
-                            ...versions.map(version =>
-                                e(Card, {
-                                    key: version.name,
-                                    onClick: () => {
-                                        setView('version-detail');
-                                    }
-                                }, [
-                                    e('h3', { className: 'text-lg font-medium' }, version.name),
-                                    e('p', { className: 'text-sm text-gray-500' },
-                                        `${version.recording_count} recordings`
-                                    )
-                                ])
-                            ),
-                            e(Card, {
-                                key: 'new',
-                                className: 'border-dashed',
-                                onClick: () => {
-                                    const name = prompt('Enter version name:');
-                                    if (name) {
-                                        setNewVersionData({ name, metadata: {} });
-                                        // Handle version creation
-                                    }
-                                }
-                            }, e('div', { className: 'text-center text-gray-500' }, '+ New Version'))
-                        ]
-                    )
-                ]);
-            };
-
-            return e('div', { className: 'min-h-screen bg-gray-50' },
-                e('div', { className: 'max-w-7xl mx-auto py-6' },
-                    view === 'projects' ? e(ProjectsList) :
-                    view === 'versions' ? e(VersionsList) :
-                    null
-                )
-            );
-        };
-
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(e(App));
-    </script>
-</body>
-</html>
-"""
-
-@app.get("/", response_class=HTMLResponse)
-async def get_app():
-    return HTML_TEMPLATE
 
 # API Routes
 @app.get("/api/projects")
@@ -366,13 +199,3 @@ async def get_step_recordings(project_name: str, version_name: str, step_id: str
 def run_server(port: int = 8000):
     """Run the FastAPI server"""
     uvicorn.run(app, host="0.0.0.0", port=port)
-
-@cli.command()
-def run(port: int = typer.Option(8000, help="Port to run the server on")):
-    """Run the MixedVoices web interface"""
-    print(f"Starting MixedVoices server on http://localhost:{port}")
-    webbrowser.open(f"http://localhost:{port}")
-    run_server(port)
-
-if __name__ == "__main__":
-    cli()
