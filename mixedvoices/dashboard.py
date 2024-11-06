@@ -429,39 +429,39 @@ def main():
                 display_df = recordings_df.copy()
                 display_df["created_at"] = pd.to_datetime(display_df["created_at"], unit='s', utc=True)
                 display_df["created_at"] = display_df["created_at"].dt.strftime("%Y-%m-%d %H:%M:%S GMT")
-                
-                # Add click handler using session state
-                def handle_click(recording_id):
-                    st.session_state.selected_recording_id = recording_id
 
                 # Display header row with divider
-                header_cols = st.columns([3, 2, 1, 4])
-                with header_cols[0]:
-                    st.markdown("**Recording ID**")
-                with header_cols[1]:
-                    st.markdown("**Created At**")
-                with header_cols[2]:
-                    st.markdown("**Success**")
-                with header_cols[3]:
-                    st.markdown("**Summary**")
-                st.divider()  # Add line after headers
+                cols = st.columns([3, 2, 1, 4])
+                with cols[0]:
+                    st.markdown("<div style='text-align: center; font-weight: bold; border-right: 1px solid #333;'>Recording ID</div>", unsafe_allow_html=True)
+                with cols[1]:
+                    st.markdown("<div style='text-align: center; font-weight: bold; border-right: 1px solid #333;'>Created At</div>", unsafe_allow_html=True)
+                with cols[2]:
+                    st.markdown("<div style='text-align: center; font-weight: bold; border-right: 1px solid #333;'>Success</div>", unsafe_allow_html=True)
+                with cols[3]:
+                    st.markdown("<div style='text-align: center; font-weight: bold;'>Summary</div>", unsafe_allow_html=True)
+                st.markdown("<hr style='margin: 0; padding: 0; background-color: #333; height: 2px;'>", unsafe_allow_html=True)
 
                 # Display each recording with clickable ID
                 for idx, row in display_df.iterrows():
                     cols = st.columns([3, 2, 1, 4])
                     with cols[0]:
-                        if st.button(row['id'], key=f"btn_{row['id']}"):
-                            handle_click(row['id'])
+                        if st.button(
+                            row['id'],
+                            key=f"id_btn_{row['id']}",
+                            use_container_width=True,
+                            type="secondary"
+                        ):
+                            st.session_state.selected_recording_id = row['id']
                     with cols[1]:
-                        st.write(row['created_at'])
+                        st.markdown(f"<div style='text-align: center; border-right: 1px solid #333;'>{row['created_at']}</div>", unsafe_allow_html=True)
                     with cols[2]:
-                        st.write("✅" if row['is_successful'] else "❌")
+                        st.markdown(f"<div style='text-align: center; border-right: 1px solid #333;'>{'✅' if row['is_successful'] else '❌'}</div>", unsafe_allow_html=True)
                     with cols[3]:
-                        st.write(row['summary'] if row['summary'] else "None")
-                    # Add a subtle divider between rows
-                    st.markdown("---")
-                
-                # Show selected recording details
+                        st.markdown(f"<div style='text-align: center;'>{row['summary'] if row['summary'] else 'None'}</div>", unsafe_allow_html=True)
+                    st.markdown("<hr style='margin: 0; padding: 0; background-color: #333; height: 1px;'>", unsafe_allow_html=True)
+
+                # Show selected recording details after the table
                 if st.session_state.selected_recording_id:
                     selected_recording = next(
                         (r for r in recordings if r["id"] == st.session_state.selected_recording_id),
@@ -469,21 +469,20 @@ def main():
                     )
                     
                     if selected_recording:
-                        st.divider()
+                        st.markdown("<hr style='margin: 20px 0; background-color: #333;'>", unsafe_allow_html=True)
                         st.subheader(f"Recording Details: {selected_recording['id']}")
                         
                         col1, col2 = st.columns(2)
                         with col1:
-                            # Convert timestamp to GMT
                             created_time = datetime.fromtimestamp(
-                                int(selected_recording["created_at"]), 
+                                int(selected_recording["created_at"]),
                                 tz=timezone.utc
                             ).strftime("%Y-%m-%d %H:%M:%S GMT")
                             st.write("Created:", created_time)
                             st.write("Status:", "✅ Successful" if selected_recording["is_successful"] else "❌ Failed")
                         with col2:
                             st.write("Steps Traversed:", len(selected_recording["step_ids"]))
-                        
+
                         if selected_recording.get("combined_transcript"):
                             with st.expander("View Transcript", expanded=True):
                                 st.text_area(
