@@ -49,8 +49,10 @@ class ProjectManager:
                     if i + j < len(versions):
                         version = versions[i + j]
                         with col:
-                            st.markdown(f"""
-                            #### {version['name']}
-                            - Recordings: {version['recording_count']}
-                            - Metadata: {version['metadata']}
-                            """)
+                            st.markdown(f"#### {version['name']}")
+                            st.markdown(f"Recordings: {version['recording_count']}")
+                            
+                            # Format metadata as bullet points
+                            st.markdown("Metadata:")
+                            for key, value in version['metadata'].items():
+                                st.markdown(f"* {key}: {value}")
