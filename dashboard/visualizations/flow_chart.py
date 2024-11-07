@@ -8,6 +8,7 @@ class FlowChart:
         self.is_recording_flow = is_recording_flow
         self.G = nx.DiGraph()
         self.pos = {}
+        self.parent_child = {}
         
     def _create_graph(self) -> None:
         """Create networkx graph from flow data"""
@@ -36,21 +37,20 @@ class FlowChart:
     
     def _create_full_graph(self) -> None:
         """Create graph for full flow visualization"""
-        parent_child = {}
         for step in self.flow_data["steps"]:
             self.G.add_node(step["id"], name=step["name"], data=step)
             for next_step_id in step["next_step_ids"]:
                 self.G.add_edge(step["id"], next_step_id)
-                if next_step_id not in parent_child:
-                    parent_child[next_step_id] = []
-                parent_child[next_step_id].append(step["id"])
+                if next_step_id not in self.parent_child:
+                    self.parent_child[next_step_id] = []
+                self.parent_child[next_step_id].append(step["id"])
         
-        self._calculate_positions(parent_child)
+        self._calculate_positions()
     
-    def _calculate_positions(self, parent_child: Dict) -> None:
+    def _calculate_positions(self) -> None:
         """Calculate node positions for visualization"""
         # Find root nodes and calculate levels
-        root_nodes = [node for node in self.G.nodes() if node not in parent_child]
+        root_nodes = [node for node in self.G.nodes() if node not in self.parent_child]
         levels = self._calculate_levels(root_nodes)
         
         # Position nodes by level
@@ -78,16 +78,28 @@ class FlowChart:
         max_level = max(levels.values())
         nodes_by_level = {}
         
+        # Group nodes by level
         for node, level in levels.items():
             if level not in nodes_by_level:
                 nodes_by_level[level] = []
             nodes_by_level[level].append(node)
         
+        # Position nodes level by level
         for level in range(max_level + 1):
             nodes = nodes_by_level[level]
+            
             if len(nodes) == 1:
-                self.pos[nodes[0]] = (0, -level)
+                # For single nodes, try to align with parent
+                node = nodes[0]
+                parent_nodes = self.parent_child.get(node, [])
+                if parent_nodes and parent_nodes[0] in self.pos:
+                    # Maintain parent's x-position
+                    self.pos[node] = (self.pos[parent_nodes[0]][0], -level)
+                else:
+                    # No parent or parent not positioned yet, center it
+                    self.pos[node] = (0, -level)
             else:
+                # For multiple nodes, space them evenly
                 total_width = len(nodes) - 1
                 for i, node in enumerate(sorted(nodes)):
                     x = i - total_width/2
