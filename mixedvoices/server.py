@@ -140,6 +140,7 @@ async def list_recordings(project_name: str, version_name: str):
         for recording_id, recording in version.recordings.items():
             recordings_data.append({
                 "id": recording.recording_id,
+                "audio_path": recording.audio_path,
                 "created_at": recording.created_at,
                 "combined_transcript": recording.combined_transcript,
                 "step_ids": recording.step_ids,

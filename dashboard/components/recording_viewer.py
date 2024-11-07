@@ -1,4 +1,3 @@
-# components/recording_viewer.py
 from datetime import datetime, timezone
 import streamlit as st
 import pandas as pd
@@ -49,39 +48,46 @@ class RecordingViewer:
     def show_recording_dialog(self, recording: dict) -> None:
         """Show recording details in a dialog"""
         st.subheader(f"Recording ID: {recording['id']}")
-        
-        col1, col2 = st.columns(2)
-        with col1:
-            created_time = datetime.fromtimestamp(
-                int(recording["created_at"]),
-                tz=timezone.utc
-            ).strftime("%-I:%M%p %-d %B %Y")
-            st.write("Created:", created_time)
-            st.write("Status:", "✅ Successful" if recording["is_successful"] else "❌ Failed")
-        with col2:
-            summary = recording.get("summary") or "N/A"
-            st.write("Summary:", summary)
-        
-        # Display flow visualization for this recording
-        st.subheader("Recording Flow")
-        self.display_recording_flow(recording['id'])
-        
-        # Display transcript
+
+        audio_path = recording['audio_path']
+        try:
+            st.audio(audio_path, format='audio/wav')
+        except Exception as e:
+            st.error(f"Unable to load audio: {str(e)}")
+
         if recording.get("combined_transcript"):
-            with st.expander("View Transcript", expanded=False):
-                st.text_area(
-                    "Transcript",
-                    recording["combined_transcript"],
-                    height=200,
-                    key=f"transcript_dialog_{recording['id']}"
-                )
+            st.text_area(
+                "Transcript",
+                recording["combined_transcript"],
+                height=200,
+                key=f"transcript_dialog_{recording['id']}"
+            )
+
+        if recording.get("summary"):
+            st.text_area("Summary", recording["summary"], height=100, key=f"summary_dialog_{recording['id']}")
+        else:
+            st.write("Summary:", "N/A")
+
+        # col1 = st.columns(1)
+        # with col1:
+        created_time = datetime.fromtimestamp(
+            int(recording["created_at"]),
+            tz=timezone.utc
+        ).strftime("%-I:%M%p %-d %B %Y")
+        st.write("Created:", created_time)
+        st.write("Audio Path:", recording["audio_path"])
+        st.write("Status:", "✅ Successful" if recording["is_successful"] else "❌ Failed")
+
+
+
+        with st.expander("View Recording Flow", expanded=False):
+            self.display_recording_flow(recording['id'])
 
     def display_recording_flow(self, recording_id: str) -> None:
         """Display flow visualization for a recording"""
         recording_flow = self.api_client.fetch_data(
             get_recording_flow_endpoint(self.project_id, self.version, recording_id)
         )
-        
         if recording_flow and recording_flow.get("steps"):
             flow_chart = FlowChart(recording_flow, is_recording_flow=True)
             fig = flow_chart.create_figure()
