@@ -75,11 +75,8 @@ class RecordingViewer:
             tz=timezone.utc
         ).strftime("%-I:%M%p %-d %B %Y")
         st.write("Created:", created_time)
-        st.write("Audio Path:", recording["audio_path"])
+        # st.write("Audio Path:", recording["audio_path"])
         st.write("Status:", "✅ Successful" if recording["is_successful"] else "❌ Failed")
-
-
-
         with st.expander("View Recording Flow", expanded=False):
             self.display_recording_flow(recording['id'])
 
