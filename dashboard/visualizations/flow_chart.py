@@ -163,7 +163,7 @@ class FlowChart:
             customdata=node_ids,
             marker=dict(
                 showscale=False,
-                size=40,
+                size=30,
                 color=node_colors,
                 line=dict(width=2, color='white')
             )

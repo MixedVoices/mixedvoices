@@ -12,7 +12,7 @@ def recordings_page():
         st.switch_page("Home.py")
         return
         
-    st.title(f"Version: {st.session_state.current_version}")
+    st.title(f"{st.session_state.current_project} | {st.session_state.current_version}")
     
     # Initialize API client and components
     api_client = APIClient()
