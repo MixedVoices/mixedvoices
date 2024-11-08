@@ -1,12 +1,37 @@
 import streamlit as st
 import json
+import html
 from dashboard.api.client import APIClient
 from dashboard.api.endpoints import get_project_versions_endpoint
+
+# Constants
+MAX_KEY_LENGTH = 25
+LONG_VALUE_THRESHOLD = 50
 
 class ProjectManager:
     def __init__(self, api_client: APIClient, project_id: str):
         self.api_client = api_client
+        
+        # Check if project has changed
+        if 'current_project_id' not in st.session_state or st.session_state.current_project_id != project_id:
+            self._reset_form_state()
+            st.session_state.current_project_id = project_id
+        
         self.project_id = project_id
+
+    def _reset_form_state(self):
+        """Reset all form-related session state when switching projects"""
+        if "version_name" in st.session_state:
+            del st.session_state.version_name
+        st.session_state.expander_state = True
+        st.session_state.metadata_pairs = [{"key": "", "value": ""}]
+
+    def _reset_after_create(self):
+        """Reset form state after successful version creation"""
+        if "version_name" in st.session_state:
+            del st.session_state.version_name
+        st.session_state.metadata_pairs = [{"key": "", "value": ""}]
+        st.session_state.expander_state = True
 
     def render(self) -> None:
         """Render project management view"""
@@ -16,88 +41,91 @@ class ProjectManager:
 
     def _render_version_creation(self) -> None:
         """Render version creation UI"""
-        # Initialize states
+        # Initialize states if they don't exist
         if "expander_state" not in st.session_state:
             st.session_state.expander_state = True
-        if "version_name" not in st.session_state:
-            st.session_state.version_name = ""
         if "metadata_pairs" not in st.session_state:
             st.session_state.metadata_pairs = [{"key": "", "value": ""}]
+            
+        def handle_create_version():
+            if not st.session_state.version_name.strip():
+                st.error("Please enter a version name")
+                return
+            
+            # if duplicate keys, st.error
+            all_keys = [pair["key"] for pair in st.session_state.metadata_pairs]
+            if len(set(all_keys)) != len(all_keys):
+                st.error("Duplicate metadata keys are not allowed")
+                return
+
+            metadata_dict = {
+                pair["key"]: pair["value"] 
+                for pair in st.session_state.metadata_pairs 
+                if pair["key"].strip() and len(pair["key"]) <= MAX_KEY_LENGTH
+            }
+            
+            response = self.api_client.post_data(
+                get_project_versions_endpoint(self.project_id),
+                {"name": st.session_state.version_name, "metadata": metadata_dict}
+            )
+            
+            if response.get("message"):
+                st.success(response["message"])
+                self._reset_after_create()
+                st.rerun()
 
         with st.expander("Create New Version", expanded=st.session_state.expander_state):
-            # Version name input
-            version_name = st.text_input(
+            st.text_input(
                 "Version Name",
-                value=st.session_state.version_name
+                key="version_name",
+                value=""
             )
             
             st.subheader("Metadata")
             
-            # Handle metadata pairs
             to_remove = None
+            
+            if st.button("Add Metadata Field"):
+                st.session_state.metadata_pairs.append({"key": "", "value": ""})
+                st.rerun()
+            
             for i, pair in enumerate(st.session_state.metadata_pairs):
-                col1, col2, col3 = st.columns([2, 2, 1])
+                col1, col2, col3 = st.columns([2, 2, 0.5])
                 
                 with col1:
                     key = st.text_input(
                         "Key",
                         value=pair["key"],
                         key=f"key_{i}",
-                        label_visibility="collapsed",
-                        placeholder="Enter key"
+                        placeholder="Enter key",
+                        max_chars=MAX_KEY_LENGTH,
+                        label_visibility="collapsed"
                     )
                     st.session_state.metadata_pairs[i]["key"] = key
+                    if len(key) > MAX_KEY_LENGTH:
+                        st.error(f"Key must be {MAX_KEY_LENGTH} characters or less")
                 
                 with col2:
                     value = st.text_input(
                         "Value",
                         value=pair["value"],
                         key=f"value_{i}",
-                        label_visibility="collapsed",
-                        placeholder="Enter value"
+                        placeholder="Enter value",
+                        label_visibility="collapsed"
                     )
                     st.session_state.metadata_pairs[i]["value"] = value
                 
                 with col3:
-                    if i > 0:  # Don't show remove button for first pair
+                    if i > 0:
                         if st.button("✕", key=f"remove_{i}"):
                             to_remove = i
             
-            # Handle remove after the loop to avoid modifying list while iterating
             if to_remove is not None:
                 st.session_state.metadata_pairs.pop(to_remove)
                 st.rerun()
             
-            # Add new metadata field button
-            if st.button("Add Metadata Field"):
-                st.session_state.metadata_pairs.append({"key": "", "value": ""})
-                st.rerun()
-            
-            # Create version button
             if st.button("Create Version"):
-                if version_name:
-                    # Convert metadata pairs to dictionary
-                    metadata_dict = {
-                        pair["key"]: pair["value"] 
-                        for pair in st.session_state.metadata_pairs 
-                        if pair["key"].strip()  # Only include pairs with non-empty keys
-                    }
-                    
-                    response = self.api_client.post_data(
-                        get_project_versions_endpoint(self.project_id),
-                        {"name": version_name, "metadata": metadata_dict}
-                    )
-                    
-                    if response.get("message"):
-                        st.success(response["message"])
-                        # Clear the fields
-                        st.session_state.version_name = ""
-                        st.session_state.metadata_pairs = [{"key": "", "value": ""}]
-                        # Keep expander open
-                        st.session_state.expander_state = True
-                        st.rerun()
-                else:
-                    st.error("Please enter a version name")
+                handle_create_version()
 
     def _render_versions_list(self) -> None:
         """Render list of versions"""
@@ -108,15 +136,110 @@ class ProjectManager:
         
         if versions:
             st.subheader("Versions")
+            versions.sort(key=lambda x: x['name'].lower())
+            
+            st.markdown("""
+                <style>
+                    .version-card {
+                        background-color: #1E1E1E;
+                        border: 1px solid #333;
+                        border-radius: 8px;
+                        padding: 1rem;
+                        margin-bottom: 1rem;
+                        min-height: 120px;
+                    }
+                    .version-header {
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                        margin-bottom: 0.5rem;
+                        padding-bottom: 0.5rem;
+                        border-bottom: 1px solid #333;
+                    }
+                    .version-name {
+                        font-size: 1.2rem;
+                        font-weight: bold;
+                        color: #FFFFFF;
+                    }
+                    .recording-count {
+                        color: #B0B0B0;
+                        font-size: 0.9rem;
+                    }
+                    .metadata-section {
+                        margin-top: 0.5rem;
+                    }
+                    .metadata-item {
+                        display: grid;
+                        grid-template-columns: minmax(80px, auto) 1fr;
+                        gap: 1rem;
+                        padding: 0.2rem 0;
+                        align-items: start;
+                    }
+                    .metadata-key {
+                        color: #888;
+                        min-width: fit-content;
+                        padding-right: 0.5rem;
+                    }
+                    .metadata-value {
+                        color: #B0B0B0;
+                    }
+                    .metadata-textarea {
+                        background-color: #2A2A2A;
+                        border: 1px solid #333;
+                        border-radius: 4px;
+                        padding: 0.5rem;
+                        color: #B0B0B0;
+                        width: 100%;
+                        min-height: 60px;
+                        resize: vertical;
+                    }
+                    .no-metadata {
+                        color: #666;
+                        font-style: italic;
+                        text-align: center;
+                        padding: 1rem 0;
+                    }
+                </style>
+            """, unsafe_allow_html=True)
+            
             for i in range(0, len(versions), 3):
                 cols = st.columns(3)
                 for j, col in enumerate(cols):
                     if i + j < len(versions):
                         version = versions[i + j]
                         with col:
-                            st.markdown(f"#### {version['name']}")
-                            st.markdown(f"Recordings: {version['recording_count']}")
-                            # Format metadata as bullet points
-                            st.markdown("Metadata:")
-                            for key, value in version['metadata'].items():
-                                st.markdown(f"* {key}: {value}")
+                            metadata_content = ""
+                            if version['metadata']:
+                                metadata_items = []
+                                for key, value in version['metadata'].items():
+                                    safe_key = html.escape(str(key))
+                                    safe_value = html.escape(str(value))
+                                    
+                                    # Use textarea for long values
+                                    if len(str(value)) > LONG_VALUE_THRESHOLD:
+                                        value_html = f'<textarea class="metadata-textarea" readonly>{safe_value}</textarea>'
+                                    else:
+                                        value_html = f'<span class="metadata-value">{safe_value}</span>'
+                                    
+                                    metadata_items.append(
+                                        f'<div class="metadata-item">'
+                                        f'<span class="metadata-key">{safe_key}:</span>'
+                                        f'{value_html}'
+                                        f'</div>'
+                                    )
+                                metadata_content = ''.join(metadata_items)
+                            else:
+                                metadata_content = '<div class="no-metadata">No metadata</div>'
+
+                            card_html = f"""
+                            <div class="version-card">
+                                <div class="version-header">
+                                    <span class="version-name">{html.escape(version['name'])}</span>
+                                    <span class="recording-count">Recordings: {version['recording_count']}</span>
+                                </div>
+                                <div class="metadata-section">
+                                    {metadata_content}
+                                </div>
+                            </div>
+                            """
+                            st.markdown(card_html, unsafe_allow_html=True)
