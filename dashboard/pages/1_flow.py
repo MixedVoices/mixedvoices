@@ -23,13 +23,6 @@ def flow_page():
         st.switch_page("main.py")
         return
         
-    if 'switch_to_recordings' not in st.session_state:
-        st.session_state.switch_to_recordings = False
-        
-    if st.session_state.switch_to_recordings:
-        st.session_state.switch_to_recordings = False
-        st.switch_page("pages/2_recordings.py")
-        
     st.title(f"Version: {st.session_state.current_version}")
     
     # Initialize API client
@@ -61,10 +54,6 @@ def flow_page():
             key="flow_chart"
         )
         
-        # Debug container
-        debug_container = st.empty()
-        info_container = st.empty()
-        
         if clicked and len(clicked) > 0:
             point_data = clicked[0]
             curve_number = point_data.get("curveNumber")
@@ -81,28 +70,8 @@ def flow_page():
                     st.session_state.selected_node_id = node_id
                     st.session_state.selected_path = " -> ".join(path)
                     
-                    with info_container:
-                        # Show selection info
-                        st.success(f"Selected path: {st.session_state.selected_path}")
-                        
-                        # Get step details
-                        step_data = next((s for s in flow_data["steps"] if s["id"] == node_id), None)
-                        if step_data:
-                            col1, col2, col3 = st.columns(3)
-                            with col1:
-                                st.metric("Total Calls", step_data["number_of_calls"])
-                            with col2:
-                                st.metric("Successful", step_data["number_of_successful_calls"])
-                            with col3:
-                                success_rate = (step_data["number_of_successful_calls"] / 
-                                              step_data["number_of_calls"] * 100 
-                                              if step_data["number_of_calls"] > 0 else 0)
-                                st.metric("Success Rate", f"{success_rate:.1f}%")
-                        
-                        # Add the button in the info container
-                        if st.button("View Recordings for this Path", type="primary"):
-                            st.session_state.switch_to_recordings = True
-                            st.rerun()
+                    # Directly switch to recordings page
+                    st.switch_page("pages/2_recordings.py")
 
 if __name__ == "__main__":
     flow_page()

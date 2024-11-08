@@ -7,9 +7,6 @@ from dashboard.api.endpoints import (
 from dashboard.components.recording_viewer import RecordingViewer
 from dashboard.visualizations.metrics import display_metrics
 
-def switch_to_flow():
-    st.switch_page("pages/1_flow.py")
-
 def recordings_page():
     if 'current_project' not in st.session_state or 'current_version' not in st.session_state:
         st.switch_page("main.py")
@@ -31,7 +28,7 @@ def recordings_page():
         if st.button("Clear Filter", key="clear_filter"):
             st.session_state.selected_node_id = None
             st.session_state.selected_path = None
-            switch_to_flow()
+            st.rerun()
     
     if st.session_state.get('selected_node_id'):
         # Fetch recordings for selected node
