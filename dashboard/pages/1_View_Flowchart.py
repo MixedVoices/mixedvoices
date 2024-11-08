@@ -20,7 +20,7 @@ def get_path_to_node(flow_data: dict, target_node_id: str) -> list:
 
 def flow_page():
     if 'current_project' not in st.session_state or 'current_version' not in st.session_state:
-        st.switch_page("main.py")
+        st.switch_page("Home.py")
         return
         
     st.title(f"Version: {st.session_state.current_version}")

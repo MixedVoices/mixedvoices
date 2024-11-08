@@ -4,7 +4,7 @@ from dashboard.components.upload_form import UploadForm
 
 def upload_page():
     if 'current_project' not in st.session_state or 'current_version' not in st.session_state:
-        st.switch_page("main.py")
+        st.switch_page("Home.py")
         return
         
     st.title(f"Version: {st.session_state.current_version}")

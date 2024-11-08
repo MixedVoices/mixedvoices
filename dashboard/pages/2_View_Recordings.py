@@ -9,7 +9,7 @@ from dashboard.visualizations.metrics import display_metrics
 
 def recordings_page():
     if 'current_project' not in st.session_state or 'current_version' not in st.session_state:
-        st.switch_page("main.py")
+        st.switch_page("Home.py")
         return
         
     st.title(f"Version: {st.session_state.current_version}")
