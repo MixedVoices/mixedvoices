@@ -5,6 +5,12 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "mixedvoices"
 version = "0.1.0"
+description = "Mixpanel for conversational AI"
+authors = [
+    {name = "Abhinav", email = "abhinav@locoto.co"},
+]
+readme = "README.md"
+license = {text = "Apache-2.0"}
 requires-python = ">=3.8"
 dependencies = [
     "pydantic>=2.5.0",
@@ -19,6 +25,23 @@ dependencies = [
     "streamlit-plotly-events>=0.0.6",
     "networkx>=3.0",
 ]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "License :: OSI Approved :: Apache Software License",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Software Development :: Testing",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+
+[project.urls]
+Homepage = "https://github.com/MixedVoices/MixedVoices"
+Repository = "https://github.com/MixedVoices/MixedVoices.git"
+Documentation = "https://github.com/MixedVoices/MixedVoices#readme"
 
 [project.scripts]
 mixedvoices = "mixedvoices.cli:cli"
