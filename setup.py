@@ -12,7 +12,7 @@ setup(
         "fastapi>=0.100.0",
         "uvicorn>=0.22.0",
         "python-multipart>=0.0.6",
-        "streamlit>=1.28.0",
+        "streamlit>=1.40.0",
         "plotly>=5.13.1",
         "streamlit-plotly-events>=0.0.6",
         "networkx>=3.0",
