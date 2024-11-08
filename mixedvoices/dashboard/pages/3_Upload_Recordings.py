@@ -1,7 +1,7 @@
 import streamlit as st
 
-from dashboard.api.client import APIClient
-from dashboard.components.upload_form import UploadForm
+from mixedvoices.dashboard.api.client import APIClient
+from mixedvoices.dashboard.components.upload_form import UploadForm
 
 
 def upload_page():

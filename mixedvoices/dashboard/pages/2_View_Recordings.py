@@ -1,12 +1,12 @@
 import streamlit as st
 
-from dashboard.api.client import APIClient
-from dashboard.api.endpoints import (
+from mixedvoices.dashboard.api.client import APIClient
+from mixedvoices.dashboard.api.endpoints import (
     get_step_recordings_endpoint,
     get_version_recordings_endpoint,
 )
-from dashboard.components.recording_viewer import RecordingViewer
-from dashboard.visualizations.metrics import display_metrics
+from mixedvoices.dashboard.components.recording_viewer import RecordingViewer
+from mixedvoices.dashboard.visualizations.metrics import display_metrics
 
 
 def recordings_page():

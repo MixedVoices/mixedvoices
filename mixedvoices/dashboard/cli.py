@@ -4,7 +4,7 @@ from pathlib import Path
 import streamlit.web.cli as stcli
 import typer
 
-from dashboard.config import DASHBOARD_PORT
+from mixedvoices.dashboard.config import DASHBOARD_PORT
 
 
 def run_dashboard(port: int = DASHBOARD_PORT):

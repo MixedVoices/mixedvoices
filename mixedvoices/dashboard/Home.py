@@ -1,9 +1,9 @@
 import streamlit as st  # noqa: N999
 
-from dashboard.api.client import APIClient
-from dashboard.components.project_manager import ProjectManager
-from dashboard.components.sidebar import Sidebar
-from dashboard.config import DEFAULT_PAGE_CONFIG
+from mixedvoices.dashboard.api.client import APIClient
+from mixedvoices.dashboard.components.project_manager import ProjectManager
+from mixedvoices.dashboard.components.sidebar import Sidebar
+from mixedvoices.dashboard.config import DEFAULT_PAGE_CONFIG
 
 
 def apply_nav_styles():

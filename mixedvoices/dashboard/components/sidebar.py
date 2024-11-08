@@ -1,7 +1,10 @@
 import streamlit as st
 
-from dashboard.api.client import APIClient
-from dashboard.api.endpoints import get_project_versions_endpoint, get_projects_endpoint
+from mixedvoices.dashboard.api.client import APIClient
+from mixedvoices.dashboard.api.endpoints import (
+    get_project_versions_endpoint,
+    get_projects_endpoint,
+)
 
 
 class Sidebar:

@@ -1,9 +1,9 @@
 import streamlit as st
 from streamlit_plotly_events import plotly_events
 
-from dashboard.api.client import APIClient
-from dashboard.api.endpoints import get_version_flow_endpoint
-from dashboard.visualizations.flow_chart import FlowChart
+from mixedvoices.dashboard.api.client import APIClient
+from mixedvoices.dashboard.api.endpoints import get_version_flow_endpoint
+from mixedvoices.dashboard.visualizations.flow_chart import FlowChart
 
 
 def get_path_to_node(flow_data: dict, target_node_id: str) -> list:

@@ -3,7 +3,7 @@ import webbrowser
 
 import typer
 
-from dashboard.cli import run_dashboard
+from mixedvoices.dashboard.cli import run_dashboard
 from mixedvoices import server
 
 cli = typer.Typer()

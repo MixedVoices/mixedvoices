@@ -1,7 +1,7 @@
 import streamlit as st
 
-from dashboard.api.client import APIClient
-from dashboard.api.endpoints import get_version_recordings_endpoint
+from mixedvoices.dashboard.api.client import APIClient
+from mixedvoices.dashboard.api.endpoints import get_version_recordings_endpoint
 
 
 class UploadForm:

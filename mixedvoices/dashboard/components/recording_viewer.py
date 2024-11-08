@@ -5,7 +5,7 @@ import streamlit as st
 from api.client import APIClient
 from api.endpoints import get_recording_flow_endpoint
 
-from dashboard.visualizations.flow_chart import FlowChart
+from mixedvoices.dashboard.visualizations.flow_chart import FlowChart
 
 
 class RecordingViewer:

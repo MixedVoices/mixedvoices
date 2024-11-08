@@ -4,7 +4,7 @@ from typing import Dict, Optional
 import requests
 import streamlit as st
 
-from dashboard.config import API_BASE_URL
+from mixedvoices.dashboard.config import API_BASE_URL
 
 
 class APIClient:
