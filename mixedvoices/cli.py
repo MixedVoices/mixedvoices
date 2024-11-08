@@ -2,7 +2,7 @@
 import typer
 import webbrowser
 import threading
-from . import server
+from mixedvoices import server
 from dashboard.cli import run_dashboard
 
 cli = typer.Typer()
