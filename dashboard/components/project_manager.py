@@ -1,5 +1,4 @@
 import streamlit as st
-import json
 import html
 from dashboard.api.client import APIClient
 from dashboard.api.endpoints import get_project_versions_endpoint
@@ -11,31 +10,34 @@ LONG_VALUE_THRESHOLD = 50
 class ProjectManager:
     def __init__(self, api_client: APIClient, project_id: str):
         self.api_client = api_client
-        
-        # Check if project has changed
-        if 'current_project_id' not in st.session_state or st.session_state.current_project_id != project_id:
-            self._reset_form_state()
-            st.session_state.current_project_id = project_id
-        
         self.project_id = project_id
 
-    def _reset_form_state(self):
-        """Reset all form-related session state when switching projects"""
+    def _reset_form(self):
+        """Reset all form-related session state"""
         if "version_name" in st.session_state:
             del st.session_state.version_name
+        st.session_state.version_name = ""
         st.session_state.expander_state = True
         st.session_state.metadata_pairs = [{"key": "", "value": ""}]
-
-    def _reset_after_create(self):
-        """Reset form state after successful version creation"""
-        if "version_name" in st.session_state:
-            del st.session_state.version_name
-        st.session_state.metadata_pairs = [{"key": "", "value": ""}]
-        st.session_state.expander_state = True
 
     def render(self) -> None:
         """Render project management view"""
         st.title(f"Project: {self.project_id}")
+        
+        # Initialize states if they don't exist
+        if "current_project_id" not in st.session_state:
+            st.session_state.current_project_id = self.project_id
+        
+        # Initialize version_name if it doesn't exist
+        if "version_name" not in st.session_state:
+            st.session_state.version_name = ""
+            
+        # Check if project has changed after initializing session states
+        if st.session_state.current_project_id != self.project_id:
+            self._reset_form()
+            st.session_state.current_project_id = self.project_id
+            st.rerun()
+            
         self._render_version_creation()
         self._render_versions_list()
 
@@ -46,6 +48,8 @@ class ProjectManager:
             st.session_state.expander_state = True
         if "metadata_pairs" not in st.session_state:
             st.session_state.metadata_pairs = [{"key": "", "value": ""}]
+        if "version_name" not in st.session_state:
+            st.session_state.version_name = ""
             
         def handle_create_version():
             if not st.session_state.version_name.strip():
@@ -71,14 +75,14 @@ class ProjectManager:
             
             if response.get("message"):
                 st.success(response["message"])
-                self._reset_after_create()
+                self._reset_form()
                 st.rerun()
 
         with st.expander("Create New Version", expanded=st.session_state.expander_state):
             st.text_input(
                 "Version Name",
                 key="version_name",
-                value=""
+                value=st.session_state.version_name
             )
             
             st.subheader("Metadata")
