@@ -6,8 +6,14 @@ from dashboard.config import DEFAULT_PAGE_CONFIG
 
 def apply_nav_styles():
     """Apply navigation styles based on project and version selection"""
-    has_project = bool(st.session_state.get('current_project'))
-    has_version = bool(st.session_state.get('current_version'))
+    # On home page, always grey out other pages
+    if st.session_state.get('current_page') == 'home':
+        has_project = False
+        has_version = False
+    else:
+        has_project = bool(st.session_state.get('current_project'))
+        has_version = bool(st.session_state.get('current_version'))
+
     nav_style = """
         <style>
             /* Set sidebar width */
@@ -73,6 +79,9 @@ def main():
     # Set page config
     st.set_page_config(**DEFAULT_PAGE_CONFIG)
     
+    # Set current page to home
+    st.session_state.current_page = 'home'
+    
     # Initialize API client
     api_client = APIClient()
     
@@ -99,7 +108,7 @@ def main():
         project_manager = ProjectManager(api_client, st.session_state.current_project)
         project_manager.render()
         return
-        
+    
     # If we have both project and version, redirect to flow
     st.switch_page("pages/1_View_Flowchart.py")
 
