@@ -40,7 +40,7 @@ include = '\.pyi?$'
 [tool.ruff]
 line-length = 88
 target-version = "py38"
-select = [
+lint.select = [
     "E",  # pycodestyle errors
     "F",  # pyflakes
     "I",  # isort
