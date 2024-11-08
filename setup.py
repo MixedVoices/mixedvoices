@@ -5,19 +5,22 @@ setup(
     version="0.1.0",
     packages=find_packages(),
     install_requires=[
-        "openai-whisper",
-        "fastapi>=0.68.0",
-        "uvicorn>=0.15.0",
-        "python-multipart>=0.0.5",
-        "typer>=0.4.0",
-        "streamlit>=1.29.0",
-        "plotly>=5.18.0",
-        "requests>=2.31.0"
+        "pydantic>=2.5.0",
+        "openai>=1.51.0",
+        "librosa>=0.10.0",
+        "typer>=0.9.0",
+        "fastapi>=0.100.0",
+        "uvicorn>=0.22.0",
+        "python-multipart>=0.0.6",
+        "streamlit>=1.28.0",
+        "plotly>=5.13.1",
+        "streamlit-plotly-events>=0.0.6",
+        "networkx>=3.0",
     ],
     entry_points={
         "console_scripts": [
             "mixedvoices=mixedvoices.cli:cli",
         ],
     },
-    python_requires=">=3.7",
+    python_requires=">=3.8",
 )
