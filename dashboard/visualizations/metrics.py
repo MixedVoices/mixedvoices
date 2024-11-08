@@ -1,5 +1,7 @@
+from typing import Dict, List
+
 import streamlit as st
-from typing import List, Dict
+
 
 def display_metrics(recordings: List[Dict]) -> None:
     """Display recording metrics"""

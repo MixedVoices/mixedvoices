@@ -1,8 +1,11 @@
-from mixedvoices.core.project import Project
-from mixedvoices.constants import ALL_PROJECTS_FOLDER
 import os
 
+from mixedvoices.constants import ALL_PROJECTS_FOLDER
+from mixedvoices.core.project import Project
+
 os.makedirs(ALL_PROJECTS_FOLDER, exist_ok=True)
+
+
 def create_project(name):
     if name in os.listdir(ALL_PROJECTS_FOLDER):
         raise ValueError(f"Project {name} already exists")

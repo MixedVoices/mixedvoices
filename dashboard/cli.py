@@ -1,8 +1,11 @@
-import typer
 import sys
 from pathlib import Path
+
 import streamlit.web.cli as stcli
+import typer
+
 from dashboard.config import DASHBOARD_PORT
+
 
 def run_dashboard(port: int = DASHBOARD_PORT):
     """Run the Streamlit dashboard"""
@@ -14,13 +17,15 @@ def run_dashboard(port: int = DASHBOARD_PORT):
         "--server.port",
         str(port),
         "--server.address",
-        "localhost"
+        "localhost",
     ]
     sys.exit(stcli.main())
+
 
 def cli():
     """Command line interface function"""
     typer.run(run_dashboard)
+
 
 if __name__ == "__main__":
     cli()

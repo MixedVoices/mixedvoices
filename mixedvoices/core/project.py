@@ -1,7 +1,9 @@
 import os
-from typing import Dict, Any, Optional
+from typing import Any, Dict, Optional
+
 from mixedvoices.constants import ALL_PROJECTS_FOLDER
 from mixedvoices.core.version import Version
+
 
 class Project:
     def __init__(self, project_id: str):
@@ -11,10 +13,13 @@ class Project:
     @property
     def versions(self):
         all_files = os.listdir(self.project_folder)
-        all_folders = [f for f in all_files if os.path.isdir(os.path.join(self.project_folder, f))]
-        return all_folders
+        return [
+            f for f in all_files if os.path.isdir(os.path.join(self.project_folder, f))
+        ]
 
-    def create_version(self, version_id: str, metadata: Optional[Dict[str, Any]] = None):
+    def create_version(
+        self, version_id: str, metadata: Optional[Dict[str, Any]] = None
+    ):
         if version_id in self.versions:
             raise ValueError(f"Version {version_id} already exists")
         version_path = os.path.join(self.project_folder, version_id)
@@ -24,9 +29,8 @@ class Project:
         version = Version(version_id, self.project_id, metadata)
         version.save()
         return version
-    
+
     def load_version(self, version_id: str):
         if version_id not in self.versions:
             raise ValueError(f"Version {version_id} does not exist")
         return Version.load(self.project_id, version_id)
-        

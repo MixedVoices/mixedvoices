@@ -1,24 +1,28 @@
 import os
-from typing import List, TYPE_CHECKING
-from mixedvoices.processors.speech_analyzer import script_to_step_names
-from mixedvoices.processors.transcriber import transcribe_and_combine
-from mixedvoices.core.step import Step
+from typing import TYPE_CHECKING, List
+
 import librosa
 import soundfile as sf
 
+from mixedvoices.core.step import Step
+from mixedvoices.processors.speech_analyzer import script_to_step_names
+from mixedvoices.processors.transcriber import transcribe_and_combine
+
 if TYPE_CHECKING:
-    from mixedvoices.core.version import Version
     from mixedvoices.core.recording import Recording
+    from mixedvoices.core.version import Version
+
+
 def separate_channels(input_file, output_folder):
     """
-    Separate stereo audio file into left and right channels and save them as individual files.
+    Separate stereo audio file into channels and save them as individual files.
     """
     # TODO: give user the ability to specify which channel assistant is speaking in
     y, sr = librosa.load(input_file, mono=False)
-    
+
     if len(y.shape) != 2 or y.shape[0] != 2:
         raise ValueError("Input must be a stereo audio file")
-    
+
     # Separate channels
     left_channel, right_channel = y[0], y[1]
 
@@ -27,7 +31,6 @@ def separate_channels(input_file, output_folder):
     sf.write(left_path, left_channel, sr)
     sf.write(right_path, right_channel, sr)
     return left_path, right_path
-
 
 
 def process_recording(recording: "Recording", version: "Version"):
@@ -65,7 +68,3 @@ def process_recording(recording: "Recording", version: "Version"):
         step.save()
     recording.step_ids = [step.step_id for step in all_steps]
     recording.save()
-
-
-
-

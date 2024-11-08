@@ -1,11 +1,14 @@
-import streamlit as st
 import html
+
+import streamlit as st
+
 from dashboard.api.client import APIClient
 from dashboard.api.endpoints import get_project_versions_endpoint
 
 # Constants
 MAX_KEY_LENGTH = 25
 LONG_VALUE_THRESHOLD = 50
+
 
 class ProjectManager:
     def __init__(self, api_client: APIClient, project_id: str):
@@ -23,21 +26,21 @@ class ProjectManager:
     def render(self) -> None:
         """Render project management view"""
         st.title(f"Project: {self.project_id}")
-        
+
         # Initialize states if they don't exist
         if "current_project_id" not in st.session_state:
             st.session_state.current_project_id = self.project_id
-        
+
         # Initialize version_name if it doesn't exist
         if "version_name" not in st.session_state:
             st.session_state.version_name = ""
-            
+
         # Check if project has changed after initializing session states
         if st.session_state.current_project_id != self.project_id:
             self._reset_form()
             st.session_state.current_project_id = self.project_id
             st.rerun()
-            
+
         self._render_version_creation()
         self._render_versions_list()
 
@@ -50,12 +53,12 @@ class ProjectManager:
             st.session_state.metadata_pairs = [{"key": "", "value": ""}]
         if "version_name" not in st.session_state:
             st.session_state.version_name = ""
-            
+
         def handle_create_version():
             if not st.session_state.version_name.strip():
                 st.error("Please enter a version name")
                 return
-            
+
             # if duplicate keys, st.error
             all_keys = [pair["key"] for pair in st.session_state.metadata_pairs]
             if len(set(all_keys)) != len(all_keys):
@@ -63,39 +66,39 @@ class ProjectManager:
                 return
 
             metadata_dict = {
-                pair["key"]: pair["value"] 
-                for pair in st.session_state.metadata_pairs 
+                pair["key"]: pair["value"]
+                for pair in st.session_state.metadata_pairs
                 if pair["key"].strip() and len(pair["key"]) <= MAX_KEY_LENGTH
             }
-            
+
             response = self.api_client.post_data(
                 get_project_versions_endpoint(self.project_id),
-                {"name": st.session_state.version_name, "metadata": metadata_dict}
+                {"name": st.session_state.version_name, "metadata": metadata_dict},
             )
-            
+
             if response.get("message"):
                 st.success(response["message"])
                 self._reset_form()
                 st.rerun()
 
-        with st.expander("Create New Version", expanded=st.session_state.expander_state):
+        with st.expander(
+            "Create New Version", expanded=st.session_state.expander_state
+        ):
             st.text_input(
-                "Version Name",
-                key="version_name",
-                value=st.session_state.version_name
+                "Version Name", key="version_name", value=st.session_state.version_name
             )
-            
+
             st.subheader("Metadata")
-            
+
             to_remove = None
-            
+
             if st.button("Add Metadata Field"):
                 st.session_state.metadata_pairs.append({"key": "", "value": ""})
                 st.rerun()
-            
+
             for i, pair in enumerate(st.session_state.metadata_pairs):
                 col1, col2, col3 = st.columns([2, 2, 0.5])
-                
+
                 with col1:
                     key = st.text_input(
                         "Key",
@@ -103,31 +106,30 @@ class ProjectManager:
                         key=f"key_{i}",
                         placeholder="Enter key",
                         max_chars=MAX_KEY_LENGTH,
-                        label_visibility="collapsed"
+                        label_visibility="collapsed",
                     )
                     st.session_state.metadata_pairs[i]["key"] = key
                     if len(key) > MAX_KEY_LENGTH:
                         st.error(f"Key must be {MAX_KEY_LENGTH} characters or less")
-                
+
                 with col2:
                     value = st.text_input(
                         "Value",
                         value=pair["value"],
                         key=f"value_{i}",
                         placeholder="Enter value",
-                        label_visibility="collapsed"
+                        label_visibility="collapsed",
                     )
                     st.session_state.metadata_pairs[i]["value"] = value
-                
+
                 with col3:
-                    if i > 0:
-                        if st.button("✕", key=f"remove_{i}"):
-                            to_remove = i
-            
+                    if i > 0 and st.button("✕", key=f"remove_{i}"):
+                        to_remove = i
+
             if to_remove is not None:
                 st.session_state.metadata_pairs.pop(to_remove)
                 st.rerun()
-            
+
             if st.button("Create Version"):
                 handle_create_version()
 
@@ -137,12 +139,13 @@ class ProjectManager:
             get_project_versions_endpoint(self.project_id)
         )
         versions = versions_data.get("versions", [])
-        
+
         if versions:
             st.subheader("Versions")
-            versions.sort(key=lambda x: x['name'].lower())
-            
-            st.markdown("""
+            versions.sort(key=lambda x: x["name"].lower())
+
+            st.markdown(
+                """
                 <style>
                     .version-card {
                         background-color: #1E1E1E;
@@ -204,8 +207,10 @@ class ProjectManager:
                         padding: 1rem 0;
                     }
                 </style>
-            """, unsafe_allow_html=True)
-            
+            """,
+                unsafe_allow_html=True,
+            )
+
             for i in range(0, len(versions), 3):
                 cols = st.columns(3)
                 for j, col in enumerate(cols):
@@ -213,33 +218,43 @@ class ProjectManager:
                         version = versions[i + j]
                         with col:
                             metadata_content = ""
-                            if version['metadata']:
+                            if version["metadata"]:
                                 metadata_items = []
-                                for key, value in version['metadata'].items():
+                                for key, value in version["metadata"].items():
                                     safe_key = html.escape(str(key))
                                     safe_value = html.escape(str(value))
-                                    
+
                                     # Use textarea for long values
                                     if len(str(value)) > LONG_VALUE_THRESHOLD:
-                                        value_html = f'<textarea class="metadata-textarea" readonly>{safe_value}</textarea>'
+                                        value_html = (
+                                            "<textarea class="
+                                            f'"metadata-textarea" readonly>{safe_value}'
+                                            "</textarea>"
+                                        )
                                     else:
-                                        value_html = f'<span class="metadata-value">{safe_value}</span>'
-                                    
+                                        value_html = (
+                                            '<span class="metadata-value">'
+                                            f"{safe_value}</span>"
+                                        )
+
                                     metadata_items.append(
                                         f'<div class="metadata-item">'
                                         f'<span class="metadata-key">{safe_key}:</span>'
-                                        f'{value_html}'
-                                        f'</div>'
+                                        f"{value_html}"
+                                        f"</div>"
                                     )
-                                metadata_content = ''.join(metadata_items)
+                                metadata_content = "".join(metadata_items)
                             else:
-                                metadata_content = '<div class="no-metadata">No metadata</div>'
-
+                                metadata_content = (
+                                    '<div class="no-metadata">No metadata</div>'
+                                )
+                            version_name = html.escape(version["name"])
+                            n = version["recording_count"]
                             card_html = f"""
                             <div class="version-card">
                                 <div class="version-header">
-                                    <span class="version-name">{html.escape(version['name'])}</span>
-                                    <span class="recording-count">Recordings: {version['recording_count']}</span>
+                                    <span class="version-name">{version_name}</span>
+                                    <span class="recording-count">Recordings: {n}</span>
                                 </div>
                                 <div class="metadata-section">
                                     {metadata_content}

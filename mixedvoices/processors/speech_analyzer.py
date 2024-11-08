@@ -1,28 +1,35 @@
-from pydantic import BaseModel
 from typing import List, Optional
+
 from openai import OpenAI
+from pydantic import BaseModel
 
 client = OpenAI()
 
-# TODO: 2 step process, first LLM call will get steps, 2nd call will refine the steps according to the rules
+
+# TODO: 2 step process, first LLM call will get steps,
+# 2nd call will refine the steps according to the rules
 class FlowChart(BaseModel):
     steps: List[str]
 
-def script_to_step_names(script: str, existing_step_names: Optional[List[str]] = None) -> List[str]:
+
+def script_to_step_names(
+    script: str, existing_step_names: Optional[List[str]] = None
+) -> List[str]:
     """
     Convert a script into a concise series of flow chart steps using OpenAI's API.
-    
+
     Args:
         script (str): The input script/transcript to convert
-        existing_step_names (List[str], optional): List of existing steps to potentially reuse
-        
+        existing_step_names (List[str], optional): List of existing steps to reuse
+
     Returns:
         List[str]: Ordered list of steps for the flow chart
     """
     existing_steps_context = ""
     if existing_step_names:
         existing_steps_string = ", ".join(existing_step_names)
-        existing_steps_context = f"""Existing steps used in the project are: {existing_steps_string}.
+        existing_steps_context = f"""Existing steps used in the project are:
+        {existing_steps_string}.
         Reuse these exact steps verbatim if you encounter similar elements.
         Only reuse if the script has very similar elements.\n"""
 
@@ -33,9 +40,9 @@ def script_to_step_names(script: str, existing_step_names: Optional[List[str]] =
             messages=[
                 {
                     "role": "system",
-                    "content": """You are an expert at analyzing transcripts and 
-                    breaking them down into essential, reusable flow chart steps. Your goal is to create 
-                    steps that can be used to analyze patterns across multiple similar interactions."""
+                    "content": """You are an expert at analyzing transcripts and
+                    breaking them down into essential, reusable flow chart steps. Your goal is to create
+                    steps that can be used to analyze patterns across multiple similar interactions.""",  # noqa: E501
                 },
                 {
                     "role": "user",
@@ -59,20 +66,20 @@ def script_to_step_names(script: str, existing_step_names: Optional[List[str]] =
                     - Schedule Appointment (use this instead of Determine Purpose/Schedule Appointment Date/Time/Location, etc.)
                     - Confirm Appointment Details (use this instead of Confirm Appointment Time/Location, etc.)
                     - Farewell
-                    
+
                     {existing_steps_context}
-                    Transcript: {script}"""
-                }
+                    Transcript: {script}""",  # noqa: E501,
+                },
             ],
             response_format=FlowChart,
         )
-        
+
         return completion.choices[0].message.parsed.steps
-        
+
     except Exception as e:
         print(f"Error processing script: {str(e)}")
         raise
-    
+
 
 # Example usage:
 if __name__ == "__main__":
@@ -99,10 +106,10 @@ if __name__ == "__main__":
         bot: Sure I'll disconnect the call now If you have any other questions feel free to call back See you on Tuesday
         user: You still haven't disconnected
         bot: Oh my bad Let me try that again Goodbye
-        """
-    
+        """  # noqa: E501
+
     existing_step_names = []
-    
+
     try:
         steps = script_to_step_names(sample_script, existing_step_names)
         print("Generated steps:")
