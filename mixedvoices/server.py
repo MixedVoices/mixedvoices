@@ -80,7 +80,7 @@ async def create_version(project_name: str, version_data: VersionCreate):
         version = project.create_version(version_data.name, metadata=version_data.metadata)
         return {"message": f"Version {version_data.name} created successfully"}
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=f"Version {version_data.name} already exists")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
