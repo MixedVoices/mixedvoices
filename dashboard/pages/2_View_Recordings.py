@@ -58,7 +58,7 @@ def recordings_page():
             display_metrics(recordings_data["recordings"])
             recording_viewer.display_recordings_list(recordings_data["recordings"])
         else:
-            st.info("No recordings found for this version. Upload recordings using the Upload tab.")
+            st.info("No recordings found for this version. Upload recordings using the Upload tab or using Python API.")
 
 if __name__ == "__main__":
     recordings_page()
