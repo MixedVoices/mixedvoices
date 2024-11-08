@@ -13,7 +13,7 @@ def get_path_to_node(flow_data: dict, target_node_id: str) -> list:
         current_node = nodes_map.get(current_node_id)
         if current_node:
             path.append(current_node["name"])
-            current_node_id = current_node.get("previous_node_id")
+            current_node_id = current_node.get("previous_step_id")
         else:
             break
     return list(reversed(path))
@@ -45,11 +45,13 @@ def flow_page():
     if flow_data.get("steps"):
         st.subheader("Call Flow Visualization")
         
-        # Create a list of node IDs in order
-        node_list = [step["id"] for step in flow_data["steps"]]
-        
+        # Create flow chart
         flow_chart = FlowChart(flow_data)
         fig = flow_chart.create_figure()
+        
+        # Store node list in state to maintain order
+        nodes = list(flow_chart.G.nodes())
+        st.session_state.flow_nodes = nodes
         
         # Handle click events using plotly_events
         clicked = plotly_events(
@@ -63,45 +65,44 @@ def flow_page():
         debug_container = st.empty()
         info_container = st.empty()
         
-        if clicked:
-            with debug_container:
-                if len(clicked) > 0:
-                    point_data = clicked[0]
-                    point_index = point_data.get("pointIndex")
+        if clicked and len(clicked) > 0:
+            point_data = clicked[0]
+            curve_number = point_data.get("curveNumber")
+            point_number = point_data.get("pointNumber")
+            
+            # Only process node clicks (curveNumber 1 is for nodes, 0 is for edges)
+            if curve_number == 1 and point_number is not None:
+                # Get the node ID using the point number as index into our stored nodes list
+                if point_number < len(nodes):
+                    node_id = nodes[point_number]
+                    path = get_path_to_node(flow_data, node_id)
                     
-                    if point_index is not None and 0 <= point_index < len(node_list):
-                        node_id = node_list[point_index]
-                        path = get_path_to_node(flow_data, node_id)
-                        print("Flow data:", flow_data)
-                        print("Node ID:", node_id)
-                        print("Path:", path)
-
+                    # Update session state
+                    st.session_state.selected_node_id = node_id
+                    st.session_state.selected_path = " -> ".join(path)
+                    
+                    with info_container:
+                        # Show selection info
+                        st.success(f"Selected path: {st.session_state.selected_path}")
                         
-                        # Update session state
-                        st.session_state.selected_node_id = node_id
-                        st.session_state.selected_path = " -> ".join(path)
+                        # Get step details
+                        step_data = next((s for s in flow_data["steps"] if s["id"] == node_id), None)
+                        if step_data:
+                            col1, col2, col3 = st.columns(3)
+                            with col1:
+                                st.metric("Total Calls", step_data["number_of_calls"])
+                            with col2:
+                                st.metric("Successful", step_data["number_of_successful_calls"])
+                            with col3:
+                                success_rate = (step_data["number_of_successful_calls"] / 
+                                              step_data["number_of_calls"] * 100 
+                                              if step_data["number_of_calls"] > 0 else 0)
+                                st.metric("Success Rate", f"{success_rate:.1f}%")
                         
-                        with info_container:
-                            # Show selection info
-                            st.success(f"Selected path: {st.session_state.selected_path}")
-                            
-                            # Get step details
-                            step_data = next((s for s in flow_data["steps"] if s["id"] == node_id), None)
-                            if step_data:
-                                col1, col2, col3 = st.columns(3)
-                                with col1:
-                                    st.metric("Total Calls", step_data["number_of_calls"])
-                                with col2:
-                                    st.metric("Successful", step_data["number_of_successful_calls"])
-                                with col3:
-                                    success_rate = (step_data["number_of_successful_calls"] / 
-                                                  step_data["number_of_calls"] * 100 
-                                                  if step_data["number_of_calls"] > 0 else 0)
-                                    st.metric("Success Rate", f"{success_rate:.1f}%")
-                            
-                            if st.button("View Recordings for this Path", type="primary"):
-                                st.session_state.switch_to_recordings = True
-                                st.rerun()
+                        # Add the button in the info container
+                        if st.button("View Recordings for this Path", type="primary"):
+                            st.session_state.switch_to_recordings = True
+                            st.rerun()
 
 if __name__ == "__main__":
     flow_page()
