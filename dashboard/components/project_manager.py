@@ -15,50 +15,89 @@ class ProjectManager:
         self._render_versions_list()
 
     def _render_version_creation(self) -> None:
-        """Render version creation form"""
-        # Initialize the expander state
+        """Render version creation UI"""
+        # Initialize states
         if "expander_state" not in st.session_state:
             st.session_state.expander_state = True
-            
-        # Initialize the form fields if they don't exist
         if "version_name" not in st.session_state:
             st.session_state.version_name = ""
-        if "version_metadata" not in st.session_state:
-            st.session_state.version_metadata = "{}"
-        
-        # Define callback to handle form submission
-        def handle_create_version():
-            try:
-                metadata_dict = json.loads(st.session_state.version_metadata)
-                response = self.api_client.post_data(
-                    get_project_versions_endpoint(self.project_id),
-                    {"name": st.session_state.version_name, "metadata": metadata_dict}
-                )
-                if response.get("message"):
-                    st.success(response["message"])
-                    # Clear the form fields
-                    st.session_state.version_name = ""
-                    st.session_state.version_metadata = "{}"
-                    # Keep expander open
-                    st.session_state.expander_state = True
-            except json.JSONDecodeError:
-                st.error("Invalid JSON in metadata field")
+        if "metadata_pairs" not in st.session_state:
+            st.session_state.metadata_pairs = [{"key": "", "value": ""}]
 
         with st.expander("Create New Version", expanded=st.session_state.expander_state):
-            # Create form with key
-            with st.form(key="version_creation_form"):
-                st.text_input(
-                    "Version Name",
-                    key="version_name",
-                )
-                st.text_area(
-                    "Metadata (JSON)",
-                    key="version_metadata",
-                )
-                submit_button = st.form_submit_button(
-                    "Create Version",
-                    on_click=handle_create_version
-                )
+            # Version name input
+            version_name = st.text_input(
+                "Version Name",
+                value=st.session_state.version_name
+            )
+            
+            st.subheader("Metadata")
+            
+            # Handle metadata pairs
+            to_remove = None
+            for i, pair in enumerate(st.session_state.metadata_pairs):
+                col1, col2, col3 = st.columns([2, 2, 1])
+                
+                with col1:
+                    key = st.text_input(
+                        "Key",
+                        value=pair["key"],
+                        key=f"key_{i}",
+                        label_visibility="collapsed",
+                        placeholder="Enter key"
+                    )
+                    st.session_state.metadata_pairs[i]["key"] = key
+                
+                with col2:
+                    value = st.text_input(
+                        "Value",
+                        value=pair["value"],
+                        key=f"value_{i}",
+                        label_visibility="collapsed",
+                        placeholder="Enter value"
+                    )
+                    st.session_state.metadata_pairs[i]["value"] = value
+                
+                with col3:
+                    if i > 0:  # Don't show remove button for first pair
+                        if st.button("✕", key=f"remove_{i}"):
+                            to_remove = i
+            
+            # Handle remove after the loop to avoid modifying list while iterating
+            if to_remove is not None:
+                st.session_state.metadata_pairs.pop(to_remove)
+                st.rerun()
+            
+            # Add new metadata field button
+            if st.button("Add Metadata Field"):
+                st.session_state.metadata_pairs.append({"key": "", "value": ""})
+                st.rerun()
+            
+            # Create version button
+            if st.button("Create Version"):
+                if version_name:
+                    # Convert metadata pairs to dictionary
+                    metadata_dict = {
+                        pair["key"]: pair["value"] 
+                        for pair in st.session_state.metadata_pairs 
+                        if pair["key"].strip()  # Only include pairs with non-empty keys
+                    }
+                    
+                    response = self.api_client.post_data(
+                        get_project_versions_endpoint(self.project_id),
+                        {"name": version_name, "metadata": metadata_dict}
+                    )
+                    
+                    if response.get("message"):
+                        st.success(response["message"])
+                        # Clear the fields
+                        st.session_state.version_name = ""
+                        st.session_state.metadata_pairs = [{"key": "", "value": ""}]
+                        # Keep expander open
+                        st.session_state.expander_state = True
+                        st.rerun()
+                else:
+                    st.error("Please enter a version name")
 
     def _render_versions_list(self) -> None:
         """Render list of versions"""
