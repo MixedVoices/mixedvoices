@@ -6,7 +6,7 @@ from dashboard.config import DASHBOARD_PORT
 
 def run_dashboard(port: int = DASHBOARD_PORT):
     """Run the Streamlit dashboard"""
-    dashboard_path = Path(__file__).parent / "main.py"
+    dashboard_path = Path(__file__).parent / "Home.py"
     sys.argv = [
         "streamlit",
         "run",

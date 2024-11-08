@@ -71,7 +71,7 @@ def flow_page():
                     st.session_state.selected_path = " -> ".join(path)
                     
                     # Directly switch to recordings page
-                    st.switch_page("pages/2_recordings.py")
+                    st.switch_page("pages/2_View_Recordings.py")
 
 if __name__ == "__main__":
     flow_page()
