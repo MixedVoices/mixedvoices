@@ -126,7 +126,6 @@ We welcome contributions! Please follow these steps:
 ### Development Setup
 ```bash
 git clone https://github.com/yourusername/mixedvoices.git
-cd mixedvoices
 pip install -e ".[dev]"
 ```
 
