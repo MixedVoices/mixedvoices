@@ -1,6 +1,6 @@
 import plotly.graph_objects as go
 import networkx as nx
-from typing import Dict, Tuple, List
+from typing import Dict, List
 
 class FlowChart:
     def __init__(self, flow_data: Dict, is_recording_flow: bool = False):
@@ -9,7 +9,7 @@ class FlowChart:
         self.G = nx.DiGraph()
         self.pos = {}
         self.parent_child = {}
-        
+    
     def _create_graph(self) -> None:
         """Create networkx graph from flow data"""
         if self.is_recording_flow:
@@ -70,7 +70,7 @@ class FlowChart:
                     next_nodes.extend(list(self.G.successors(node)))
             current_nodes = next_nodes
             current_level += 1
-            
+        
         return levels
     
     def _position_nodes_by_level(self, levels: Dict) -> None:
@@ -86,46 +86,25 @@ class FlowChart:
         
         # Position nodes level by level
         for level in range(max_level + 1):
-            nodes = nodes_by_level[level]
-            
+            nodes = nodes_by_level.get(level, [])
             if len(nodes) == 1:
-                # For single nodes, try to align with parent
                 node = nodes[0]
                 parent_nodes = self.parent_child.get(node, [])
                 if parent_nodes and parent_nodes[0] in self.pos:
-                    # Maintain parent's x-position
                     self.pos[node] = (self.pos[parent_nodes[0]][0], -level)
                 else:
-                    # No parent or parent not positioned yet, center it
                     self.pos[node] = (0, -level)
             else:
-                # For multiple nodes, space them evenly
                 total_width = len(nodes) - 1
                 for i, node in enumerate(sorted(nodes)):
                     x = i - total_width/2
                     self.pos[node] = (x, -level)
     
-    def create_figure(self) -> go.Figure:
-        """Create and return the plotly figure"""
-        self._create_graph()
-        
-        # Create edge trace
-        edge_trace = self._create_edge_trace()
-        
-        # Create node trace
-        node_trace = self._create_node_trace()
-        
-        # Create figure
-        fig = go.Figure(
-            data=[edge_trace, node_trace],
-            layout=self._create_layout()
-        )
-        
-        return fig
-    
     def _create_edge_trace(self) -> go.Scatter:
         """Create edge trace for visualization"""
-        edge_x, edge_y = [], []
+        edge_x = []
+        edge_y = []
+        
         for edge in self.G.edges():
             x0, y0 = self.pos[edge[0]]
             x1, y1 = self.pos[edge[1]]
@@ -133,18 +112,22 @@ class FlowChart:
             edge_y.extend([y0, y1, None])
         
         return go.Scatter(
-            x=edge_x, y=edge_y,
-            line=dict(width=1, color='#666'),
+            x=edge_x,
+            y=edge_y,
+            line=dict(width=1, color='#888'),
             hoverinfo='none',
-            mode='lines'
+            mode='lines',
+            showlegend=False
         )
     
     def _create_node_trace(self) -> go.Scatter:
         """Create node trace for visualization"""
-        node_x, node_y = [], []
-        node_text, hover_text = [], []
-        node_ids = []
+        node_x = []
+        node_y = []
+        node_text = []
+        node_hover = []
         node_colors = []
+        node_ids = []  # For customdata
         
         for node in self.G.nodes():
             x, y = self.pos[node]
@@ -166,62 +149,67 @@ class FlowChart:
             
             node_colors.append(color)
             node_text.append(node_data["name"])
-            hover_text.append(hover)
+            node_hover.append(hover)
         
         return go.Scatter(
-            x=node_x, y=node_y,
+            x=node_x,
+            y=node_y,
             mode='markers+text',
+            name='',
             hoverinfo='text',
             text=node_text,
             textposition="bottom center",
-            hovertext=hover_text,
+            hovertext=node_hover,
             customdata=node_ids,
             marker=dict(
                 showscale=False,
-                color=node_colors,
                 size=40,
-                line_width=2,
-                line_color='white'
+                color=node_colors,
+                line=dict(width=2, color='white')
             )
         )
     
     @staticmethod
     def _get_color_by_success_rate(success_rate: float) -> str:
-        """Get color based on success rate"""
         if success_rate >= 80:
-            return '#198754'
+            return '#198754'  # Success green
         elif success_rate >= 60:
-            return '#fd7e14'
-        return '#dc3545'
+            return '#fd7e14'  # Warning orange
+        return '#dc3545'      # Danger red
     
     @staticmethod
     def _create_hover_text(node_data: Dict, success_rate: float) -> str:
-        """Create hover text for node"""
         return (f"Step: {node_data['name']}<br>"
-                f"Total: {node_data['number_of_calls']}<br>"
-                f"Success: {node_data['number_of_successful_calls']}<br>"
-                f"Rate: {success_rate:.1f}%")
+                f"Total Calls: {node_data['number_of_calls']}<br>"
+                f"Successful: {node_data['number_of_successful_calls']}<br>"
+                f"Success Rate: {success_rate:.1f}%")
     
-    @staticmethod
-    def _create_layout() -> Dict:
-        """Create figure layout"""
-        return go.Layout(
-            showlegend=False,
-            hovermode='closest',
-            margin=dict(b=5, l=5, r=5, t=5),
-            plot_bgcolor='rgba(0,0,0,0)',
-            paper_bgcolor='rgba(0,0,0,0)',
-            xaxis=dict(
-                showgrid=False, 
-                zeroline=False, 
-                showticklabels=False,
-            ),
-            yaxis=dict(
-                showgrid=False, 
-                zeroline=False, 
-                showticklabels=False,
-            ),
-            height=600,
-            width=None,
-            clickmode='event'
+    def create_figure(self) -> go.Figure:
+        """Create and return the plotly figure"""
+        self._create_graph()
+        
+        # Create edge trace
+        edge_trace = self._create_edge_trace()
+        
+        # Create node trace
+        node_trace = self._create_node_trace()
+        
+        # Create figure with both traces
+        fig = go.Figure(
+            data=[edge_trace, node_trace],
+            layout=go.Layout(
+                showlegend=False,
+                hovermode='closest',
+                margin=dict(b=20, l=5, r=5, t=40),
+                xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
+                yaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
+                plot_bgcolor='rgba(0,0,0,0)',
+                paper_bgcolor='rgba(0,0,0,0)',
+                clickmode='event',
+                height=600,
+                dragmode=False
+            )
         )
+        
+        return fig
+
