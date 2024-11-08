@@ -145,6 +145,7 @@ This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md
 Please report security vulnerabilities to security@mixedvoices.ai -->
 
 ## Roadmap
+- [ ] Unit Tests
 - [ ] Support other APIs and Open Source LLMs
 - [ ] Team collaboration features
 - [ ] Custom analytics plugins
