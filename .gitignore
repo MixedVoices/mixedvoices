@@ -37,3 +37,4 @@ docker-compose.override.yml
 
 experiments/*
 projects/*
+data/*
