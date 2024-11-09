@@ -1,1 +1,3 @@
-ALL_PROJECTS_FOLDER = "/Users/abhinavtuli/Documents/MixedVoices/projects"
+import os
+
+ALL_PROJECTS_FOLDER = os.path.expanduser("~/.mixedvoices/projects")
