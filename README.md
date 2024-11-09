@@ -131,7 +131,7 @@ pip install -e ".[dev]"
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details.
+This project is licensed under the Apache 2.0 License - see the [LICENSE](LICENSE) file for details.
 
 <!-- ## Support
 
@@ -146,6 +146,7 @@ Please report security vulnerabilities to security@mixedvoices.ai -->
 
 ## Roadmap
 - [ ] Unit Tests
+- [ ] Async recording analysis
 - [ ] Support other APIs and Open Source LLMs
 - [ ] Team collaboration features
 - [ ] Custom analytics plugins
