@@ -9,7 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 import mixedvoices
-from mixedvoices.constants import ALL_PROJECTS_FOLDER
+import mixedvoices.constants
 
 app = FastAPI()
 
@@ -38,9 +38,9 @@ class RecordingUpload(BaseModel):
 async def list_projects():
     """List all available projects"""
     try:
-        if not os.path.exists(ALL_PROJECTS_FOLDER):
+        if not os.path.exists(mixedvoices.constants.ALL_PROJECTS_FOLDER):
             return {"projects": []}
-        projects = os.listdir(ALL_PROJECTS_FOLDER)
+        projects = os.listdir(mixedvoices.constants.ALL_PROJECTS_FOLDER)
         return {"projects": projects}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e)) from e

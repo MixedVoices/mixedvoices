@@ -1,9 +1,10 @@
 import os
 
-from mixedvoices.constants import ALL_PROJECTS_FOLDER
 from mixedvoices.core.project import Project
 
+ALL_PROJECTS_FOLDER = os.path.expanduser("~/.mixedvoices/projects")
 os.makedirs(ALL_PROJECTS_FOLDER, exist_ok=True)
+OPEN_AI_CLIENT = None
 
 
 def create_project(name):

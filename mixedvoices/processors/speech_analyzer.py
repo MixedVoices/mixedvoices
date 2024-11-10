@@ -3,7 +3,7 @@ from typing import List, Optional
 from openai import OpenAI
 from pydantic import BaseModel
 
-client = OpenAI()
+import mixedvoices
 
 
 # TODO: 2 step process, first LLM call will get steps,
@@ -32,7 +32,10 @@ def script_to_step_names(
         {existing_steps_string}.
         Reuse these exact steps verbatim if you encounter similar elements.
         Only reuse if the script has very similar elements.\n"""
+    if mixedvoices.OPEN_AI_CLIENT is None:
+        mixedvoices.OPEN_AI_CLIENT = OpenAI()
 
+    client = mixedvoices.OPEN_AI_CLIENT
     try:
         completion = client.beta.chat.completions.parse(
             # model="gpt-4o-mini-2024-07-18",

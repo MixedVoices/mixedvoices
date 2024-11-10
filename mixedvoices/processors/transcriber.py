@@ -3,13 +3,17 @@ from typing import List
 from openai import OpenAI
 from openai.types.audio import TranscriptionVerbose, TranscriptionWord
 
-client = OpenAI()
+import mixedvoices
 
 
 def transcribe_with_whisper(audio_path):
     # TODO: Remove long silences from script before
     # sending to whisper to speed up transcription and reduce cost
     # later adjust the time stamps according to silences
+    if mixedvoices.OPEN_AI_CLIENT is None:
+        mixedvoices.OPEN_AI_CLIENT = OpenAI()
+
+    client = mixedvoices.OPEN_AI_CLIENT
     with open(audio_path, "rb") as audio_file:
         json_response: TranscriptionVerbose = client.audio.transcriptions.create(
             model="whisper-1",
