@@ -6,6 +6,7 @@ from uuid import uuid4
 import mixedvoices.constants as constants
 from mixedvoices.core.recording import Recording
 from mixedvoices.core.step import Step
+from mixedvoices.core.task_manager import TaskManager
 from mixedvoices.utils import process_recording
 
 
@@ -68,7 +69,7 @@ class Version:
         for next_step in step.next_steps:
             self.recursively_assign_steps(next_step)
 
-    def add_recording(self, audio_path: str):
+    def add_recording(self, audio_path: str, blocking: bool = False):
         recording_id = str(uuid4())
         if not os.path.exists(audio_path):
             raise FileNotFoundError(f"Audio path {audio_path} does not exist")
@@ -85,7 +86,17 @@ class Version:
             recording_id, output_audio_path, self.version_id, self.project_id
         )
         self.recordings[recording.recording_id] = recording
-        process_recording(recording, self)
+        recording.save()
+
+        if blocking:
+            process_recording(recording, self)
+        else:
+            task_manager = TaskManager()
+            task_id = task_manager.add_task(
+                "process_recording", recording=recording, version=self
+            )
+            recording.processing_task_id = task_id
+
         return recording
 
     def save(self):

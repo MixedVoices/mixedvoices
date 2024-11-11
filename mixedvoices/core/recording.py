@@ -18,6 +18,7 @@ class Recording:
         step_ids: Optional[List[str]] = None,
         summary: Optional[str] = None,
         is_successful: Optional[bool] = None,
+        processing_task_id: Optional[str] = None,
     ):
         self.recording_id = recording_id
         self.created_at = created_at or int(time.time())
@@ -28,6 +29,7 @@ class Recording:
         self.step_ids = step_ids
         self.summary = summary
         self.is_successful = is_successful
+        self.processing_task_id: Optional[str] = processing_task_id
 
     @property
     def path(self):
@@ -43,14 +45,7 @@ class Recording:
         os.makedirs(self.path, exist_ok=True)
         save_path = os.path.join(self.path, "info.json")
         with open(save_path, "w") as f:
-            d = {
-                "created_at": self.created_at,
-                "audio_path": self.audio_path,
-                "combined_transcript": self.combined_transcript,
-                "step_ids": self.step_ids,
-                "summary": self.summary,
-                "is_successful": self.is_successful,
-            }
+            d = self.to_dict()
             f.write(json.dumps(d))
 
     @classmethod
@@ -74,3 +69,14 @@ class Recording:
             }
         )
         return cls(**d)
+
+    def to_dict(self):
+        return {
+            "created_at": self.created_at,
+            "audio_path": self.audio_path,
+            "combined_transcript": self.combined_transcript,
+            "step_ids": self.step_ids,
+            "summary": self.summary,
+            "is_successful": self.is_successful,
+            "processing_task_id": self.processing_task_id,
+        }
