@@ -1,4 +1,4 @@
-# task_manager.py
+import atexit
 import json
 import logging
 import os
@@ -6,7 +6,7 @@ import threading
 import time
 from dataclasses import dataclass
 from enum import Enum
-from queue import Queue
+from queue import Empty, Queue
 from typing import Any, Dict, Optional
 
 import mixedvoices.constants as constants
@@ -62,11 +62,13 @@ class TaskManager:
         self._initialized = True
         self.task_queue = Queue()
         self.tasks: Dict[str, Task] = {}
-        self.daemon_thread = None
+        self.processing_thread = None
+        self.shutdown_flag = threading.Event()
         self.tasks_folder = os.path.join(constants.ALL_PROJECTS_FOLDER, "_tasks")
         os.makedirs(self.tasks_folder, exist_ok=True)
         self._load_pending_tasks()
-        self._start_daemon()
+        self._start_processing_thread()
+        atexit.register(self.shutdown)
 
     def _serialize_task_params(
         self, task_type: str, params: Dict[str, Any]
@@ -151,22 +153,26 @@ class TaskManager:
             except Exception as e:
                 logging.error(f"Error loading task {task_file}: {str(e)}")
 
-    def _start_daemon(self):
-        """Start the daemon thread if it's not already running."""
-        if self.daemon_thread is None or not self.daemon_thread.is_alive():
-            self.daemon_thread = threading.Thread(
-                target=self._process_queue, daemon=True
-            )
-            self.daemon_thread.start()
+    def _start_processing_thread(self):
+        """Start the processing thread if it's not already running."""
+        if self.processing_thread is None or not self.processing_thread.is_alive():
+            self.processing_thread = threading.Thread(target=self._process_queue)
+            self.processing_thread.start()
 
     def _process_queue(self):
-        """Main daemon thread loop to process tasks."""
-        while True:
+        """Main processing thread loop to process tasks."""
+        while not self.shutdown_flag.is_set() or not self.task_queue.empty():
             try:
-                task_id = self.task_queue.get()
+                # Use timeout to periodically check shutdown flag
+                try:
+                    task_id = self.task_queue.get(timeout=1.0)
+                except Empty:
+                    continue
+
                 task = self.tasks.get(task_id)
 
                 if task is None:
+                    self.task_queue.task_done()
                     continue
 
                 task.status = TaskStatus.IN_PROGRESS
@@ -177,7 +183,6 @@ class TaskManager:
                     from mixedvoices.utils import process_recording
 
                     try:
-                        # Deserialize parameters just before execution
                         deserialized_params = self._deserialize_task_params(
                             task.task_type, task.params
                         )
@@ -190,11 +195,20 @@ class TaskManager:
                         logging.error(f"Task {task_id} failed: {str(e)}")
 
                 self._save_task(task)
+                self.task_queue.task_done()
 
             except Exception as e:
-                logging.error(f"Error in task processing daemon: {str(e)}")
-            finally:
-                self.task_queue.task_done()
+                logging.error(f"Error in task processing thread: {str(e)}")
+                if "task_id" in locals():
+                    self.task_queue.task_done()
+
+    def shutdown(self):
+        """Gracefully shutdown the task manager."""
+        if self.processing_thread and self.processing_thread.is_alive():
+            logging.info("Initiating TaskManager shutdown...")
+            self.shutdown_flag.set()
+            self.processing_thread.join()
+            logging.info("TaskManager shutdown complete")
 
     def add_task(self, task_type: str, **params) -> str:
         """Add a new task to the queue."""
@@ -220,10 +234,14 @@ class TaskManager:
         """Get the current status of a task."""
         return self.tasks.get(task_id)
 
+    def get_pending_task_count(self) -> int:
+        """Get the number of pending and in-progress tasks."""
+        return self.task_queue.qsize()
+
     def wait_for_task(
         self, task_id: str, timeout: Optional[float] = None
     ) -> Optional[Task]:
-        """Wait for a task to complete and return its final status."""
+        """Wait for a specific task to complete."""
         start_time = time.time()
         while True:
             task = self.get_task_status(task_id)
@@ -237,3 +255,20 @@ class TaskManager:
                 return task
 
             time.sleep(0.1)
+
+    def wait_for_all_tasks(self, timeout: Optional[float] = None) -> bool:
+        """
+        Wait for all current tasks to complete.
+
+        Args:
+            timeout: Maximum time to wait (in seconds). If None, wait indefinitely.
+
+        Returns:
+            bool: True if all tasks completed, False if timed out
+        """
+        start_time = time.time()
+        while self.get_pending_task_count() > 0:
+            if timeout is not None and time.time() - start_time > timeout:
+                return False
+            time.sleep(0.1)
+        return True

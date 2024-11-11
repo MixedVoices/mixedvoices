@@ -20,6 +20,7 @@ class Version:
         self.version_id = version_id
         self.project_id = project_id
         self.metadata = metadata
+        self.task_manager = TaskManager()
         self.load_recordings()
         self.load_steps()
         self.create_flowchart()
@@ -73,6 +74,7 @@ class Version:
         recording_id = str(uuid4())
         if not os.path.exists(audio_path):
             raise FileNotFoundError(f"Audio path {audio_path} does not exist")
+
         extension = os.path.splitext(audio_path)[1]
         file_name = os.path.basename(audio_path)
         if extension not in [".mp3", ".wav"]:
@@ -82,6 +84,7 @@ class Version:
         output_audio_path = os.path.join(output_folder, file_name)
         os.makedirs(output_folder)
         os.system(f"cp {audio_path} {output_audio_path}")
+
         recording = Recording(
             recording_id, output_audio_path, self.version_id, self.project_id
         )
@@ -91,8 +94,7 @@ class Version:
         if blocking:
             process_recording(recording, self)
         else:
-            task_manager = TaskManager()
-            task_id = task_manager.add_task(
+            task_id = self.task_manager.add_task(
                 "process_recording", recording=recording, version=self
             )
             recording.processing_task_id = task_id
