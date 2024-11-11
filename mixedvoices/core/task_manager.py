@@ -1,4 +1,3 @@
-import atexit
 import json
 import logging
 import os
@@ -46,13 +45,13 @@ class Task:
 class TaskManager:
     _instance = None
     _lock = threading.Lock()
+    _initialized = False
 
     def __new__(cls):
         if cls._instance is None:
             with cls._lock:
                 if cls._instance is None:
                     cls._instance = super(TaskManager, cls).__new__(cls)
-                    cls._instance._initialized = False
         return cls._instance
 
     def __init__(self):
@@ -63,12 +62,10 @@ class TaskManager:
         self.task_queue = Queue()
         self.tasks: Dict[str, Task] = {}
         self.processing_thread = None
-        self.shutdown_flag = threading.Event()
         self.tasks_folder = os.path.join(constants.ALL_PROJECTS_FOLDER, "_tasks")
         os.makedirs(self.tasks_folder, exist_ok=True)
         self._load_pending_tasks()
         self._start_processing_thread()
-        atexit.register(self.shutdown)
 
     def _serialize_task_params(
         self, task_type: str, params: Dict[str, Any]
@@ -139,7 +136,7 @@ class TaskManager:
                     task = Task(
                         task_id=task_data["task_id"],
                         task_type=task_data["task_type"],
-                        params=task_data["params"],  # Keep serialized form when loading
+                        params=task_data["params"],
                         status=TaskStatus(task_data["status"]),
                         created_at=task_data["created_at"],
                         started_at=task_data.get("started_at"),
@@ -156,59 +153,54 @@ class TaskManager:
     def _start_processing_thread(self):
         """Start the processing thread if it's not already running."""
         if self.processing_thread is None or not self.processing_thread.is_alive():
-            self.processing_thread = threading.Thread(target=self._process_queue)
+            self.processing_thread = threading.Thread(
+                target=self._process_queue, name="TaskProcessingThread"
+            )
             self.processing_thread.start()
 
     def _process_queue(self):
-        """Main processing thread loop to process tasks."""
-        while not self.shutdown_flag.is_set() or not self.task_queue.empty():
+        main_thread = threading.main_thread()
+
+        while True:
+            if not main_thread.is_alive() and self.task_queue.empty():
+                break
+
             try:
-                # Use timeout to periodically check shutdown flag
                 try:
                     task_id = self.task_queue.get(timeout=1.0)
                 except Empty:
                     continue
 
                 task = self.tasks.get(task_id)
-
                 if task is None:
                     self.task_queue.task_done()
                     continue
 
-                task.status = TaskStatus.IN_PROGRESS
-                task.started_at = time.time()
-                self._save_task(task)
+                try:
+                    task.status = TaskStatus.IN_PROGRESS
+                    task.started_at = time.time()
+                    self._save_task(task)
 
-                if task.task_type == "process_recording":
-                    from mixedvoices.utils import process_recording
+                    if task.task_type == "process_recording":
+                        from mixedvoices.utils import process_recording
 
-                    try:
                         deserialized_params = self._deserialize_task_params(
                             task.task_type, task.params
                         )
                         process_recording(**deserialized_params)
                         task.status = TaskStatus.COMPLETED
                         task.completed_at = time.time()
-                    except Exception as e:
-                        task.status = TaskStatus.FAILED
-                        task.error = str(e)
-                        logging.error(f"Task {task_id} failed: {str(e)}")
-
-                self._save_task(task)
-                self.task_queue.task_done()
-
-            except Exception as e:
-                logging.error(f"Error in task processing thread: {str(e)}")
-                if "task_id" in locals():
+                except Exception as e:
+                    task.status = TaskStatus.FAILED
+                    task.error = str(e)
+                    logging.error(f"Task {task_id} failed: {str(e)}")
+                finally:
+                    self._save_task(task)
                     self.task_queue.task_done()
 
-    def shutdown(self):
-        """Gracefully shutdown the task manager."""
-        if self.processing_thread and self.processing_thread.is_alive():
-            logging.info("Initiating TaskManager shutdown...")
-            self.shutdown_flag.set()
-            self.processing_thread.join()
-            logging.info("TaskManager shutdown complete")
+            except Exception:
+                if "task_id" in locals():
+                    self.task_queue.task_done()
 
     def add_task(self, task_type: str, **params) -> str:
         """Add a new task to the queue."""
@@ -236,12 +228,11 @@ class TaskManager:
 
     def get_pending_task_count(self) -> int:
         """Get the number of pending and in-progress tasks."""
-        return self.task_queue.qsize()
+        return self.task_queue.unfinished_tasks
 
     def wait_for_task(
         self, task_id: str, timeout: Optional[float] = None
     ) -> Optional[Task]:
-        """Wait for a specific task to complete."""
         start_time = time.time()
         while True:
             task = self.get_task_status(task_id)
@@ -266,9 +257,15 @@ class TaskManager:
         Returns:
             bool: True if all tasks completed, False if timed out
         """
-        start_time = time.time()
-        while self.get_pending_task_count() > 0:
-            if timeout is not None and time.time() - start_time > timeout:
-                return False
-            time.sleep(0.1)
-        return True
+        try:
+            if timeout is not None:
+                start = time.time()
+                while self.task_queue.unfinished_tasks > 0:
+                    if time.time() - start > timeout:
+                        return False
+                    time.sleep(0.1)
+            else:
+                self.task_queue.join()
+            return True
+        except Exception:
+            return False
