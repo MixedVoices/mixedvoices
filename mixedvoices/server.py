@@ -191,7 +191,7 @@ async def add_recording(
                 shutil.copyfileobj(file.file, buffer)
 
             # Process the recording
-            recording = version.add_recording(str(temp_path))
+            recording = version.add_recording(str(temp_path), blocking=True)
 
             # Clean up
             temp_path.unlink()
