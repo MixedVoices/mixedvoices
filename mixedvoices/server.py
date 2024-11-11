@@ -41,6 +41,8 @@ async def list_projects():
         if not os.path.exists(mixedvoices.constants.ALL_PROJECTS_FOLDER):
             return {"projects": []}
         projects = os.listdir(mixedvoices.constants.ALL_PROJECTS_FOLDER)
+        if "_tasks" in projects:
+            projects.remove("_tasks")
         return {"projects": projects}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e)) from e
