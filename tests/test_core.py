@@ -94,9 +94,9 @@ def test_core(temp_project_folder):
     assert len(v1.recordings) == 0
     assert v1.metadata == {"description": "test version"}
 
-    v1.add_recording(call1_path)
+    v1.add_recording(call1_path, blocking=True)
     with pytest.raises(ValueError):
-        v1.add_recording(script1_path)
+        v1.add_recording(script1_path, blocking=True)
     assert len(v1.recordings) == 1
     assert len(v1.steps) == 7
 
@@ -106,12 +106,12 @@ def test_core(temp_project_folder):
     assert len(v1.recordings) == 1
     assert len(v1.steps) == 7
     assert v1.metadata == {"description": "test version"}
-    v1.add_recording(call2_path)
+    v1.add_recording(call2_path, blocking=True)
 
     assert len(v1.recordings) == 2
     assert len(v1.steps) == 10
 
     v2 = p1.create_version("v2")
     assert set(p1.versions) == {"v1", "v2"}
-    v2.add_recording(call2_path)
+    v2.add_recording(call2_path, blocking=True)
     assert len(v2.recordings) == 1
