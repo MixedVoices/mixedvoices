@@ -62,10 +62,39 @@ class TaskManager:
         self.task_queue = Queue()
         self.tasks: Dict[str, Task] = {}
         self.processing_thread = None
+        self.monitor_thread = None
+        self.is_processing = False  # New flag to track active processing
         self.tasks_folder = os.path.join(constants.ALL_PROJECTS_FOLDER, "_tasks")
         os.makedirs(self.tasks_folder, exist_ok=True)
         self._load_pending_tasks()
         self._start_processing_thread()
+        self._start_monitor_thread()
+
+    def _monitor_status(self):
+        main_thread = threading.main_thread()
+        status_printed = False
+
+        while True:
+            if not main_thread.is_alive():
+                if (
+                    self.task_queue.qsize() > 0 or self.is_processing
+                ) and not status_printed:
+                    print(
+                        "MixedVoices is still processing recordings. "
+                        "In case you want to change this behaviour, "
+                        "use blocking=True in add_recording()"
+                    )
+                    status_printed = True
+                elif self.task_queue.qsize() == 0 and not self.is_processing:
+                    break
+            time.sleep(0.5)
+
+    def _start_monitor_thread(self):
+        if self.monitor_thread is None or not self.monitor_thread.is_alive():
+            self.monitor_thread = threading.Thread(
+                target=self._monitor_status, name="TaskMonitorThread"
+            )
+            self.monitor_thread.start()
 
     def _serialize_task_params(
         self, task_type: str, params: Dict[str, Any]
@@ -162,18 +191,25 @@ class TaskManager:
         main_thread = threading.main_thread()
 
         while True:
-            if not main_thread.is_alive() and self.task_queue.empty():
+            if (
+                not main_thread.is_alive()
+                and self.task_queue.empty()
+                and not self.is_processing
+            ):
                 break
 
             try:
                 try:
                     task_id = self.task_queue.get(timeout=1.0)
+                    self.is_processing = True
                 except Empty:
+                    self.is_processing = False
                     continue
 
                 task = self.tasks.get(task_id)
                 if task is None:
                     self.task_queue.task_done()
+                    self.is_processing = False
                     continue
 
                 try:
@@ -197,10 +233,12 @@ class TaskManager:
                 finally:
                     self._save_task(task)
                     self.task_queue.task_done()
+                    self.is_processing = False
 
             except Exception:
                 if "task_id" in locals():
                     self.task_queue.task_done()
+                self.is_processing = False
 
     def add_task(self, task_type: str, **params) -> str:
         """Add a new task to the queue."""
