@@ -3,7 +3,7 @@ import os
 from typing import TYPE_CHECKING, Optional
 from uuid import uuid4
 
-from mixedvoices.constants import ALL_PROJECTS_FOLDER
+import mixedvoices.constants as constants
 
 if TYPE_CHECKING:
     from mixedvoices.core.recording import Recording
@@ -43,7 +43,11 @@ class Step:
     @property
     def path(self):
         return os.path.join(
-            ALL_PROJECTS_FOLDER, self.project_id, self.version_id, "steps", self.step_id
+            constants.ALL_PROJECTS_FOLDER,
+            self.project_id,
+            self.version_id,
+            "steps",
+            self.step_id,
         )
 
     def record_usage(self, recording: "Recording", is_final_step, is_successful):
@@ -70,7 +74,12 @@ class Step:
     @classmethod
     def load(cls, project_id, version_id, step_id):
         path = os.path.join(
-            ALL_PROJECTS_FOLDER, project_id, version_id, "steps", step_id, "info.json"
+            constants.ALL_PROJECTS_FOLDER,
+            project_id,
+            version_id,
+            "steps",
+            step_id,
+            "info.json",
         )
         with open(path, "r") as f:
             d = json.loads(f.read())

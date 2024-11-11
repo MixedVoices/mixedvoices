@@ -3,7 +3,7 @@ import os
 import time
 from typing import List, Optional
 
-from mixedvoices.constants import ALL_PROJECTS_FOLDER
+import mixedvoices.constants as constants
 
 
 class Recording:
@@ -32,7 +32,7 @@ class Recording:
     @property
     def path(self):
         return os.path.join(
-            ALL_PROJECTS_FOLDER,
+            constants.ALL_PROJECTS_FOLDER,
             self.project_id,
             self.version_id,
             "recordings",
@@ -56,7 +56,7 @@ class Recording:
     @classmethod
     def load(cls, project_id, version_id, recording_id):
         path = os.path.join(
-            ALL_PROJECTS_FOLDER,
+            constants.ALL_PROJECTS_FOLDER,
             project_id,
             version_id,
             "recordings",

@@ -1,14 +1,14 @@
 import os
 from typing import Any, Dict, Optional
 
-from mixedvoices.constants import ALL_PROJECTS_FOLDER
+import mixedvoices.constants as constants
 from mixedvoices.core.version import Version
 
 
 class Project:
     def __init__(self, project_id: str):
         self.project_id = project_id
-        self.project_folder = os.path.join(ALL_PROJECTS_FOLDER, project_id)
+        self.project_folder = os.path.join(constants.ALL_PROJECTS_FOLDER, project_id)
 
     @property
     def versions(self):

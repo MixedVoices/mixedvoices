@@ -26,8 +26,11 @@ def separate_channels(input_file, output_folder):
     # Separate channels
     left_channel, right_channel = y[0], y[1]
 
-    left_path = os.path.join(output_folder, "left.wav")
-    right_path = os.path.join(output_folder, "right.wav")
+    left_filename = os.path.basename(input_file).split(".")[0] + "_left.wav"
+    right_filename = os.path.basename(input_file).split(".")[0] + "_right.wav"
+
+    left_path = os.path.join(output_folder, left_filename)
+    right_path = os.path.join(output_folder, right_filename)
     sf.write(left_path, left_channel, sr)
     sf.write(right_path, right_channel, sr)
     return left_path, right_path

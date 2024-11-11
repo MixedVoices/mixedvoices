@@ -3,7 +3,7 @@ import os
 from typing import Any, Dict, Optional
 from uuid import uuid4
 
-from mixedvoices.constants import ALL_PROJECTS_FOLDER
+import mixedvoices.constants as constants
 from mixedvoices.core.recording import Recording
 from mixedvoices.core.step import Step
 from mixedvoices.utils import process_recording
@@ -25,7 +25,9 @@ class Version:
 
     @property
     def path(self):
-        return os.path.join(ALL_PROJECTS_FOLDER, self.project_id, self.version_id)
+        return os.path.join(
+            constants.ALL_PROJECTS_FOLDER, self.project_id, self.version_id
+        )
 
     def load_recordings(self):
         self.recordings: Dict[str, Recording] = {}
@@ -95,7 +97,7 @@ class Version:
     @classmethod
     def load(cls, project_id, version_id):
         load_path = os.path.join(
-            ALL_PROJECTS_FOLDER, project_id, version_id, "info.json"
+            constants.ALL_PROJECTS_FOLDER, project_id, version_id, "info.json"
         )
         with open(load_path, "r") as f:
             d = json.loads(f.read())
