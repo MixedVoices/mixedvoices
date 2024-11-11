@@ -1,6 +1,8 @@
 import os
+from concurrent import futures  # Preload this to avoid shutdown issues  # noqa: F401
 from typing import TYPE_CHECKING, List
 
+import joblib  # Preload joblib as well # noqa: F401
 import librosa
 import soundfile as sf
 
