@@ -17,11 +17,21 @@ class ProjectManager:
 
     def _reset_form(self):
         """Reset all form-related session state"""
-        if "version_name" in st.session_state:
-            del st.session_state.version_name
+        # Reset version name
         st.session_state.version_name = ""
-        st.session_state.expander_state = True
+
+        # Reset metadata pairs to a single empty pair
         st.session_state.metadata_pairs = [{"key": "", "value": ""}]
+
+        # Reset form key to force re-render of inputs
+        st.session_state.form_key = st.session_state.get("form_key", 0) + 1
+
+        # Keep expander open
+        st.session_state.expander_state = True
+
+        # Clear any error messages
+        if "version_error" in st.session_state:
+            del st.session_state.version_error
 
     def render(self) -> None:
         """Render project management view"""
@@ -30,16 +40,23 @@ class ProjectManager:
         # Initialize states if they don't exist
         if "current_project_id" not in st.session_state:
             st.session_state.current_project_id = self.project_id
-
-        # Initialize version_name if it doesn't exist
         if "version_name" not in st.session_state:
             st.session_state.version_name = ""
+        if "form_key" not in st.session_state:
+            st.session_state.form_key = 0
+        if "show_version_success" not in st.session_state:
+            st.session_state.show_version_success = False
 
-        # Check if project has changed after initializing session states
+        # Check if project has changed
         if st.session_state.current_project_id != self.project_id:
             self._reset_form()
             st.session_state.current_project_id = self.project_id
             st.rerun()
+
+        # Show success message if needed
+        if st.session_state.show_version_success:
+            st.success("Version created successfully!")
+            st.session_state.show_version_success = False
 
         self._render_version_creation()
         self._render_versions_list()
@@ -51,18 +68,31 @@ class ProjectManager:
             st.session_state.expander_state = True
         if "metadata_pairs" not in st.session_state:
             st.session_state.metadata_pairs = [{"key": "", "value": ""}]
-        if "version_name" not in st.session_state:
-            st.session_state.version_name = ""
+
+        def handle_version_name_change():
+            """Callback for version name input change"""
+            if "version_error" in st.session_state:
+                del st.session_state.version_error
 
         def handle_create_version():
-            if not st.session_state.version_name.strip():
-                st.error("Please enter a version name")
+            current_version_name = st.session_state.get(
+                f"version_name_{st.session_state.form_key}", ""
+            ).strip()
+
+            if not current_version_name:
+                st.session_state.version_error = "Please enter a version name"
                 return
 
-            # if duplicate keys, st.error
-            all_keys = [pair["key"] for pair in st.session_state.metadata_pairs]
-            if len(set(all_keys)) != len(all_keys):
-                st.error("Duplicate metadata keys are not allowed")
+            # Check for duplicate keys
+            filled_keys = [
+                pair["key"]
+                for pair in st.session_state.metadata_pairs
+                if pair["key"].strip()
+            ]
+            if len(set(filled_keys)) != len(filled_keys):
+                st.session_state.version_error = (
+                    "Duplicate metadata keys are not allowed"
+                )
                 return
 
             metadata_dict = {
@@ -73,26 +103,35 @@ class ProjectManager:
 
             response = self.api_client.post_data(
                 get_project_versions_endpoint(self.project_id),
-                {"name": st.session_state.version_name, "metadata": metadata_dict},
+                {"name": current_version_name, "metadata": metadata_dict},
             )
 
             if response.get("message"):
-                st.success(response["message"])
+                st.session_state.show_version_success = True
                 self._reset_form()
                 st.rerun()
 
         with st.expander(
             "Create New Version", expanded=st.session_state.expander_state
         ):
+            version_name_key = f"version_name_{st.session_state.form_key}"
             st.text_input(
-                "Version Name", key="version_name", value=st.session_state.version_name
+                "Version Name",
+                key=version_name_key,
+                on_change=handle_version_name_change,
             )
+
+            # Display error if exists
+            if "version_error" in st.session_state:
+                st.error(st.session_state.version_error)
 
             st.subheader("Metadata")
 
             to_remove = None
 
-            if st.button("Add Metadata Field"):
+            if st.button(
+                "Add Metadata Field", key=f"add_metadata_{st.session_state.form_key}"
+            ):
                 st.session_state.metadata_pairs.append({"key": "", "value": ""})
                 st.rerun()
 
@@ -103,7 +142,7 @@ class ProjectManager:
                     key = st.text_input(
                         "Key",
                         value=pair["key"],
-                        key=f"key_{i}",
+                        key=f"key_{i}_{st.session_state.form_key}",
                         placeholder="Enter key",
                         max_chars=MAX_KEY_LENGTH,
                         label_visibility="collapsed",
@@ -116,21 +155,25 @@ class ProjectManager:
                     value = st.text_input(
                         "Value",
                         value=pair["value"],
-                        key=f"value_{i}",
+                        key=f"value_{i}_{st.session_state.form_key}",
                         placeholder="Enter value",
                         label_visibility="collapsed",
                     )
                     st.session_state.metadata_pairs[i]["value"] = value
 
                 with col3:
-                    if i > 0 and st.button("✕", key=f"remove_{i}"):
+                    if i > 0 and st.button(
+                        "✕", key=f"remove_{i}_{st.session_state.form_key}"
+                    ):
                         to_remove = i
 
             if to_remove is not None:
                 st.session_state.metadata_pairs.pop(to_remove)
                 st.rerun()
 
-            if st.button("Create Version"):
+            if st.button(
+                "Create Version", key=f"create_version_{st.session_state.form_key}"
+            ):
                 handle_create_version()
 
     def _render_versions_list(self) -> None:
