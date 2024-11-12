@@ -74,6 +74,8 @@ class RecordingViewer:
         except Exception as e:
             st.error(f"Unable to load audio: {str(e)}")
 
+        st.write("Duration:", f"{round(recording['duration'], 1)} seconds")
+
         if recording.get("combined_transcript"):
             st.text_area(
                 "Transcript",

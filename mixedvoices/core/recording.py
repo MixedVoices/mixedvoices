@@ -18,6 +18,7 @@ class Recording:
         step_ids: Optional[List[str]] = None,
         summary: Optional[str] = None,
         is_successful: Optional[bool] = None,
+        duration: Optional[float] = None,
         processing_task_id: Optional[str] = None,
     ):
         self.recording_id = recording_id
@@ -29,6 +30,7 @@ class Recording:
         self.step_ids = step_ids
         self.summary = summary
         self.is_successful = is_successful
+        self.duration = duration
         self.processing_task_id: Optional[str] = processing_task_id
 
     @property
@@ -78,5 +80,6 @@ class Recording:
             "step_ids": self.step_ids,
             "summary": self.summary,
             "is_successful": self.is_successful,
+            "duration": self.duration,
             "processing_task_id": self.processing_task_id,
         }

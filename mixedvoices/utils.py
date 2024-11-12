@@ -21,6 +21,7 @@ def separate_channels(input_file, output_folder):
     """
     # TODO: give user the ability to specify which channel assistant is speaking in
     y, sr = librosa.load(input_file, mono=False)
+    duration = librosa.get_duration(y=y, sr=sr)
 
     if len(y.shape) != 2 or y.shape[0] != 2:
         raise ValueError("Input must be a stereo audio file")
@@ -35,13 +36,15 @@ def separate_channels(input_file, output_folder):
     right_path = os.path.join(output_folder, right_filename)
     sf.write(left_path, left_channel, sr)
     sf.write(right_path, right_channel, sr)
-    return left_path, right_path
+    return left_path, right_path, duration
 
 
 def process_recording(recording: "Recording", version: "Version"):
     audio_path = recording.audio_path
     output_folder = os.path.join(version.path, "recordings", recording.recording_id)
-    user_audio_path, assistant_audio_path = separate_channels(audio_path, output_folder)
+    user_audio_path, assistant_audio_path, duration = separate_channels(
+        audio_path, output_folder
+    )
     combined_transcript = transcribe_and_combine(user_audio_path, assistant_audio_path)
     recording.combined_transcript = combined_transcript
     existing_step_names = [step.name for step in version.steps.values()]
@@ -72,4 +75,5 @@ def process_recording(recording: "Recording", version: "Version"):
     for step in all_steps:
         step.save()
     recording.step_ids = [step.step_id for step in all_steps]
+    recording.duration = duration
     recording.save()
