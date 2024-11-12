@@ -47,11 +47,31 @@ class Sidebar:
 
     def _handle_project_creation(self) -> None:
         """Handle new project creation"""
-        new_project_name = st.text_input("Project Name")
+        # Initialize states if they don't exist
+        if "show_project_success" not in st.session_state:
+            st.session_state.show_project_success = False
+
+        # Key for project name input to force re-render when needed
+        if "project_input_key" not in st.session_state:
+            st.session_state.project_input_key = 0
+
+        # Show success message if needed
+        if st.session_state.show_project_success:
+            st.success("Project created successfully!")
+            st.session_state.show_project_success = False
+
+        # Project creation form
+        new_project_name = st.text_input(
+            "Project Name",
+            key=f"project_name_input_{st.session_state.project_input_key}",
+        )
+
         if st.button("Create Project") and new_project_name:
             response = self.api_client.post_data(
                 f"projects?name={new_project_name}", {}
             )
             if response.get("message"):
-                st.success(response["message"])
+                # Increment the input key to force a fresh input field
+                st.session_state.project_input_key += 1
+                st.session_state.show_project_success = True
                 st.rerun()
