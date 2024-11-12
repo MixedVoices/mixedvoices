@@ -109,6 +109,7 @@ class TaskManager:
                     "audio_path": recording.audio_path,
                     "version_id": recording.version_id,
                     "project_id": recording.project_id,
+                    "is_successful": recording.is_successful,
                 },
                 "version_data": {
                     "version_id": version.version_id,
@@ -133,6 +134,7 @@ class TaskManager:
                 audio_path=recording_data["audio_path"],
                 version_id=recording_data["version_id"],
                 project_id=recording_data["project_id"],
+                is_successful=recording_data["is_successful"],
             )
 
             version = Version.load(

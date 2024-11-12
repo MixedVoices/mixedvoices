@@ -70,7 +70,12 @@ class Version:
         for next_step in step.next_steps:
             self.recursively_assign_steps(next_step)
 
-    def add_recording(self, audio_path: str, blocking: bool = False):
+    def add_recording(
+        self,
+        audio_path: str,
+        is_successful: Optional[bool] = None,
+        blocking: bool = False,
+    ):
         recording_id = str(uuid4())
         if not os.path.exists(audio_path):
             raise FileNotFoundError(f"Audio path {audio_path} does not exist")
@@ -86,7 +91,11 @@ class Version:
         os.system(f"cp {audio_path} {output_audio_path}")
 
         recording = Recording(
-            recording_id, output_audio_path, self.version_id, self.project_id
+            recording_id,
+            output_audio_path,
+            self.version_id,
+            self.project_id,
+            is_successful=is_successful,
         )
         self.recordings[recording.recording_id] = recording
         recording.save()
