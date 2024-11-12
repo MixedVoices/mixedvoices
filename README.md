@@ -48,13 +48,13 @@ export OPENAI_API_KEY='your-api-key'
 
 ### Using Python API
 ```python
-import mixedvoices
+import mixedvoices as mv
 
 # Create a new project
-project = mixedvoices.create_project("receptionist")
+project = mv.create_project("receptionist")
 
 # or load existing project
-project = mixedvoices.load_project("receptionist")
+project = mv.load_project("receptionist")
 
 # Create a version with metadata
 version = project.create_version("v1", metadata={
@@ -65,8 +65,11 @@ version = project.create_version("v1", metadata={
 # or load an existing version
 version = project.load_version("v1")
 
-# Add recording to analyze
-version.add_recording("path/to/recording.wav")
+# Add recording to analyze, by default this is non blocking and runs on a separate thread
+version.add_recording("path/to/recording.wav", is_successful=True)
+
+# run in blocking mode
+version.add_recording("path/to/recording2.wav", blocking=True, is_successful=False)
 ```
 
 ### Using Dashboard
