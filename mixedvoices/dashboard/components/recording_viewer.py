@@ -51,7 +51,10 @@ class RecordingViewer:
             with cols[1]:
                 st.write(row["created_at"])
             with cols[2]:
-                st.write("✅" if row["is_successful"] else "❌")
+                if row["is_successful"] is None:
+                    st.write("N/A")
+                else:
+                    st.write("✅" if row["is_successful"] else "❌")
             with cols[3]:
                 st.write(row["summary"] or "None")
             st.markdown(
