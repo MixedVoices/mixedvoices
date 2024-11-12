@@ -99,9 +99,13 @@ class RecordingViewer:
         ).strftime("%-I:%M%p %-d %B %Y")
         st.write("Created:", created_time)
         # st.write("Audio Path:", recording["audio_path"])
-        st.write(
-            "Status:", "✅ Successful" if recording["is_successful"] else "❌ Failed"
-        )
+        if recording["is_successful"] is None:
+            st.write("Status:", "N/A")
+        else:
+            st.write(
+                "Status:",
+                "✅ Successful" if recording["is_successful"] else "❌ Failed",
+            )
         with st.expander("View Recording Flow", expanded=False):
             self.display_recording_flow(recording["id"])
 
