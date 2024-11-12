@@ -40,6 +40,21 @@ class UploadForm:
             accept_multiple_files=False,
         )
 
+        # Add success status selection
+        success_status = st.radio(
+            "Call Status",
+            options=["N/A", "Successful", "Unsuccessful"],
+            key=f"success_status_{st.session_state.form_key}",
+            disabled=st.session_state.is_uploading,
+        )
+
+        # Convert selection to boolean or None
+        is_successful = {
+            "N/A": None,
+            "Successful": True,
+            "Unsuccessful": False,
+        }.get(success_status)
+
         # Show upload button if file is selected
         if uploaded_file:
             col1, _ = st.columns([1, 3])
@@ -64,6 +79,7 @@ class UploadForm:
                     response = self.api_client.post_data(
                         get_version_recordings_endpoint(self.project_id, self.version),
                         files=files,
+                        params={"is_successful": is_successful},
                     )
 
                     if response:

@@ -31,6 +31,7 @@ class VersionCreate(BaseModel):
 
 class RecordingUpload(BaseModel):
     url: Optional[str] = None
+    is_successful: Optional[bool] = None
 
 
 # API Routes
@@ -178,10 +179,13 @@ async def list_recordings(project_name: str, version_name: str):
 async def add_recording(
     project_name: str,
     version_name: str,
+    is_successful: Optional[bool] = None,
     file: Optional[UploadFile] = None,
     recording_data: Optional[RecordingUpload] = None,
 ):
     """Add a new recording to a version"""
+    print(is_successful)
+    print(recording_data)
     try:
         project = mixedvoices.load_project(project_name)
         version = project.load_version(version_name)
@@ -193,7 +197,9 @@ async def add_recording(
                 shutil.copyfileobj(file.file, buffer)
 
             # Process the recording
-            recording = version.add_recording(str(temp_path), blocking=True)
+            recording = version.add_recording(
+                str(temp_path), blocking=True, is_successful=is_successful
+            )
 
             # Clean up
             temp_path.unlink()
@@ -203,7 +209,7 @@ async def add_recording(
                 "recording_id": recording.recording_id,
             }
         elif recording_data and recording_data.url:
-            # TODO: Implement URL download and processing
+            # TODO: Implement URL upload and processing
             raise HTTPException(
                 status_code=501, detail="URL upload not implemented yet"
             )

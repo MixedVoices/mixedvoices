@@ -90,7 +90,10 @@ class APIClient:
 
     @staticmethod
     def post_data(
-        endpoint: str, json_data: Optional[Dict] = None, files: Optional[Dict] = None
+        endpoint: str,
+        json_data: Optional[Dict] = None,
+        files: Optional[Dict] = None,
+        params: Optional[Dict] = None,
     ) -> Dict:
         """Post data to the FastAPI backend
 
@@ -98,6 +101,7 @@ class APIClient:
             endpoint: API endpoint to post to
             json_data: JSON payload to send
             files: Files to upload
+            params: Query parameters to include
 
         Returns:
             Dict: Response data from API
@@ -110,6 +114,7 @@ class APIClient:
                 f"{API_BASE_URL}/{endpoint}",
                 json=json_data or None,
                 files=files or None,
+                params=params or None,
                 timeout=30,  # Add reasonable timeout
             )
             response.raise_for_status()
