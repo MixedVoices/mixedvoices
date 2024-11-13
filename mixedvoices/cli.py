@@ -16,8 +16,8 @@ def run_server_thread(port: int):
 
 @cli.command()
 def dashboard(
-    server_port: int = typer.Option(8000, help="Port to run the API server on"),
-    dash_port: int = typer.Option(8501, help="Port to run the dashboard on"),
+    server_port: int = typer.Option(7760, help="Port to run the API server on"),
+    dash_port: int = typer.Option(7761, help="Port to run the dashboard on"),
 ):
     """Launch both the MixedVoices API server and dashboard"""
     print(f"Starting MixedVoices API server on http://localhost:{server_port}")

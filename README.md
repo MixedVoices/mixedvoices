@@ -79,8 +79,8 @@ mixedvoices
 ```
 
 This will start:
-- API server at http://localhost:8000
-- Dashboard at http://localhost:8501
+- API server at http://localhost:7760
+- Dashboard at http://localhost:7761
 
 ## Technical Requirements
 

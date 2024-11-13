@@ -395,7 +395,7 @@ async def handle_webhook(
         raise HTTPException(status_code=500, detail=str(e)) from e
 
 
-def run_server(port: int = 8000):
+def run_server(port: int = 7760):
     """Run the FastAPI server"""
     logger.info(f"Starting server on port {port}")
     uvicorn.run(app, host="0.0.0.0", port=port)
