@@ -52,6 +52,22 @@ class Recording:
             d = self.to_dict()
             f.write(json.dumps(d))
 
+    def get_summary_from_metadata(self):
+        if self.metadata is None:
+            return None
+        analysis_info = self.metadata.get("analysis_info", {})
+        summary = analysis_info.get("summary", None)
+        if summary:
+            return summary
+
+    def get_combined_transcript_from_metadata(self):
+        if self.metadata is None:
+            return None
+        call_info = self.metadata.get("call_info", {})
+        combined_transcript = call_info.get("transcript", None)
+        if combined_transcript:
+            return combined_transcript
+
     @classmethod
     def load(cls, project_id, version_id, recording_id):
         path = os.path.join(
