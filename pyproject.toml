@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "mixedvoices"
-version = "0.1.2"
+version = "0.1.3"
 description = "Mixpanel for conversational AI"
 authors = [
     {name = "Abhinav", email = "abhinav@locoto.co"},
@@ -56,7 +56,7 @@ dev = [
 ]
 
 [tool.setuptools]
-packages = ["find:"]
+packages = {find = {}}
 
 [tool.black]
 line-length = 88
