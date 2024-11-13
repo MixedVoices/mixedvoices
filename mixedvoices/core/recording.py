@@ -1,7 +1,7 @@
 import json
 import os
 import time
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 
 import mixedvoices.constants as constants
 
@@ -20,6 +20,7 @@ class Recording:
         is_successful: Optional[bool] = None,
         duration: Optional[float] = None,
         processing_task_id: Optional[str] = None,
+        metadata: Optional[Dict[str, Any]] = None,
     ):
         self.recording_id = recording_id
         self.created_at = created_at or int(time.time())
@@ -32,6 +33,7 @@ class Recording:
         self.is_successful = is_successful
         self.duration = duration
         self.processing_task_id: Optional[str] = processing_task_id
+        self.metadata = metadata
 
     @property
     def path(self):
@@ -82,4 +84,5 @@ class Recording:
             "is_successful": self.is_successful,
             "duration": self.duration,
             "processing_task_id": self.processing_task_id,
+            "metadata": self.metadata,
         }

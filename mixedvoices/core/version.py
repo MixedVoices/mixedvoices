@@ -75,6 +75,7 @@ class Version:
         audio_path: str,
         is_successful: Optional[bool] = None,
         blocking: bool = False,
+        metadata: Optional[Dict[str, Any]] = None,
     ):
         recording_id = str(uuid4())
         if not os.path.exists(audio_path):
@@ -96,6 +97,7 @@ class Version:
             self.version_id,
             self.project_id,
             is_successful=is_successful,
+            metadata=metadata,
         )
         self.recordings[recording.recording_id] = recording
         recording.save()

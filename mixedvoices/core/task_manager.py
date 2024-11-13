@@ -110,6 +110,7 @@ class TaskManager:
                     "version_id": recording.version_id,
                     "project_id": recording.project_id,
                     "is_successful": recording.is_successful,
+                    "metadata": recording.metadata,
                 },
                 "version_data": {
                     "version_id": version.version_id,
@@ -135,6 +136,7 @@ class TaskManager:
                 version_id=recording_data["version_id"],
                 project_id=recording_data["project_id"],
                 is_successful=recording_data["is_successful"],
+                metadata=recording_data["metadata"],
             )
 
             version = Version.load(
@@ -262,7 +264,7 @@ class TaskManager:
         self.task_queue.put(task_id)
         return task_id
 
-    def get_task_status(self, task_id: str) -> Optional[Task]:
+    def get_task(self, task_id: str) -> Optional[Task]:
         """Get the current status of a task."""
         return self.tasks.get(task_id)
 
@@ -275,7 +277,7 @@ class TaskManager:
     ) -> Optional[Task]:
         start_time = time.time()
         while True:
-            task = self.get_task_status(task_id)
+            task = self.get_task(task_id)
             if task is None:
                 return None
 

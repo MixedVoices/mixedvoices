@@ -3,13 +3,15 @@ import shutil
 from pathlib import Path
 from typing import Any, Dict, Optional
 
+import aiohttp
 import uvicorn
-from fastapi import FastAPI, HTTPException, UploadFile
+from fastapi import FastAPI, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 import mixedvoices
 import mixedvoices.constants
+from mixedvoices.server.utils import process_vapi_webhook
 
 app = FastAPI()
 
@@ -249,6 +251,65 @@ async def get_step_recordings(project_name: str, version_name: str, step_id: str
             )
 
         return {"recordings": recordings_data}
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+@app.post("/api/{project_name}/{version_name}/{provider_name}")
+async def handle_webhook(
+    project_name: str, version_name: str, provider_name: str, request: Request
+):
+    """Handle incoming webhook from Vapi, download the recording, and add it to the version"""
+    try:
+        # Get the webhook data
+        webhook_data = await request.json()
+
+        if provider_name == "vapi":
+            data = process_vapi_webhook(webhook_data)
+            stereo_url = data["call_info"]["stereo_recording_url"]
+            is_successful = data["analysis_info"]["success_evaluation"]
+            call_id = data["id_info"]["call_id"]
+        else:
+            raise HTTPException(status_code=400, detail="Invalid provider name")
+
+        # Load project and version
+        project = mixedvoices.load_project(project_name)
+        version = project.load_version(version_name)
+
+        # Download the audio file
+        temp_path = Path(f"/tmp/{call_id}.wav")
+
+        async with aiohttp.ClientSession() as session:
+            async with session.get(stereo_url) as response:
+                if response.status == 200:
+                    with open(temp_path, "wb") as f:
+                        f.write(await response.read())
+
+        try:
+            # Add recording with processed webhook data as metadata
+            recording = version.add_recording(
+                str(temp_path),
+                blocking=False,
+                is_successful=is_successful,
+                metadata=data,
+            )
+
+            # Clean up temporary file
+            temp_path.unlink()
+
+            return {
+                "message": "Webhook processed and recording added successfully",
+                "recording_id": recording.recording_id,
+            }
+
+        except Exception as e:
+            # Clean up temp file if processing fails
+            if temp_path.exists():
+                temp_path.unlink()
+            raise e
+
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e)) from e
     except Exception as e:

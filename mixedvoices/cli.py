@@ -4,7 +4,7 @@ import webbrowser
 import typer
 
 from mixedvoices.dashboard.cli import run_dashboard
-from mixedvoices import server
+from mixedvoices.server import server
 
 cli = typer.Typer()
 
