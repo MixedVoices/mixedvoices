@@ -108,6 +108,45 @@ class RecordingViewer:
                 "Status:",
                 "✅ Successful" if recording["is_successful"] else "❌ Failed",
             )
+        if recording.get("metadata"):
+            source = recording["metadata"].get("source")
+            supported_sources = ["vapi"]
+            heading = (
+                f"{source.capitalize()} Metadata"
+                if source in supported_sources
+                else "metadata"
+            )
+            with st.expander(heading, expanded=False):
+                # Display top-level simple key-values
+                simple_items = {
+                    k: v
+                    for k, v in recording["metadata"].items()
+                    if isinstance(v, (str, int, float, bool))
+                }
+                if simple_items:
+                    st.write("### Basic Information")
+                    for key, value in simple_items.items():
+                        if key == "source" and value in supported_sources:
+                            continue
+                        st.write(f"{key}: {value}")
+
+                # Create tabs for nested structures
+                complex_items = {
+                    k: v
+                    for k, v in recording["metadata"].items()
+                    if isinstance(v, dict)
+                }
+                if complex_items:
+                    tabs = st.tabs(list(complex_items.keys()))
+                    for tab, value in zip(tabs, complex_items.values()):
+                        with tab:
+                            for sub_key, sub_value in value.items():
+                                if isinstance(sub_value, (str, int, float, bool)):
+                                    st.write(f"{sub_key}: {sub_value}")
+                                else:
+                                    st.write(f"{sub_key}:")
+                                    st.json(sub_value, expanded=False)
+
         with st.expander("View Recording Flow", expanded=False):
             self.display_recording_flow(recording["id"])
 
