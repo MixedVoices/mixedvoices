@@ -33,7 +33,7 @@ class Recording:
         self.is_successful = is_successful
         self.duration = duration
         self.processing_task_id: Optional[str] = processing_task_id
-        self.metadata = metadata
+        self.metadata = metadata or {}
 
     @property
     def path(self):
@@ -53,16 +53,12 @@ class Recording:
             f.write(json.dumps(d))
 
     def get_summary_from_metadata(self):
-        if self.metadata is None:
-            return None
         analysis_info = self.metadata.get("analysis_info", {})
         summary = analysis_info.get("summary", None)
         if summary:
             return summary
 
     def get_combined_transcript_from_metadata(self):
-        if self.metadata is None:
-            return None
         call_info = self.metadata.get("call_info", {})
         combined_transcript = call_info.get("transcript", None)
         if combined_transcript:
