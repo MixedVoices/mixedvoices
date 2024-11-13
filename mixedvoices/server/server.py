@@ -1,3 +1,4 @@
+import logging
 import os
 import shutil
 from pathlib import Path
@@ -12,6 +13,14 @@ from pydantic import BaseModel
 import mixedvoices
 import mixedvoices.constants
 from mixedvoices.server.utils import process_vapi_webhook
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    handlers=[logging.FileHandler("server.log"), logging.StreamHandler()],
+)
+logger = logging.getLogger(__name__)
 
 app = FastAPI()
 
@@ -48,6 +57,7 @@ async def list_projects():
             projects.remove("_tasks")
         return {"projects": projects}
     except Exception as e:
+        logger.error(f"Error listing projects: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e)) from e
 
 
@@ -56,10 +66,13 @@ async def create_project(name: str):
     """Create a new project"""
     try:
         mixedvoices.create_project(name)
+        logger.info(f"Project '{name}' created successfully")
         return {"message": f"Project {name} created successfully"}
     except ValueError as e:
+        logger.error(f"Invalid project name '{name}': {str(e)}")
         raise HTTPException(status_code=400, detail=str(e)) from e
     except Exception as e:
+        logger.error(f"Error creating project '{name}': {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e)) from e
 
 
@@ -80,8 +93,13 @@ async def list_versions(project_name: str):
             )
         return {"versions": versions_data}
     except ValueError as e:
+        logger.error(f"Project '{project_name}' not found: {str(e)}")
         raise HTTPException(status_code=404, detail=str(e)) from e
     except Exception as e:
+        logger.error(
+            f"Error listing versions for project '{project_name}': {str(e)}",
+            exc_info=True,
+        )
         raise HTTPException(status_code=500, detail=str(e)) from e
 
 
@@ -91,12 +109,22 @@ async def create_version(project_name: str, version_data: VersionCreate):
     try:
         project = mixedvoices.load_project(project_name)
         project.create_version(version_data.name, metadata=version_data.metadata)
+        logger.info(
+            f"Version '{version_data.name}' created successfully in project '{project_name}'"
+        )
         return {"message": f"Version {version_data.name} created successfully"}
     except ValueError as e:
+        logger.error(
+            f"Error creating version '{version_data.name}' in project '{project_name}': {str(e)}"
+        )
         raise HTTPException(
             status_code=400, detail=f"Version {version_data.name} already exists"
         ) from e
     except Exception as e:
+        logger.error(
+            f"Error creating version '{version_data.name}' in project '{project_name}': {str(e)}",
+            exc_info=True,
+        )
         raise HTTPException(status_code=500, detail=str(e)) from e
 
 
@@ -121,8 +149,15 @@ async def get_version_flow(project_name: str, version_name: str):
         ]
         return {"steps": steps_data}
     except ValueError as e:
+        logger.error(
+            f"Version '{version_name}' not found in project '{project_name}': {str(e)}"
+        )
         raise HTTPException(status_code=404, detail=str(e)) from e
     except Exception as e:
+        logger.error(
+            f"Error getting flow data for version '{version_name}' in project '{project_name}': {str(e)}",
+            exc_info=True,
+        )
         raise HTTPException(status_code=500, detail=str(e)) from e
 
 
@@ -147,8 +182,15 @@ async def get_recording_flow(project_name: str, version_name: str, recording_id:
             )
         return {"steps": steps_data}
     except ValueError as e:
+        logger.error(
+            f"Recording '{recording_id}' not found in version '{version_name}' of project '{project_name}': {str(e)}"
+        )
         raise HTTPException(status_code=404, detail=str(e)) from e
     except Exception as e:
+        logger.error(
+            f"Error getting flow data for recording '{recording_id}' in version '{version_name}' of project '{project_name}': {str(e)}",
+            exc_info=True,
+        )
         raise HTTPException(status_code=500, detail=str(e)) from e
 
 
@@ -174,8 +216,15 @@ async def list_recordings(project_name: str, version_name: str):
         ]
         return {"recordings": recordings_data}
     except ValueError as e:
+        logger.error(
+            f"Version '{version_name}' not found in project '{project_name}': {str(e)}"
+        )
         raise HTTPException(status_code=404, detail=str(e)) from e
     except Exception as e:
+        logger.error(
+            f"Error listing recordings for version '{version_name}' in project '{project_name}': {str(e)}",
+            exc_info=True,
+        )
         raise HTTPException(status_code=500, detail=str(e)) from e
 
 
@@ -188,41 +237,50 @@ async def add_recording(
     recording_data: Optional[RecordingUpload] = None,
 ):
     """Add a new recording to a version"""
-    print(is_successful)
-    print(recording_data)
+    logger.info(
+        f"Adding recording to version '{version_name}' in project '{project_name}'"
+    )
+    logger.debug(f"is_successful: {is_successful}")
+    logger.debug(f"recording_data: {recording_data}")
+
     try:
         project = mixedvoices.load_project(project_name)
         version = project.load_version(version_name)
 
         if file:
-            # Save uploaded file to temporary location
             temp_path = Path(f"/tmp/{file.filename}")
-            with temp_path.open("wb") as buffer:
-                shutil.copyfileobj(file.file, buffer)
+            try:
+                with temp_path.open("wb") as buffer:
+                    shutil.copyfileobj(file.file, buffer)
 
-            # Process the recording
-            recording = version.add_recording(
-                str(temp_path), blocking=True, is_successful=is_successful
-            )
+                recording = version.add_recording(
+                    str(temp_path), blocking=True, is_successful=is_successful
+                )
+                logger.info(f"Recording added successfully: {recording.recording_id}")
+                return {
+                    "message": "Recording added successfully",
+                    "recording_id": recording.recording_id,
+                }
+            finally:
+                if temp_path.exists():
+                    temp_path.unlink()
+                    logger.debug(f"Temporary file removed: {temp_path}")
 
-            # Clean up
-            temp_path.unlink()
-
-            return {
-                "message": "Recording added successfully",
-                "recording_id": recording.recording_id,
-            }
         elif recording_data and recording_data.url:
             # TODO: Implement URL upload and processing
+            logger.error("URL upload not implemented yet")
             raise HTTPException(
                 status_code=501, detail="URL upload not implemented yet"
             )
         else:
+            logger.error("No file or URL provided")
             raise HTTPException(status_code=400, detail="No file or URL provided")
 
     except ValueError as e:
+        logger.error(f"Invalid recording data: {str(e)}")
         raise HTTPException(status_code=400, detail=str(e)) from e
     except Exception as e:
+        logger.error(f"Error adding recording: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e)) from e
 
 
@@ -255,8 +313,15 @@ async def get_step_recordings(project_name: str, version_name: str, step_id: str
 
         return {"recordings": recordings_data}
     except ValueError as e:
+        logger.error(
+            f"Step '{step_id}' not found in version '{version_name}' of project '{project_name}': {str(e)}"
+        )
         raise HTTPException(status_code=404, detail=str(e)) from e
     except Exception as e:
+        logger.error(
+            f"Error getting recordings for step '{step_id}' in version '{version_name}' of project '{project_name}': {str(e)}",
+            exc_info=True,
+        )
         raise HTTPException(status_code=500, detail=str(e)) from e
 
 
@@ -264,10 +329,14 @@ async def get_step_recordings(project_name: str, version_name: str, step_id: str
 async def handle_webhook(
     project_name: str, version_name: str, provider_name: str, request: Request
 ):
-    """Handle incoming webhook from Vapi, download the recording, and add it to the version"""
+    """Handle incoming webhook, download the recording, and add it to the version"""
+    logger.info(
+        f"Received webhook for provider '{provider_name}' - project: '{project_name}', version: '{version_name}'"
+    )
+
     try:
-        # Get the webhook data
         webhook_data = await request.json()
+        logger.debug(f"Webhook data received: {webhook_data}")
 
         if provider_name == "vapi":
             data = process_vapi_webhook(webhook_data)
@@ -275,50 +344,58 @@ async def handle_webhook(
             is_successful = data["analysis_info"]["success_evaluation"]
             call_id = data["id_info"]["call_id"]
         else:
+            logger.error(f"Invalid provider name: {provider_name}")
             raise HTTPException(status_code=400, detail="Invalid provider name")
 
-        # Load project and version
         project = mixedvoices.load_project(project_name)
         version = project.load_version(version_name)
 
-        # Download the audio file
         temp_path = Path(f"/tmp/{call_id}.wav")
-
-        async with aiohttp.ClientSession() as session:
-            async with session.get(stereo_url) as response:
-                if response.status == 200:
-                    with open(temp_path, "wb") as f:
-                        f.write(await response.read())
-
         try:
-            # Add recording with processed webhook data as metadata
+            async with aiohttp.ClientSession() as session:
+                async with session.get(stereo_url) as response:
+                    if response.status == 200:
+                        with open(temp_path, "wb") as f:
+                            f.write(await response.read())
+                            logger.info(
+                                f"Audio file downloaded successfully: {call_id}.wav"
+                            )
+                    else:
+                        logger.error(
+                            f"Failed to download audio file: {response.status}"
+                        )
+                        raise HTTPException(
+                            status_code=response.status,
+                            detail="Failed to download audio file",
+                        )
+
             recording = version.add_recording(
                 str(temp_path),
-                blocking=False,
+                blocking=True,
                 is_successful=is_successful,
                 metadata=data,
             )
-
-            # Clean up temporary file
-            temp_path.unlink()
+            logger.info(f"Recording processed successfully: {recording.recording_id}")
 
             return {
                 "message": "Webhook processed and recording added successfully",
                 "recording_id": recording.recording_id,
             }
 
-        except Exception as e:
-            # Clean up temp file if processing fails
+        finally:
             if temp_path.exists():
                 temp_path.unlink()
-            raise e
+                logger.debug(f"Temporary file removed: {temp_path}")
 
     except ValueError as e:
+        logger.error(f"Invalid webhook data: {str(e)}")
         raise HTTPException(status_code=404, detail=str(e)) from e
     except Exception as e:
+        logger.error(f"Error processing webhook: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 def run_server(port: int = 8000):
     """Run the FastAPI server"""
+    logger.info(f"Starting server on port {port}")
     uvicorn.run(app, host="0.0.0.0", port=port)
