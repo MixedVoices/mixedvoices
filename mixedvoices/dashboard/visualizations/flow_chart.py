@@ -143,13 +143,14 @@ class FlowChart:
                 color = "#4B89DC"
                 hover = f"Step: {node_data['name']}"
             else:
-                success_rate = (
-                    node_data["number_of_successful_calls"]
+                failure_rate = (
+                    node_data["number_of_failed_calls"]
                     / node_data["number_of_calls"]
                     * 100
                     if node_data["number_of_calls"] > 0
                     else 0
                 )
+                success_rate = 100 - failure_rate
                 color = self._get_color_by_success_rate(success_rate)
                 hover = self._create_hover_text(node_data, success_rate)
 
@@ -188,7 +189,7 @@ class FlowChart:
         return (
             f"Step: {node_data['name']}<br>"
             f"Total Calls: {node_data['number_of_calls']}<br>"
-            f"Successful: {node_data['number_of_successful_calls']}<br>"
+            f"Failed: {node_data['number_of_failed_calls']}<br>"
             f"Success Rate: {success_rate:.1f}%"
         )
 

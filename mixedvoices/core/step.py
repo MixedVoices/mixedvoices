@@ -17,7 +17,7 @@ class Step:
         project_id,
         recording_ids: Optional[list] = None,
         number_of_terminated_calls: int = 0,
-        number_of_successful_calls: int = 0,
+        number_of_failed_calls: int = 0,
         previous_step_id: Optional[str] = None,
         next_step_ids: Optional[list] = None,
         step_id: Optional[str] = None,
@@ -28,9 +28,7 @@ class Step:
         self.project_id = project_id
         self.recording_ids = recording_ids or []
         self.number_of_terminated_calls = number_of_terminated_calls
-        self.number_of_successful_calls = (
-            number_of_successful_calls  # out of the terminated calls
-        )
+        self.number_of_failed_calls = number_of_failed_calls
         self.previous_step_id = previous_step_id
         self.next_step_ids = next_step_ids or []
         self.previous_step = None
@@ -52,10 +50,8 @@ class Step:
 
     def record_usage(self, recording: "Recording", is_final_step, is_successful):
         self.recording_ids.append(recording.recording_id)
-        if is_final_step:
-            self.number_of_terminated_calls += 1
-            if is_successful:
-                self.number_of_successful_calls += 1
+        if is_final_step and not is_successful:
+            self.number_of_failed_calls += 1
 
     def save(self):
         os.makedirs(self.path, exist_ok=True)
@@ -65,7 +61,7 @@ class Step:
                 "name": self.name,
                 "recording_ids": self.recording_ids,
                 "number_of_terminated_calls": self.number_of_terminated_calls,
-                "number_of_successful_calls": self.number_of_successful_calls,
+                "number_of_failed_calls": self.number_of_failed_calls,
                 "previous_step_id": self.previous_step_id,
                 "next_step_ids": self.next_step_ids,
             }

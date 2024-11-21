@@ -68,7 +68,7 @@ def process_recording(recording: "Recording", version: "Version"):
                 previous_step.next_steps.append(step)
             version.steps[step.step_id] = step
         all_steps.append(step)
-        step.record_usage(recording, is_final_step, False)
+        step.record_usage(recording, is_final_step, recording.is_successful)
         step_options = step.next_steps
         previous_step = step
 

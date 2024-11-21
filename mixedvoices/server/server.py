@@ -141,7 +141,7 @@ async def get_version_flow(project_name: str, version_name: str):
                 "name": step.name,
                 "number_of_calls": step.number_of_calls,
                 "number_of_terminated_calls": step.number_of_terminated_calls,
-                "number_of_successful_calls": step.number_of_successful_calls,
+                "number_of_failed_calls": step.number_of_failed_calls,
                 "previous_step_id": step.previous_step_id,
                 "next_step_ids": step.next_step_ids,
             }

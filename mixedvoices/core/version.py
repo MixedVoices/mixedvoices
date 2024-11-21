@@ -51,10 +51,11 @@ class Version:
             step_id = os.path.splitext(filename)[0]
             self.steps[step_id] = Step.load(self.project_id, self.version_id, step_id)
 
+    @property
+    def starting_steps(self):
+        return [step for step in self.steps.values() if step.previous_step_id is None]
+
     def create_flowchart(self):
-        self.starting_steps = [
-            step for step in self.steps.values() if step.previous_step_id is None
-        ]
         for starting_step in self.starting_steps:
             self.recursively_assign_steps(starting_step)
 
