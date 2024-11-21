@@ -1,6 +1,8 @@
-from typing import Dict, List
+from collections import defaultdict
+from typing import Dict, Set
 
 import networkx as nx
+import numpy as np
 import plotly.graph_objects as go
 
 
@@ -11,6 +13,8 @@ class FlowChart:
         self.G = nx.DiGraph()
         self.pos = {}
         self.parent_child = {}
+        self.tree_roots = []
+        self.node_tree_map = {}  # Maps nodes to their tree index
 
     def _create_graph(self) -> None:
         """Create networkx graph from flow data"""
@@ -39,6 +43,7 @@ class FlowChart:
 
     def _create_full_graph(self) -> None:
         """Create graph for full flow visualization"""
+        # Build the graph
         for step in self.flow_data["steps"]:
             self.G.add_node(step["id"], name=step["name"], data=step)
             for next_step_id in step["next_step_ids"]:
@@ -47,71 +52,119 @@ class FlowChart:
                     self.parent_child[next_step_id] = []
                 self.parent_child[next_step_id].append(step["id"])
 
-        self._calculate_positions()
+        # Find root nodes (nodes with no parents)
+        self.tree_roots = [
+            node for node in self.G.nodes() if node not in self.parent_child
+        ]
 
-    def _calculate_positions(self) -> None:
-        """Calculate node positions for visualization"""
-        # Find root nodes and calculate levels
-        root_nodes = [node for node in self.G.nodes() if node not in self.parent_child]
-        levels = self._calculate_levels(root_nodes)
+        self._calculate_tree_positions()
 
-        # Position nodes by level
-        self._position_nodes_by_level(levels)
+    def _get_tree_nodes(self, root: str, visited: Set[str] = None) -> Set[str]:
+        """Get all nodes in a tree starting from the given root"""
+        if visited is None:
+            visited = set()
 
-    def _calculate_levels(self, root_nodes: List) -> Dict:
-        """Calculate node levels using BFS"""
-        levels = {node: -1 for node in self.G.nodes()}
-        current_level = 0
-        current_nodes = root_nodes
+        if root in visited:
+            return visited
 
-        while current_nodes:
-            next_nodes = []
-            for node in current_nodes:
-                if levels[node] == -1:
-                    levels[node] = current_level
-                    next_nodes.extend(list(self.G.successors(node)))
-            current_nodes = next_nodes
-            current_level += 1
+        visited.add(root)
+        for successor in self.G.successors(root):
+            self._get_tree_nodes(successor, visited)
+
+        return visited
+
+    def _calculate_node_levels(self, root: str) -> Dict[str, int]:
+        """Calculate levels for nodes in a tree"""
+        levels = {root: 0}
+        queue = [(root, 0)]
+        visited = {root}
+
+        while queue:
+            node, level = queue.pop(0)
+            for successor in self.G.successors(node):
+                if successor not in visited:
+                    levels[successor] = level + 1
+                    queue.append((successor, level + 1))
+                    visited.add(successor)
 
         return levels
 
-    def _position_nodes_by_level(self, levels: Dict) -> None:
-        """Position nodes based on their levels"""
-        max_level = max(levels.values())
-        nodes_by_level = {}
+    def _calculate_tree_positions(self) -> None:
+        """Calculate positions for nodes treating each root as a separate tree"""
+        if not self.tree_roots:
+            return
 
-        # Group nodes by level
-        for node, level in levels.items():
-            if level not in nodes_by_level:
-                nodes_by_level[level] = []
-            nodes_by_level[level].append(node)
+        # Calculate the width needed for each tree
+        tree_widths = []
+        tree_nodes = []
+        max_level = 0
 
-        # Position nodes level by level
-        for level in range(max_level + 1):
-            nodes = nodes_by_level.get(level, [])
-            if len(nodes) == 1:
-                node = nodes[0]
-                parent_nodes = self.parent_child.get(node, [])
-                if parent_nodes and parent_nodes[0] in self.pos:
-                    self.pos[node] = (self.pos[parent_nodes[0]][0], -level)
-                else:
-                    self.pos[node] = (0, -level)
-            else:
-                total_width = len(nodes) - 1
-                for i, node in enumerate(sorted(nodes)):
-                    x = i - total_width / 2
-                    self.pos[node] = (x, -level)
+        for root in self.tree_roots:
+            nodes = self._get_tree_nodes(root)
+            levels = self._calculate_node_levels(root)
+            max_level = max(max_level, max(levels.values()))
+
+            # Count nodes at each level
+            level_counts = defaultdict(int)
+            for node, level in levels.items():
+                level_counts[level] += 1
+
+            tree_width = max(level_counts.values())
+            tree_widths.append(tree_width)
+            tree_nodes.append((nodes, levels))
+
+        # Calculate starting x-position for each tree
+        total_width = sum(tree_widths)
+        spacing = 2  # Space between trees
+        current_x = -(total_width + (len(tree_widths) - 1) * spacing) / 2
+
+        # Position nodes for each tree
+        for tree_index, (nodes, levels) in enumerate(tree_nodes):
+            # Group nodes by level
+            nodes_by_level = defaultdict(list)
+            for node in nodes:
+                level = levels[node]
+                nodes_by_level[level].append(node)
+
+            # Calculate positions within this tree
+            tree_width = tree_widths[tree_index]
+            for level, level_nodes in nodes_by_level.items():
+                level_width = len(level_nodes)
+                for i, node in enumerate(level_nodes):
+                    x = current_x + (i - (level_width - 1) / 2)
+                    y = -level  # Negative to flow downward
+                    self.pos[node] = (x, y)
+                    self.node_tree_map[node] = tree_index
+
+            # Move to next tree position
+            current_x += tree_width + spacing
 
     def _create_edge_trace(self) -> go.Scatter:
-        """Create edge trace for visualization"""
+        """Create edge trace for visualization with curved edges"""
         edge_x = []
         edge_y = []
 
         for edge in self.G.edges():
             x0, y0 = self.pos[edge[0]]
             x1, y1 = self.pos[edge[1]]
-            edge_x.extend([x0, x1, None])
-            edge_y.extend([y0, y1, None])
+
+            # Only curve edges that span multiple levels
+            if abs(y1 - y0) > 1:
+                # Create curved path using quadratic Bezier curve
+                control_x = (x0 + x1) / 2
+                control_y = (y0 + y1) / 2
+
+                # Generate points along the curve
+                t = np.linspace(0, 1, 20)
+                curve_x = (1 - t) ** 2 * x0 + 2 * (1 - t) * t * control_x + t**2 * x1
+                curve_y = (1 - t) ** 2 * y0 + 2 * (1 - t) * t * control_y + t**2 * y1
+
+                edge_x.extend(curve_x.tolist() + [None])
+                edge_y.extend(curve_y.tolist() + [None])
+            else:
+                # Use straight lines for adjacent levels
+                edge_x.extend([x0, x1, None])
+                edge_y.extend([y0, y1, None])
 
         return go.Scatter(
             x=edge_x,
@@ -129,8 +182,7 @@ class FlowChart:
         node_text = []
         node_hover = []
         node_colors = []
-        node_ids = []  # For customdata
-
+        node_ids = []
         for node in self.G.nodes():
             x, y = self.pos[node]
             node_x.append(x)
