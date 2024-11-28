@@ -85,10 +85,12 @@ def test_core(temp_project_folder):
     with pytest.raises(ValueError):
         mixedvoices.create_project("p1")
 
-    v1 = p1.create_version("v1", metadata={"description": "test version"})
+    v1 = p1.create_version(
+        "v1", prompt="Testing prompt", metadata={"description": "test version"}
+    )
 
     with pytest.raises(ValueError):
-        p1.create_version("v1")
+        p1.create_version("v1", prompt="Testing prompt")
 
     assert set(p1.versions) == {"v1"}
     assert len(v1.recordings) == 0
@@ -111,7 +113,7 @@ def test_core(temp_project_folder):
     assert len(v1.recordings) == 2
     assert len(v1.steps) == 10
 
-    v2 = p1.create_version("v2")
+    v2 = p1.create_version("v2", prompt="Testing prompt2")
     assert set(p1.versions) == {"v1", "v2"}
     v2.add_recording(call2_path, blocking=True)
     assert len(v2.recordings) == 1

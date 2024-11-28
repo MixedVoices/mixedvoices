@@ -37,6 +37,7 @@ app.add_middleware(
 # API Models
 class VersionCreate(BaseModel):
     name: str
+    prompt: str
     metadata: Dict[str, Any]
 
 
@@ -87,6 +88,7 @@ async def list_versions(project_name: str):
             versions_data.append(
                 {
                     "name": version_id,
+                    "prompt": version.prompt,
                     "metadata": version.metadata,
                     "recording_count": len(version.recordings),
                 }
@@ -108,7 +110,11 @@ async def create_version(project_name: str, version_data: VersionCreate):
     """Create a new version in a project"""
     try:
         project = mixedvoices.load_project(project_name)
-        project.create_version(version_data.name, metadata=version_data.metadata)
+        project.create_version(
+            version_data.name,
+            prompt=version_data.prompt,
+            metadata=version_data.metadata,
+        )
         logger.info(
             f"Version '{version_data.name}' created successfully in project '{project_name}'"
         )

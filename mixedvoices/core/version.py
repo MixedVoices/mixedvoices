@@ -15,10 +15,12 @@ class Version:
         self,
         version_id: str,
         project_id: str,
+        prompt: str,
         metadata: Optional[Dict[str, Any]] = None,
     ):
         self.version_id = version_id
         self.project_id = project_id
+        self.prompt = prompt
         self.metadata = metadata
         self.task_manager = TaskManager()
         self.load_recordings()
@@ -116,7 +118,7 @@ class Version:
     def save(self):
         save_path = os.path.join(self.path, "info.json")
         with open(save_path, "w") as f:
-            d = {"metadata": self.metadata}
+            d = {"prompt": self.prompt, "metadata": self.metadata}
             f.write(json.dumps(d))
 
     @classmethod
@@ -126,4 +128,4 @@ class Version:
         )
         with open(load_path, "r") as f:
             d = json.loads(f.read())
-        return cls(version_id, project_id, d["metadata"])
+        return cls(version_id, project_id, d["prompt"], d["metadata"])

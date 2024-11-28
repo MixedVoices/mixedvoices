@@ -18,7 +18,7 @@ class Project:
         ]
 
     def create_version(
-        self, version_id: str, metadata: Optional[Dict[str, Any]] = None
+        self, version_id: str, prompt: str, metadata: Optional[Dict[str, Any]] = None
     ):
         if version_id in self.versions:
             raise ValueError(f"Version {version_id} already exists")
@@ -26,7 +26,7 @@ class Project:
         os.makedirs(version_path)
         os.makedirs(os.path.join(version_path, "recordings"))
         os.makedirs(os.path.join(version_path, "steps"))
-        version = Version(version_id, self.project_id, metadata)
+        version = Version(version_id, self.project_id, prompt, metadata)
         version.save()
         return version
 

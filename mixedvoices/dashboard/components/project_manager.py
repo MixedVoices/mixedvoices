@@ -17,8 +17,9 @@ class ProjectManager:
 
     def _reset_form(self):
         """Reset all form-related session state"""
-        # Reset version name
+        # Reset version name and prompt
         st.session_state.version_name = ""
+        st.session_state.prompt = ""
 
         # Reset metadata pairs to a single empty pair
         st.session_state.metadata_pairs = [{"key": "", "value": ""}]
@@ -42,6 +43,8 @@ class ProjectManager:
             st.session_state.current_project_id = self.project_id
         if "version_name" not in st.session_state:
             st.session_state.version_name = ""
+        if "prompt" not in st.session_state:
+            st.session_state.prompt = ""
         if "form_key" not in st.session_state:
             st.session_state.form_key = 0
         if "show_version_success" not in st.session_state:
@@ -69,8 +72,8 @@ class ProjectManager:
         if "metadata_pairs" not in st.session_state:
             st.session_state.metadata_pairs = [{"key": "", "value": ""}]
 
-        def handle_version_name_change():
-            """Callback for version name input change"""
+        def handle_input_change():
+            """Callback for input changes"""
             if "version_error" in st.session_state:
                 del st.session_state.version_error
 
@@ -78,9 +81,16 @@ class ProjectManager:
             current_version_name = st.session_state.get(
                 f"version_name_{st.session_state.form_key}", ""
             ).strip()
+            current_prompt = st.session_state.get(
+                f"prompt_{st.session_state.form_key}", ""
+            ).strip()
 
             if not current_version_name:
                 st.session_state.version_error = "Please enter a version name"
+                return
+
+            if not current_prompt:
+                st.session_state.version_error = "Please enter a prompt"
                 return
 
             # Check for duplicate keys
@@ -103,7 +113,11 @@ class ProjectManager:
 
             response = self.api_client.post_data(
                 get_project_versions_endpoint(self.project_id),
-                {"name": current_version_name, "metadata": metadata_dict},
+                {
+                    "name": current_version_name,
+                    "prompt": current_prompt,
+                    "metadata": metadata_dict,
+                },
             )
 
             if response.get("message"):
@@ -118,7 +132,14 @@ class ProjectManager:
             st.text_input(
                 "Version Name",
                 key=version_name_key,
-                on_change=handle_version_name_change,
+                on_change=handle_input_change,
+            )
+
+            prompt_key = f"prompt_{st.session_state.form_key}"
+            st.text_area(
+                "Prompt",
+                key=prompt_key,
+                on_change=handle_input_change,
             )
 
             # Display error if exists
@@ -215,6 +236,16 @@ class ProjectManager:
                         color: #B0B0B0;
                         font-size: 0.9rem;
                     }
+                    .prompt-section {
+                        margin: 0.5rem 0;
+                        padding: 0.5rem 0;
+                        border-bottom: 1px solid #333;
+                    }
+                    .prompt-content {
+                        color: #B0B0B0;
+                        font-size: 0.95rem;
+                        line-height: 1.4;
+                    }
                     .metadata-section {
                         margin-top: 0.5rem;
                     }
@@ -260,6 +291,14 @@ class ProjectManager:
                     if i + j < len(versions):
                         version = versions[i + j]
                         with col:
+                            # Prepare prompt section
+                            prompt_content = f"""
+                            <div class="prompt-section">
+                                <div class="prompt-label">Prompt:</div>
+                                <div class="prompt-content">{html.escape(version.get('prompt', ''))}</div>
+                            </div>
+                            """
+
                             metadata_content = ""
                             if version["metadata"]:
                                 metadata_items = []
@@ -299,7 +338,12 @@ class ProjectManager:
                                     <span class="version-name">{version_name}</span>
                                     <span class="recording-count">Recordings: {n}</span>
                                 </div>
+                                <div class="prompt-section">
+                                    <div class="prompt-label">Prompt:</div>
+                                    <div class="prompt-content">{html.escape(version.get('prompt', ''))}</div>
+                                </div>
                                 <div class="metadata-section">
+                                    <div class="metadata-label">Metadata:</div>
                                     {metadata_content}
                                 </div>
                             </div>
