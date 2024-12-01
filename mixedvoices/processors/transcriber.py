@@ -62,6 +62,7 @@ def create_combined_transcript(
         all_segments.append(current_segment)
 
     all_sentences = [" ".join(segment) for segment in all_segments]
+    all_sentences = [f"{i+1}. {sentence}" for i, sentence in enumerate(all_sentences)]
     return "\n".join(all_sentences)
 
 
