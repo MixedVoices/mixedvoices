@@ -34,3 +34,11 @@ class Project:
         if version_id not in self.versions:
             raise ValueError(f"Version {version_id} does not exist")
         return Version.load(self.project_id, version_id)
+
+    def get_paths(self):
+        # TODO implement
+        pass
+
+    def get_failure_reasons(self):
+        # TODO implement
+        pass

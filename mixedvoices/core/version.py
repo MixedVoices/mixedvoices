@@ -1,9 +1,12 @@
 import json
 import os
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Iterator, Optional
 from uuid import uuid4
 
 import mixedvoices.constants as constants
+from enterprise.eval_case_generation import create_prompt_runs
+from mixedvoices.core.eval_prompt_run import EvalPromptRun
+from mixedvoices.core.project import Project
 from mixedvoices.core.recording import Recording
 from mixedvoices.core.step import Step
 from mixedvoices.core.task_manager import TaskManager
@@ -129,3 +132,64 @@ class Version:
         with open(load_path, "r") as f:
             d = json.loads(f.read())
         return cls(version_id, project_id, d["prompt"], d["metadata"])
+
+    def get_paths(self):
+        # TODO implement
+        pass
+
+    def get_failure_reasons(self):
+        # TODO implement
+        pass
+
+    def create_evaluator(
+        self,
+        use_recordings_from_other_versions: bool = False,  # TODO: Create separate methods
+        empathy: bool = True,
+        verbatim_repetition: bool = True,
+        conciseness: bool = True,
+        hallucination: bool = True,
+        context_awareness: bool = True,
+        scheduling: bool = True,
+        adaptive_qa: bool = True,
+        objection_handling: bool = True,
+    ) -> Iterator[EvalPromptRun]:
+        metrics_dict = {
+            "empathy": empathy,
+            "verbatim_repetition": verbatim_repetition,
+            "conciseness": conciseness,
+            "hallucination": hallucination,
+            "context_awareness": context_awareness,
+            "scheduling": scheduling,
+            "adaptive_qa": adaptive_qa,
+            "objection_handling": objection_handling,
+        }
+        if use_recordings_from_other_versions:
+            project = Project(self.project_id)
+            all_paths = project.get_paths()
+            all_failure_reasons = project.get_failure_reasons()
+        else:
+            all_paths = self.get_paths()
+            all_failure_reasons = self.get_failure_reasons()
+
+        prompt_run_ids = create_prompt_runs(
+            self.project_id,
+            self.version_id,
+            self.prompt,
+            use_recordings_from_other_versions,
+            metrics_dict,
+            all_paths,
+            all_failure_reasons,
+        )
+
+        for prompt_run_id in prompt_run_ids:
+            yield EvalPromptRun(self, prompt_run_id)
+
+    def get_fixed_prompt(self):
+        # check mixedvoices token
+        # get fixed prompt from server
+        pass
+
+    def get_prompt_suggestions(self):
+        # check mixedvoices token
+        # get prompt suggestions from server
+        pass
