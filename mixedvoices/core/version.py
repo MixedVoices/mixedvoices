@@ -4,11 +4,11 @@ from typing import Any, Dict, Iterator, Optional
 from uuid import uuid4
 
 import mixedvoices.constants as constants
-from mixedvoices.evaluation.eval_agent import EvalAgent
-from mixedvoices.evaluation.eval_case_generation import generate_eval_prompts
 from mixedvoices.core.recording import Recording
 from mixedvoices.core.step import Step
 from mixedvoices.core.task_manager import TaskManager
+from mixedvoices.evaluation.eval_agent import EvalAgent
+from mixedvoices.evaluation.eval_case_generation import generate_eval_prompts
 from mixedvoices.utils import process_recording
 
 
@@ -169,13 +169,3 @@ class Version:
         print(prompts)
         for prompt in prompts:
             yield EvalAgent(self, prompt, metrics_dict)
-
-    def get_fixed_prompt(self):
-        # check mixedvoices token
-        # get fixed prompt from server
-        pass
-
-    def get_prompt_suggestions(self):
-        # check mixedvoices token
-        # get prompt suggestions from server
-        pass
