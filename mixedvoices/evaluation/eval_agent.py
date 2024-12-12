@@ -3,17 +3,7 @@ from datetime import datetime
 from openai import OpenAI
 
 from mixedvoices.evaluation.metric_analysis import analyze_conversation
-
-
-def history_to_transcript(history):
-    messages = []
-    for message in history:
-        if message["role"] == "user":
-            messages.append(f"Bot: {message['content']}")
-        elif message["role"] == "assistant":
-            messages.append(f"User: {message['content']}")
-    return "\n".join(messages)
-
+from mixedvoices.evaluation.utils import history_to_transcript
 
 client = OpenAI()
 
@@ -58,11 +48,3 @@ class EvalAgent:
         except Exception as e:
             print(f"Error calling OpenAI API: {str(e)}")
             return None
-
-
-# def get_eval_agent(prompt_run_id):
-#     db = DatabaseManager()
-#     run_details = db.get_run_details(prompt_run_id)
-#     prompt = run_details["prompt"]
-#     metadata = run_details["metadata"]
-#     return EvalAgent(prompt, metadata)
