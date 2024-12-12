@@ -4,9 +4,8 @@ from typing import Any, Dict, Iterator, Optional
 from uuid import uuid4
 
 import mixedvoices.constants as constants
-from enterprise.eval_case_generation import create_prompt_runs
-from mixedvoices.core.eval_prompt_run import EvalPromptRun
-from mixedvoices.core.project import Project
+from enterprise.eval_agent import EvalAgent
+from enterprise.eval_case_generation import generate_eval_prompts
 from mixedvoices.core.recording import Recording
 from mixedvoices.core.step import Step
 from mixedvoices.core.task_manager import TaskManager
@@ -29,6 +28,7 @@ class Version:
         self.load_recordings()
         self.load_steps()
         self.create_flowchart()
+        self.analytics = []
 
     @property
     def path(self):
@@ -80,7 +80,7 @@ class Version:
         self,
         audio_path: str,
         is_successful: Optional[bool] = None,
-        blocking: bool = False,
+        blocking: bool = True,
         metadata: Optional[Dict[str, Any]] = None,
     ):
         recording_id = str(uuid4())
@@ -135,15 +135,14 @@ class Version:
 
     def get_paths(self):
         # TODO implement
-        pass
+        return []
 
     def get_failure_reasons(self):
         # TODO implement
-        pass
+        return []
 
     def create_evaluator(
         self,
-        use_recordings_from_other_versions: bool = False,  # TODO: Create separate methods
         empathy: bool = True,
         verbatim_repetition: bool = True,
         conciseness: bool = True,
@@ -152,7 +151,7 @@ class Version:
         scheduling: bool = True,
         adaptive_qa: bool = True,
         objection_handling: bool = True,
-    ) -> Iterator[EvalPromptRun]:
+    ) -> Iterator[EvalAgent]:
         metrics_dict = {
             "empathy": empathy,
             "verbatim_repetition": verbatim_repetition,
@@ -163,26 +162,13 @@ class Version:
             "adaptive_qa": adaptive_qa,
             "objection_handling": objection_handling,
         }
-        if use_recordings_from_other_versions:
-            project = Project(self.project_id)
-            all_paths = project.get_paths()
-            all_failure_reasons = project.get_failure_reasons()
-        else:
-            all_paths = self.get_paths()
-            all_failure_reasons = self.get_failure_reasons()
-
-        prompt_run_ids = create_prompt_runs(
-            self.project_id,
-            self.version_id,
-            self.prompt,
-            use_recordings_from_other_versions,
-            metrics_dict,
-            all_paths,
-            all_failure_reasons,
-        )
-
-        for prompt_run_id in prompt_run_ids:
-            yield EvalPromptRun(self, prompt_run_id)
+        all_paths = self.get_paths()
+        all_failure_reasons = self.get_failure_reasons()
+        print("Generating Evaluation Prompts")
+        prompts = generate_eval_prompts(self.prompt, all_failure_reasons, all_paths)
+        print(prompts)
+        for prompt in prompts:
+            yield EvalAgent(self, prompt, metrics_dict)
 
     def get_fixed_prompt(self):
         # check mixedvoices token

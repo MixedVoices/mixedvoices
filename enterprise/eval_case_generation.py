@@ -12,9 +12,11 @@ system_prompt_dict = {
     "TESTING agents to test against REAL agents. "
     "GOAL: Create TESTING prompts that simulate real world scenarios. "
     "Don't create a conversation, just the prompt. "
+    "Don't give the agent an exact script."
     "Don't evaluate the conversation or any behaviour. "
-    "Give the TESTING agent a name, for example John Doe along with age andpersonality."
+    "Give the TESTING agent a name along with age and personality."
     "Ensure that each prompt follows a structured outline for the TESTING agent to follow. "
+    "Ensure that the bot always finishes conversation and says goodbye"
     "This will be a text conversation only, "
     "so voice speed/modulation, background noise etc. won't matter. "
     "Ensure that the TESTING agent won't go in loops and repeats."
@@ -39,7 +41,16 @@ def generate_eval_prompts_for_failure_reasons(
         ----
         Generate {count} different TESTING agent prompts that try to recreate this failure: {failure_reason}
         Try to make the prompts distinct.
-        Return output as a {count} strings separated by \n without numbering
+        Return output as a {count} strings separated by ---- (4 dashes) without numbering
+
+        Example:
+        This is first prompt
+        ----
+        This is second prompt
+        ----
+        This is third prompt
+        ----
+        and so on
         """  # noqa: E501
         completion = client.chat.completions.create(
             model=model,
@@ -50,8 +61,8 @@ def generate_eval_prompts_for_failure_reasons(
             ],
         )
         response_text = completion.choices[0].message.content
-        prompts = response_text.split("\n")
-        prompts = [p for p in prompts if p != ""]
+        prompts = response_text.split("----")
+        prompts = [p for p in prompts if len(p) > 50]
         eval_prompts.extend(prompts)
 
     return eval_prompts
@@ -72,8 +83,17 @@ def generate_eval_prompts_for_new_paths(
         ----
         Generate {count} different TESTING agent prompts that follow this path: {new_path}
         Try to make the prompts distinct.
-        Return output as a {count} strings separated by \n without numbering
-        """
+        Return output as a {count} strings separated by ---- (4 dashes) without numbering
+
+        Example:
+        This is first prompt
+        ----
+        This is second prompt
+        ----
+        This is third prompt
+        ----
+        and so on
+            """
         completion = client.chat.completions.create(
             model=model,
             messages=[
@@ -83,8 +103,8 @@ def generate_eval_prompts_for_new_paths(
             ],
         )
         response_text = completion.choices[0].message.content
-        prompts = response_text.split("\n")
-        prompts = [p for p in prompts if p != ""]
+        prompts = response_text.split("----")
+        prompts = [p for p in prompts if len(p) > 50]
         eval_prompts.extend(prompts)
 
     return eval_prompts
@@ -100,7 +120,17 @@ def generate_eval_prompts_for_edge_cases(agent_prompt: str, count: int = 2):
     ----
     Generate {count} different TESTING agent prompts to simulate tricky edge cases.
     Try to make the prompts distinct.
-    Return output as a {count} strings separated by \n without numbering
+    Return output as a {count} strings separated by ---- (4 dashes) without numbering
+
+    Example:
+    This is first prompt
+    ----
+    This is second prompt
+    ----
+    This is third prompt
+    ----
+    and so on
+
     """
 
     completion = client.chat.completions.create(
@@ -112,8 +142,8 @@ def generate_eval_prompts_for_edge_cases(agent_prompt: str, count: int = 2):
         ],
     )
     response_text = completion.choices[0].message.content
-    prompts = response_text.split("\n")
-    prompts = [p for p in prompts if p != ""]
+    prompts = response_text.split("----")
+    prompts = [p for p in prompts if len(p) > 50]
     eval_prompts.extend(prompts)
 
     return eval_prompts
@@ -124,6 +154,11 @@ def generate_eval_prompts(
     failure_reasons: List[str],
     new_paths: List[str],
 ):
+    failure_reasons = []
+    new_paths = [
+        "Greeting->Inquiry Handling->Set Appointment->Farewell",
+        "Greeting->Caller Complaint Handling->Farewell",
+    ]
     testcases_per_path = 2
     testcases_per_failure_reason = 2
     testcases_for_edge_cases = 4

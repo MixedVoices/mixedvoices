@@ -2,12 +2,24 @@ import os
 import re
 import threading
 import time
-from typing import List, Optional, Literal, Generator, Tuple
+from typing import Generator, List, Literal, Tuple
 
 import openai
 import pygame
 import requests
 from deepgram import DeepgramClient, LiveOptions, LiveTranscriptionEvents, Microphone
+
+import mixedvoices as mv
+
+
+def conversation_ended(response: str) -> bool:
+    return (
+        "bye" in response.lower()
+        or "see you" in response.lower()
+        or "see ya" in response.lower()
+        or "catch you" in response.lower()
+        or "talk to you" in response.lower()
+    )
 
 
 class DentalAssistant:
@@ -26,30 +38,31 @@ class DentalAssistant:
     - Keep all your responses short and simple. Use casual language, phrases like "Umm...", "Well...", and "I mean" are preferred.
     - Keep your responses short, like in a real conversation. Don't ramble for too long.
     - Don't say hey multiple times.
-    - Don't use emojis.
+    - NEVER use emojis.
     """
 
-    def __init__(self, mode: Literal['text', 'cli', 'voice']):
+    def __init__(self, mode: Literal["text", "cli", "voice"]):
         self.mode = mode
         self.conversation_memory = []
         self.output_audio_file = "output_audio.mp3"
         self.mute_microphone = threading.Event()
-        
+
         # Initialize API keys
         self.deepgram_api_key = os.getenv("DEEPGRAM_API_KEY")
         self.openai_api_key = os.getenv("OPENAI_API_KEY")
-        
+
         # Initialize clients
-        if self.mode == 'voice':
+        if self.mode == "voice":
             self.dg_client = DeepgramClient(api_key=self.deepgram_api_key)
         self.openai_client = openai.OpenAI(api_key=self.openai_api_key)
-        
+
         # TTS configuration
         self.deepgram_tts_url = "https://api.deepgram.com/v1/speak?model=aura-helios-en"
         self.headers = {
             "Authorization": f"Token {self.deepgram_api_key}",
             "Content-Type": "application/json",
         }
+        self.path = "./data/call1.wav"
 
     def process_message(self, message: str) -> str:
         """
@@ -76,7 +89,7 @@ class DentalAssistant:
         segments = []
         start = 0
         for boundary_index in boundaries_indices:
-            segments.append(text[start:boundary_index + 1].strip())
+            segments.append(text[start : boundary_index + 1].strip())
             start = boundary_index + 1
         segments.append(text[start:].strip())
 
@@ -84,7 +97,9 @@ class DentalAssistant:
 
     def synthesize_audio(self, text: str) -> bytes:
         payload = {"text": text}
-        with requests.post(self.deepgram_tts_url, stream=True, headers=self.headers, json=payload) as r:
+        with requests.post(
+            self.deepgram_tts_url, stream=True, headers=self.headers, json=payload
+        ) as r:
             return r.content
 
     def play_audio(self, file_path: str):
@@ -103,12 +118,13 @@ class DentalAssistant:
         self.conversation_memory.append({"role": "user", "content": user_input.strip()})
         messages = [{"role": "system", "content": self.SYSTEM_PROMPT}]
         messages.extend(self.conversation_memory)
-        
+
         chat_completion = self.openai_client.chat.completions.create(
-            model="gpt-4o",
-            messages=messages
+            model="gpt-4o", messages=messages
         )
-        return chat_completion.choices[0].message.content.strip()
+        response = chat_completion.choices[0].message.content.strip()
+        self.conversation_memory.append({"role": "assistant", "content": response})
+        return response
 
     def handle_voice_response(self, response: str):
         text_segments = self.segment_text_by_sentence(response)
@@ -122,7 +138,7 @@ class DentalAssistant:
         self.play_audio(self.output_audio_file)
         time.sleep(0.5)
         self.current_microphone.unmute()
-        
+
         if os.path.exists(self.output_audio_file):
             os.remove(self.output_audio_file)
 
@@ -139,24 +155,28 @@ class DentalAssistant:
             sentence = result.channel.alternatives[0].transcript
             if len(sentence) == 0:
                 return
-                
+
             if result.is_final:
                 self.is_finals.append(sentence)
                 if result.speech_final:
                     utterance = " ".join(self.is_finals)
                     print(f"Speech Final: {utterance}")
                     self.is_finals = []
-                    
+
                     response = self.get_assistant_response(utterance)
                     print(f"Assistant: {response}")
                     self.handle_voice_response(response)
             else:
                 print(f"Interim Results: {sentence}")
 
-        def on_close(_, close, **kwargs):  # Changed self to _
+        def on_close(_, close, **kwargs):
             print("Connection Closed")
+            project = mv.load_project("dental_clinic")
+            version = project.load_version("v1")
+            metadata = {"transcript": self.get_combined_transcript()}
+            version.add_recording(self.path, metadata=metadata)
 
-        def on_error(_, error, **kwargs):  # Changed self to _
+        def on_error(_, error, **kwargs):
             print(f"Error: {error}")
 
         # Set up event handlers
@@ -192,7 +212,7 @@ class DentalAssistant:
 
             print("\nPress Enter to stop...")
             input("")
-            
+
             self.current_microphone.finish()
             dg_connection.finish()
             print("Session ended")
@@ -204,7 +224,7 @@ class DentalAssistant:
         print("Welcome to Locoto's Dental Assistant! (Type 'quit' to exit)")
         while True:
             user_input = input("\nYou: ").strip()
-            if user_input.lower() == 'quit':
+            if user_input.lower() == "quit":
                 print("Thank you for using Locoto's Dental Assistant!")
                 break
 
@@ -212,33 +232,44 @@ class DentalAssistant:
             print(f"\nAssistant: {response}")
 
     def run(self):
-        if self.mode == 'voice':
+        if self.mode == "voice":
             self.run_voice_mode()
-        elif self.mode == 'cli':
+        elif self.mode == "cli":
             self.run_cli_mode()
         else:  # text mode
             # In text mode, we don't automatically start a loop
             # Instead, the user should use process_message() or conversation_loop()
             pass
 
+    def get_combined_transcript(self):
+        all_messages = []
+        # in the format user: message\nbot: message\n
+        for message in self.conversation_memory:
+            if message["role"] == "user":
+                all_messages.append(f"user: {message['content']}\n")
+            else:
+                all_messages.append(f"bot: {message['content']}\n")
+
+        return "".join(all_messages)
+
 
 # Example usage:
 if __name__ == "__main__":
-    assistant_cli = DentalAssistant(mode='voice')
+    assistant_cli = DentalAssistant(mode="voice")
     assistant_cli.run()
 
     # Example 2: Text Mode (Programmatic)
     # assistant_text = DentalAssistant(mode='text')
-    
+
     # Simple single message processing
     # response = assistant_text.process_message("What are your office hours?")
     # print(f"Response: {response}")
     # exit()
-    
+
     # Using the conversation loop
     # conversation = assistant_text.conversation_loop()
     # next(conversation)  # Initialize the generator
-    
+
     # # Simulate a conversation
     # messages = [
     #     "Hi, I'd like to book an appointment",
@@ -246,7 +277,7 @@ if __name__ == "__main__":
     #     "I need a cleaning",
     #     "How about next Tuesday at 2pm?"
     # ]
-    
+
     # for message in messages:
     #     user_msg, assistant_response = conversation.send(message)
     #     print(f"User: {user_msg}")

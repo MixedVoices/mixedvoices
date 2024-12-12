@@ -45,7 +45,10 @@ def process_recording(recording: "Recording", version: "Version"):
     user_audio_path, assistant_audio_path, duration = separate_channels(
         audio_path, output_folder
     )
-    combined_transcript = transcribe_and_combine(user_audio_path, assistant_audio_path)
+    combined_transcript = (
+        recording.get_combined_transcript_from_metadata()
+        or transcribe_and_combine(user_audio_path, assistant_audio_path)
+    )
     recording.combined_transcript = combined_transcript
     existing_step_names = [step.name for step in version.steps.values()]
     step_names = script_to_step_names(combined_transcript, existing_step_names)

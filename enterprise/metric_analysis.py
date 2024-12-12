@@ -11,7 +11,8 @@ def analyze_metric(transcript: str, metric_name: str, metric_definition: str):
 
     Metric:
     {metric_definition}
-    Respond with an explanation of how the bot performed on the metric in 2-3 sentences, followed by score.
+    Respond with an explanation of how the bot performed on the metric in 2-3 sentences, followed by score. 
+    DONT add blank lines between explanation and score.
 
     >Format example
 
@@ -34,10 +35,11 @@ def analyze_metric(transcript: str, metric_name: str, metric_definition: str):
         )
 
         full_response = response.choices[0].message.content
+        print(full_response)
         explanation_match = re.search(
             r"Explanation:\s*(.+?)(?:\n|$)", full_response, re.DOTALL
         )
-        score_match = re.search(r"Score:\s*(\d+)", full_response)
+        score_match = re.search(r"Score:\s*((?:\d|10|N/A|PASS|FAIL))", full_response)
 
         if not explanation_match or not score_match:
             raise ValueError("Could not parse explanation or score")

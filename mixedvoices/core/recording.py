@@ -59,8 +59,7 @@ class Recording:
             return summary
 
     def get_combined_transcript_from_metadata(self):
-        call_info = self.metadata.get("call_info", {})
-        combined_transcript = call_info.get("transcript", None)
+        combined_transcript = self.metadata.get("transcript", {})
         if combined_transcript:
             return combined_transcript
 
