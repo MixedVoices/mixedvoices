@@ -133,6 +133,7 @@ def generate_eval_prompts(
         "Greeting->Inquiry Handling->Set Appointment->Farewell",
         "Greeting->Caller Complaint Handling->Farewell",
     ]
+    # TODO: remove hard coded values and counts
     testcases_per_path = 2
     testcases_per_failure_reason = 2
     testcases_for_edge_cases = 4

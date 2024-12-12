@@ -4,6 +4,8 @@ from openai import OpenAI
 
 client = OpenAI()
 
+#TODO: add more metrics, define better
+
 
 def analyze_metric(transcript: str, metric_name: str, metric_definition: str):
     prompt = f"""Transcript:
