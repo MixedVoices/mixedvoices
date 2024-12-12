@@ -4,8 +4,8 @@ from typing import Any, Dict, Iterator, Optional
 from uuid import uuid4
 
 import mixedvoices.constants as constants
-from enterprise.eval_agent import EvalAgent
-from enterprise.eval_case_generation import generate_eval_prompts
+from mixedvoices.evaluation.eval_agent import EvalAgent
+from mixedvoices.evaluation.eval_case_generation import generate_eval_prompts
 from mixedvoices.core.recording import Recording
 from mixedvoices.core.step import Step
 from mixedvoices.core.task_manager import TaskManager

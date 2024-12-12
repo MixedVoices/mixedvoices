@@ -1,4 +1,4 @@
-from enterprise.eval_agent import get_eval_agent
+from mixedvoices.evaluation.eval_agent import get_eval_agent
 
 
 class EvalPromptRun:

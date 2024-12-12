@@ -2,8 +2,6 @@ from typing import List
 
 from openai import OpenAI
 
-from enterprise.db_manager import DatabaseManager
-
 client = OpenAI()
 
 system_prompt_dict = {
@@ -202,47 +200,47 @@ if __name__ == "__main__":
         print(f"Prompt {i}: {prompt}")
 
 
-def create_prompt_runs(
-    project_id,
-    version_id,
-    prompt,
-    use_recordings_from_other_versions,
-    metrics_dict,
-    all_paths,
-    all_failure_reasons,
-):
-    db = DatabaseManager()
-    if not db.project_exists(project_id):
-        db.create_project(project_id)
+# def create_prompt_runs(
+#     project_id,
+#     version_id,
+#     prompt,
+#     use_recordings_from_other_versions,
+#     metrics_dict,
+#     all_paths,
+#     all_failure_reasons,
+# ):
+#     db = DatabaseManager()
+#     if not db.project_exists(project_id):
+#         db.create_project(project_id)
 
-    if not db.version_exists(project_id, version_id):
-        db.create_version(project_id, version_id)
-    if use_recordings_from_other_versions:
-        # get all paths and failure reasons in previous evaluations
-        previous_paths = db.get_project_paths(project_id)
-        previous_failure_reasons = db.get_project_failure_reasons(project_id)
-        # combine into unique ones by using LLMs
-    else:
-        # get all paths and failure reasons in previous evaluations
-        previous_paths = db.get_version_paths(project_id, version_id)
-        previous_failure_reasons = db.get_version_failure_reasons(
-            project_id, version_id
-        )
+#     if not db.version_exists(project_id, version_id):
+#         db.create_version(project_id, version_id)
+#     if use_recordings_from_other_versions:
+#         # get all paths and failure reasons in previous evaluations
+#         previous_paths = db.get_project_paths(project_id)
+#         previous_failure_reasons = db.get_project_failure_reasons(project_id)
+#         # combine into unique ones by using LLMs
+#     else:
+#         # get all paths and failure reasons in previous evaluations
+#         previous_paths = db.get_version_paths(project_id, version_id)
+#         previous_failure_reasons = db.get_version_failure_reasons(
+#             project_id, version_id
+#         )
 
-    paths = all_paths - previous_paths
-    failure_reasons = all_failure_reasons - previous_failure_reasons
-    new_prompts = generate_eval_prompts(prompt, failure_reasons, paths)
-    if use_recordings_from_other_versions:
-        db.add_paths_to_project(project_id, paths)
-        db.add_failure_reasons_to_project(project_id, failure_reasons)
-        db.add_project_prompts(project_id, new_prompts)
-        prompt_ids = db.get_project_prompts(project_id)
-        eval_id = db.create_project_evaluation(project_id, metrics_dict)
-    else:
-        db.add_paths_to_version(project_id, version_id, paths)
-        db.add_failure_reasons_to_version(project_id, version_id, failure_reasons)
-        db.add_version_prompts(project_id, version_id, new_prompts)
-        prompt_ids = db.get_version_prompts(project_id, version_id)
-        eval_id = db.create_version_evaluation(project_id, version_id, metrics_dict)
+#     paths = all_paths - previous_paths
+#     failure_reasons = all_failure_reasons - previous_failure_reasons
+#     new_prompts = generate_eval_prompts(prompt, failure_reasons, paths)
+#     if use_recordings_from_other_versions:
+#         db.add_paths_to_project(project_id, paths)
+#         db.add_failure_reasons_to_project(project_id, failure_reasons)
+#         db.add_project_prompts(project_id, new_prompts)
+#         prompt_ids = db.get_project_prompts(project_id)
+#         eval_id = db.create_project_evaluation(project_id, metrics_dict)
+#     else:
+#         db.add_paths_to_version(project_id, version_id, paths)
+#         db.add_failure_reasons_to_version(project_id, version_id, failure_reasons)
+#         db.add_version_prompts(project_id, version_id, new_prompts)
+#         prompt_ids = db.get_version_prompts(project_id, version_id)
+#         eval_id = db.create_version_evaluation(project_id, version_id, metrics_dict)
 
-    return [db.create_prompt_run(eval_id, prompt_id) for prompt_id in prompt_ids]
+#     return [db.create_prompt_run(eval_id, prompt_id) for prompt_id in prompt_ids]

@@ -2,7 +2,7 @@ from datetime import datetime
 
 from openai import OpenAI
 
-from enterprise.metric_analysis import analyze_conversation
+from mixedvoices.evaluation.metric_analysis import analyze_conversation
 
 
 def history_to_transcript(history):
