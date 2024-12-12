@@ -23,6 +23,18 @@ system_prompt_dict = {
 
 output_prompt_dict = {"role": "assistant", "content": "Output:"}
 
+common_prompt = """Try to make the prompts distinct.
+Return output as a {count} strings separated by ---- (4 dashes) without numbering
+
+Example:
+First prompt
+----
+Second prompt
+----
+Third prompt
+----
+and so on"""
+
 
 def generate_eval_prompts_for_failure_reasons(
     agent_prompt: str,
@@ -31,25 +43,14 @@ def generate_eval_prompts_for_failure_reasons(
 ):
     eval_prompts = []
     model = "gpt-4o"
+    end_prompt = common_prompt.format(count=count)
     for failure_reason in failure_reasons:
-        prompt = f"""
-        REAL agent prompt:
-        ----
-        {agent_prompt}
-        ----
-        Generate {count} different TESTING agent prompts that try to recreate this failure: {failure_reason}
-        Try to make the prompts distinct.
-        Return output as a {count} strings separated by ---- (4 dashes) without numbering
-
-        Example:
-        First prompt
-        ----
-        Second prompt
-        ----
-        Third prompt
-        ----
-        and so on
-        """  # noqa: E501
+        prompt = f"""REAL agent prompt:
+----
+{agent_prompt}
+----
+Generate {count} different TESTING agent prompts that try to recreate this failure: {failure_reason}
+{end_prompt}"""  # noqa: E501
         completion = client.chat.completions.create(
             model=model,
             messages=[
@@ -74,24 +75,14 @@ def generate_eval_prompts_for_new_paths(
     eval_prompts = []
     model = "gpt-4o"
     for new_path in new_paths:
-        prompt = f"""
-        REAL agent prompt:
-        ----
-        {agent_prompt}
-        ----
-        Generate {count} different TESTING agent prompts that follow this path: {new_path}
-        Try to make the prompts distinct.
-        Return output as a {count} strings separated by ---- (4 dashes) without numbering
-
-        Example:
-        This is first prompt
-        ----
-        This is second prompt
-        ----
-        This is third prompt
-        ----
-        and so on
-            """
+        end_prompt = common_prompt.format(count=count)
+        prompt = f"""REAL agent prompt:
+----
+{agent_prompt}
+----
+Generate {count} different TESTING agent prompts that follow this path: {new_path}
+{end_prompt}
+"""
         completion = client.chat.completions.create(
             model=model,
             messages=[
@@ -110,25 +101,13 @@ def generate_eval_prompts_for_new_paths(
 
 def generate_eval_prompts_for_edge_cases(agent_prompt: str, count: int = 2):
     model = "gpt-4o"
-    prompt = f"""
-    REAL agent prompt:
-    ----
-    {agent_prompt}
-    ----
-    Generate {count} different TESTING agent prompts to simulate tricky edge cases.
-    Try to make the prompts distinct.
-    Return output as a {count} strings separated by ---- without numbering
-
-    Example:
-    This is first prompt
-    ----
-    This is second prompt
-    ----
-    This is third prompt
-    ----
-    and so on
-
-    """
+    end_prompt = common_prompt.format(count=count)
+    prompt = f"""REAL agent prompt:
+----
+{agent_prompt}
+----
+Generate {count} different TESTING agent prompts to simulate tricky edge cases.
+{end_prompt}"""
 
     completion = client.chat.completions.create(
         model=model,
