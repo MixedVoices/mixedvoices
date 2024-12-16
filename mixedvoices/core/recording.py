@@ -3,9 +3,7 @@ import os
 import time
 from typing import Any, Dict, List, Optional
 
-import mixedvoices
 import mixedvoices.constants as constants
-from mixedvoices.core.task_manager import TaskStatus
 
 
 class Recording:
@@ -23,6 +21,7 @@ class Recording:
         duration: Optional[float] = None,
         processing_task_id: Optional[str] = None,
         metadata: Optional[Dict[str, Any]] = None,
+        task_status: Optional[str] = None,
     ):
         self.recording_id = recording_id
         self.created_at = created_at or int(time.time())
@@ -36,6 +35,7 @@ class Recording:
         self.duration = duration
         self.processing_task_id: Optional[str] = processing_task_id
         self.metadata = metadata or {}
+        self.task_status = task_status or "Processing"
 
     @property
     def path(self):
@@ -99,10 +99,5 @@ class Recording:
             "duration": self.duration,
             "processing_task_id": self.processing_task_id,
             "metadata": self.metadata,
+            "task_status": self.task_status,
         }
-
-    @property
-    def task_status(self):
-        if self.processing_task_id == 0:
-            return TaskStatus.COMPLETED
-        return mixedvoices.TASK_MANAGER.get_task(self.processing_task_id).status
