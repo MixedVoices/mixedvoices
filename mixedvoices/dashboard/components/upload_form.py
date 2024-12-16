@@ -23,7 +23,7 @@ class UploadForm:
             st.session_state.show_success = False
 
         if st.session_state.show_success:
-            st.success("Recording uploaded successfully!")
+            st.success("Recording queued for processing!")
             st.session_state.show_success = False
 
         # Create a container for loading status

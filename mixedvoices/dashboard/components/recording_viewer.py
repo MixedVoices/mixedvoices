@@ -16,6 +16,14 @@ class RecordingViewer:
 
     def display_recordings_list(self, recordings: list) -> None:
         """Display list of recordings with details"""
+        # Header row with refresh button
+        header_row = st.columns([8, 1])
+        with header_row[0]:
+            st.write("## Recordings")
+        with header_row[1]:
+            if st.button("Refresh", help="Refresh recordings"):
+                st.rerun()
+
         # Create DataFrame and format dates
         display_df = pd.DataFrame(recordings)
         display_df["created_at"] = pd.to_datetime(
