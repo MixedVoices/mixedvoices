@@ -19,7 +19,7 @@ class Project:
 
     def create_version(
         self, version_id: str, prompt: str, metadata: Optional[Dict[str, Any]] = None
-    ):
+    ) -> Version:
         if version_id in self.versions:
             raise ValueError(f"Version {version_id} already exists")
         version_path = os.path.join(self.project_folder, version_id)
@@ -30,7 +30,7 @@ class Project:
         version.save()
         return version
 
-    def load_version(self, version_id: str):
+    def load_version(self, version_id: str) -> Version:
         if version_id not in self.versions:
             raise ValueError(f"Version {version_id} does not exist")
         return Version.load(self.project_id, version_id)
