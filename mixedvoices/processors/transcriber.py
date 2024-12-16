@@ -1,9 +1,14 @@
+import atexit
+from concurrent.futures import ThreadPoolExecutor
 from typing import List
 
 from openai import OpenAI
 from openai.types.audio import TranscriptionVerbose, TranscriptionWord
 
 import mixedvoices
+
+TRANSCRIPTION_POOL = ThreadPoolExecutor(max_workers=2, thread_name_prefix="Transcriber")
+atexit.register(lambda: TRANSCRIPTION_POOL.shutdown(wait=True))
 
 
 def transcribe_with_whisper(audio_path):
@@ -67,6 +72,13 @@ def create_combined_transcript(
 
 
 def transcribe_and_combine(user_audio_path, assistant_audio_path):
-    _, user_words = transcribe_with_whisper(user_audio_path)
-    _, assistant_words = transcribe_with_whisper(assistant_audio_path)
+    with TRANSCRIPTION_POOL as executor:
+        user_future = executor.submit(transcribe_with_whisper, user_audio_path)
+        assistant_future = executor.submit(
+            transcribe_with_whisper, assistant_audio_path
+        )
+
+        _, user_words = user_future.result()
+        _, assistant_words = assistant_future.result()
+
     return create_combined_transcript(user_words, assistant_words)
