@@ -106,11 +106,12 @@ class Version:
 
         if blocking:
             process_recording(recording, self)
+            task_id = 0
         else:
             task_id = mixedvoices.TASK_MANAGER.add_task(
                 "process_recording", recording=recording, version=self
             )
-            recording.processing_task_id = task_id
+        recording.processing_task_id = task_id
 
         return recording
 

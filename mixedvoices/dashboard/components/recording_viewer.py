@@ -26,7 +26,7 @@ class RecordingViewer:
         )
 
         # Table header
-        header_cols = st.columns([3, 2, 1, 4])
+        header_cols = st.columns([3, 2, 1, 4, 1])
         with header_cols[0]:
             st.markdown("**Recording ID**")
         with header_cols[1]:
@@ -35,6 +35,8 @@ class RecordingViewer:
             st.markdown("**Success**")
         with header_cols[3]:
             st.markdown("**Summary**")
+        with header_cols[4]:
+            st.markdown("**Status**")
         st.markdown(
             "<hr style='margin: 0; padding: 0; background-color: #333; height: 1px;'>",
             unsafe_allow_html=True,
@@ -42,7 +44,7 @@ class RecordingViewer:
 
         # Table rows
         for idx, row in display_df.iterrows():
-            cols = st.columns([3, 2, 1, 4])
+            cols = st.columns([3, 2, 1, 4, 1])
             with cols[0]:
                 if st.button(
                     row["id"], key=f"id_btn_{row['id']}", help="Click to view details"
@@ -57,6 +59,8 @@ class RecordingViewer:
                     st.write("✅" if row["is_successful"] else "❌")
             with cols[3]:
                 st.write(row["summary"] or "None")
+            with cols[4]:
+                st.write(row["task_status"])
             st.markdown(
                 "<hr style='margin: 0; padding: 0; background-color: #333;"
                 " height: 1px;'>",

@@ -305,7 +305,6 @@ class TaskManager:
         return task_id
 
     def get_task(self, task_id: str) -> Optional[Task]:
-        """Get the current status of a task."""
         return self.tasks.get(task_id)
 
     def get_pending_task_count(self) -> int:
