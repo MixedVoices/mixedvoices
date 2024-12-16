@@ -5,9 +5,9 @@ from mixedvoices.core.project import Project
 from mixedvoices.core.task_manager import TaskManager
 from mixedvoices.utils import validate_name
 
-task_manager = TaskManager()
 os.makedirs(constants.ALL_PROJECTS_FOLDER, exist_ok=True)
 OPEN_AI_CLIENT = None
+TASK_MANAGER = TaskManager()
 
 
 def create_project(project_name):
