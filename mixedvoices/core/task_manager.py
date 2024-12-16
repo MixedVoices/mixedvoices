@@ -244,6 +244,9 @@ class TaskManager:
                     self.task_queue.task_done()
                 self.is_processing = False
 
+    async def add_task_async(self, task_type: str, **params) -> str:
+        return self.add_task(task_type, **params)
+
     def add_task(self, task_type: str, **params) -> str:
         """Add a new task to the queue."""
         import uuid
