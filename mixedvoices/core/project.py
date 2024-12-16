@@ -3,6 +3,7 @@ from typing import Any, Dict, Optional
 
 import mixedvoices.constants as constants
 from mixedvoices.core.version import Version
+from mixedvoices.utils import validate_name
 
 
 class Project:
@@ -20,6 +21,7 @@ class Project:
     def create_version(
         self, version_id: str, prompt: str, metadata: Optional[Dict[str, Any]] = None
     ):
+        validate_name(version_id, "version_id")
         if version_id in self.versions:
             raise ValueError(f"Version {version_id} already exists")
         version_path = os.path.join(self.project_folder, version_id)
