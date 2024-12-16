@@ -3,10 +3,10 @@ import os
 from typing import Any, Dict, Optional
 from uuid import uuid4
 
+import mixedvoices
 import mixedvoices.constants as constants
 from mixedvoices.core.recording import Recording
 from mixedvoices.core.step import Step
-from mixedvoices.core.task_manager import TaskManager
 from mixedvoices.utils import process_recording
 
 
@@ -22,7 +22,6 @@ class Version:
         self.project_id = project_id
         self.prompt = prompt
         self.metadata = metadata
-        self.task_manager = TaskManager()
         self.load_recordings()
         self.load_steps()
         self.create_flowchart()
@@ -108,7 +107,7 @@ class Version:
         if blocking:
             process_recording(recording, self)
         else:
-            task_id = self.task_manager.add_task(
+            task_id = mixedvoices.TASK_MANAGER.add_task(
                 "process_recording", recording=recording, version=self
             )
             recording.processing_task_id = task_id
