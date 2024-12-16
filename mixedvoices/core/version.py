@@ -109,7 +109,6 @@ class Version:
         if blocking:
             await process_recording_async(recording, self)
         else:
-            # Assuming task_manager has async support
             task_id = await self.task_manager.add_task_async(
                 "process_recording", recording=recording, version=self
             )
