@@ -1,21 +1,23 @@
-from typing import List
+import asyncio
+from typing import List, Tuple
 
-from openai import OpenAI
-from openai.types.audio import TranscriptionVerbose, TranscriptionWord
+from openai import AsyncOpenAI
+from openai.types.audio import TranscriptionWord
 
 import mixedvoices
 
 
-def transcribe_with_whisper(audio_path):
+async def transcribe_with_whisper_async(audio_path: str) -> Tuple[str, List]:
     # TODO: Remove long silences from script before
     # sending to whisper to speed up transcription and reduce cost
     # later adjust the time stamps according to silences
     if mixedvoices.OPEN_AI_CLIENT is None:
-        mixedvoices.OPEN_AI_CLIENT = OpenAI()
+        mixedvoices.OPEN_AI_CLIENT = AsyncOpenAI()
 
     client = mixedvoices.OPEN_AI_CLIENT
+
     with open(audio_path, "rb") as audio_file:
-        json_response: TranscriptionVerbose = client.audio.transcriptions.create(
+        json_response = await client.audio.transcriptions.create(
             model="whisper-1",
             file=audio_file,
             response_format="verbose_json",
@@ -66,7 +68,14 @@ def create_combined_transcript(
     return "\n".join(all_sentences)
 
 
-def transcribe_and_combine(user_audio_path, assistant_audio_path):
-    _, user_words = transcribe_with_whisper(user_audio_path)
-    _, assistant_words = transcribe_with_whisper(assistant_audio_path)
+async def transcribe_and_combine_async(
+    user_audio_path: str, assistant_audio_path: str
+) -> str:
+    user_task = transcribe_with_whisper_async(user_audio_path)
+    assistant_task = transcribe_with_whisper_async(assistant_audio_path)
+
+    (user_text, user_words), (assistant_text, assistant_words) = await asyncio.gather(
+        user_task, assistant_task
+    )
+
     return create_combined_transcript(user_words, assistant_words)

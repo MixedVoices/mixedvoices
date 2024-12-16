@@ -1,3 +1,4 @@
+import asyncio
 import json
 import os
 from typing import Any, Dict, Optional
@@ -7,7 +8,7 @@ import mixedvoices.constants as constants
 from mixedvoices.core.recording import Recording
 from mixedvoices.core.step import Step
 from mixedvoices.core.task_manager import TaskManager
-from mixedvoices.utils import process_recording
+from mixedvoices.utils import process_recording_async
 
 
 class Version:
@@ -73,7 +74,7 @@ class Version:
         for next_step in step.next_steps:
             self.recursively_assign_steps(next_step)
 
-    def add_recording(
+    async def add_recording_async(
         self,
         audio_path: str,
         is_successful: Optional[bool] = None,
@@ -106,14 +107,31 @@ class Version:
         recording.save()
 
         if blocking:
-            process_recording(recording, self)
+            await process_recording_async(recording, self)
         else:
-            task_id = self.task_manager.add_task(
+            # Assuming task_manager has async support
+            task_id = await self.task_manager.add_task_async(
                 "process_recording", recording=recording, version=self
             )
             recording.processing_task_id = task_id
 
         return recording
+
+    def add_recording(
+        self,
+        audio_path: str,
+        is_successful: Optional[bool] = None,
+        blocking: bool = False,
+        metadata: Optional[Dict[str, Any]] = None,
+    ):
+        return asyncio.run(
+            self.add_recording_async(
+                audio_path,
+                is_successful=is_successful,
+                blocking=blocking,
+                metadata=metadata,
+            )
+        )
 
     def save(self):
         save_path = os.path.join(self.path, "info.json")

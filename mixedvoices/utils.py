@@ -1,3 +1,4 @@
+import asyncio
 import os
 from concurrent import futures  # Preload this to avoid shutdown issues  # noqa: F401
 from typing import TYPE_CHECKING, List
@@ -8,7 +9,7 @@ import soundfile as sf
 
 from mixedvoices.core.step import Step
 from mixedvoices.processors.speech_analyzer import script_to_step_names
-from mixedvoices.processors.transcriber import transcribe_and_combine
+from mixedvoices.processors.transcriber import transcribe_and_combine_async
 
 if TYPE_CHECKING:
     from mixedvoices.core.recording import Recording
@@ -39,17 +40,20 @@ def separate_channels(input_file, output_folder):
     return left_path, right_path, duration
 
 
-def process_recording(recording: "Recording", version: "Version"):
+async def process_recording_async(recording: "Recording", version: "Version"):
     audio_path = recording.audio_path
     output_folder = os.path.join(version.path, "recordings", recording.recording_id)
+
     user_audio_path, assistant_audio_path, duration = separate_channels(
         audio_path, output_folder
     )
-    combined_transcript = transcribe_and_combine(user_audio_path, assistant_audio_path)
+
+    combined_transcript = await transcribe_and_combine_async(
+        user_audio_path, assistant_audio_path
+    )
     recording.combined_transcript = combined_transcript
     existing_step_names = [step.name for step in version.steps.values()]
     step_names = script_to_step_names(combined_transcript, existing_step_names)
-
     all_steps: List[Step] = []
     step_options = version.starting_steps
     previous_step = None
@@ -78,3 +82,7 @@ def process_recording(recording: "Recording", version: "Version"):
     recording.duration = duration
     recording.summary = recording.get_summary_from_metadata()
     recording.save()
+
+
+def process_recording(recording: "Recording", version: "Version"):
+    return asyncio.run(process_recording_async(recording, version))

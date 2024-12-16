@@ -259,9 +259,10 @@ async def add_recording(
                 with temp_path.open("wb") as buffer:
                     shutil.copyfileobj(file.file, buffer)
 
-                recording = version.add_recording(
+                recording = await version.add_recording_async(
                     str(temp_path), blocking=True, is_successful=is_successful
                 )
+
                 logger.info(f"Recording added successfully: {recording.recording_id}")
                 return {
                     "message": "Recording added successfully",
