@@ -78,3 +78,8 @@ def process_recording(recording: "Recording", version: "Version"):
     recording.duration = duration
     recording.summary = recording.get_summary_from_metadata()
     recording.save()
+
+
+def validate_name(name: str, identifier: str):
+    if not name.isalnum() and name not in ["-", "_"]:
+        raise ValueError(f"{identifier} can only contain a-z, A-Z, 0-9, -, _")
