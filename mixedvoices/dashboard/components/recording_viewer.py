@@ -44,7 +44,7 @@ class RecordingViewer:
         with header_cols[3]:
             st.markdown("**Summary**")
         with header_cols[4]:
-            st.markdown("**Status**")
+            st.markdown("**Task Status**")
         st.markdown(
             "<hr style='margin: 0; padding: 0; background-color: #333; height: 1px;'>",
             unsafe_allow_html=True,
@@ -85,6 +85,7 @@ class RecordingViewer:
             st.audio(audio_path, format="audio/wav")
         except Exception as e:
             st.error(f"Unable to load audio: {str(e)}")
+        st.write("Task Status:", recording["task_status"])
 
         st.write("Duration:", f"{round(recording['duration'], 1)} seconds")
 
@@ -114,11 +115,11 @@ class RecordingViewer:
         st.write("Created:", created_time)
         # st.write("Audio Path:", recording["audio_path"])
         if recording["is_successful"] is None:
-            st.write("Status:", "N/A")
+            st.write("Success:", "N/A")
         else:
             st.write(
-                "Status:",
-                "✅ Successful" if recording["is_successful"] else "❌ Failed",
+                "Success",
+                "✅" if recording["is_successful"] else "❌",
             )
         if recording.get("metadata"):
             source = recording["metadata"].get("source")
