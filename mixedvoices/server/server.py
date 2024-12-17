@@ -44,6 +44,7 @@ class VersionCreate(BaseModel):
 class RecordingUpload(BaseModel):
     url: Optional[str] = None
     is_successful: Optional[bool] = None
+    user_channel: Optional[str] = None
 
 
 # API Routes
@@ -240,6 +241,7 @@ async def add_recording(
     project_name: str,
     version_name: str,
     is_successful: Optional[bool] = None,
+    user_channel: Optional[str] = None,
     file: Optional[UploadFile] = None,
     recording_data: Optional[RecordingUpload] = None,
 ):
@@ -261,7 +263,10 @@ async def add_recording(
                     shutil.copyfileobj(file.file, buffer)
 
                 recording = version.add_recording(
-                    str(temp_path), blocking=False, is_successful=is_successful
+                    str(temp_path),
+                    blocking=False,
+                    is_successful=is_successful,
+                    user_channel=user_channel,
                 )
                 logger.info(f"Recording is being processed: {recording.recording_id}")
                 return {
