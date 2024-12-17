@@ -15,36 +15,47 @@ if TYPE_CHECKING:
     from mixedvoices.core.version import Version
 
 
-def separate_channels(input_file, output_folder):
+def separate_channels(input_file: str, output_folder: str, user_channel="left"):
     """
     Separate stereo audio file into channels and save them as individual files.
+
+    Parameters:
+        input_file (str): Path to input audio file
+        output_folder (str): Path to output folder
+        user_channel (str): Channel containing user audio ("left" or "right")
+
+    Returns:
+        tuple: Paths to the saved channel files and audio duration
     """
-    # TODO: give user the ability to specify which channel assistant is speaking in
+    if user_channel not in {"left", "right"}:
+        raise ValueError('user_channel must be either "left" or "right"')
     y, sr = librosa.load(input_file, mono=False)
     duration = librosa.get_duration(y=y, sr=sr)
 
     if len(y.shape) != 2 or y.shape[0] != 2:
         raise ValueError("Input must be a stereo audio file")
 
-    # Separate channels
     left_channel, right_channel = y[0], y[1]
 
-    left_filename = os.path.basename(input_file).split(".")[0] + "_left.wav"
-    right_filename = os.path.basename(input_file).split(".")[0] + "_right.wav"
+    user_filename = os.path.basename(input_file).split(".")[0] + "_user.wav"
+    assistant_filename = os.path.basename(input_file).split(".")[0] + "_assistant.wav"
+    user_path = os.path.join(output_folder, user_filename)
+    assistant_path = os.path.join(output_folder, assistant_filename)
+    if user_channel == "left":
+        sf.write(user_path, left_channel, sr)
+        sf.write(assistant_path, right_channel, sr)
+    else:
+        sf.write(user_path, right_channel, sr)
+        sf.write(assistant_path, left_channel, sr)
+    return user_path, assistant_path, duration
 
-    left_path = os.path.join(output_folder, left_filename)
-    right_path = os.path.join(output_folder, right_filename)
-    sf.write(left_path, left_channel, sr)
-    sf.write(right_path, right_channel, sr)
-    return left_path, right_path, duration
 
-
-def process_recording(recording: "Recording", version: "Version"):
+def process_recording(recording: "Recording", version: "Version", user_channel="left"):
     try:
         audio_path = recording.audio_path
         output_folder = os.path.join(version.path, "recordings", recording.recording_id)
         user_audio_path, assistant_audio_path, duration = separate_channels(
-            audio_path, output_folder
+            audio_path, output_folder, user_channel
         )
         combined_transcript = transcribe_and_combine(
             user_audio_path, assistant_audio_path

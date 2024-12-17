@@ -81,6 +81,7 @@ class Version:
         is_successful: Optional[bool] = None,
         blocking: bool = False,
         metadata: Optional[Dict[str, Any]] = None,
+        user_channel: str = "left",
     ):
         recording_id = str(uuid4())
         if not os.path.exists(audio_path):
@@ -108,10 +109,13 @@ class Version:
         recording.save()
 
         if blocking:
-            process_recording(recording, self)
+            process_recording(recording, self, user_channel)
         else:
             recording.processing_task_id = mixedvoices.TASK_MANAGER.add_task(
-                "process_recording", recording=recording, version=self
+                "process_recording",
+                recording=recording,
+                version=self,
+                user_channel=user_channel,
             )
 
         return recording
