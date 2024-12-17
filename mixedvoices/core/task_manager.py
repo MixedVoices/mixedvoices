@@ -129,6 +129,7 @@ class TaskManager:
                     "version_id": version.version_id,
                     "project_id": version.project_id,
                 },
+                "user_channel": params["user_channel"],
             }
         return params
 
@@ -142,6 +143,7 @@ class TaskManager:
 
             recording_data = params["recording_data"]
             version_data = params["version_data"]
+            user_channel = params["user_channel"]
 
             recording = Recording(
                 recording_id=recording_data["recording_id"],
@@ -157,7 +159,11 @@ class TaskManager:
                 version_id=version_data["version_id"],
             )
 
-            return {"recording": recording, "version": version}
+            return {
+                "recording": recording,
+                "version": version,
+                "user_channel": user_channel,
+            }
         return params
 
     def _save_task(self, task: Task):
