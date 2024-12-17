@@ -37,11 +37,14 @@ class Version:
         recordings_path = os.path.join(self.path, "recordings")
         recording_files = os.listdir(recordings_path)
         for recording_file in recording_files:
-            filename = os.path.basename(recording_file)
-            recording_id = os.path.splitext(filename)[0]
-            self.recordings[recording_id] = Recording.load(
-                self.project_id, self.version_id, recording_id
-            )
+            try:
+                filename = os.path.basename(recording_file)
+                recording_id = os.path.splitext(filename)[0]
+                self.recordings[recording_id] = Recording.load(
+                    self.project_id, self.version_id, recording_id
+                )
+            except Exception as e:
+                print(f"Error loading recording {recording_file}: {e}")
 
     def load_steps(self):
         self.steps: Dict[str, Step] = {}
@@ -107,10 +110,9 @@ class Version:
         if blocking:
             process_recording(recording, self)
         else:
-            task_id = mixedvoices.TASK_MANAGER.add_task(
+            recording.processing_task_id = mixedvoices.TASK_MANAGER.add_task(
                 "process_recording", recording=recording, version=self
             )
-            recording.processing_task_id = task_id
 
         return recording
 
