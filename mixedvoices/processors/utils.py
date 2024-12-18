@@ -1,5 +1,15 @@
 from typing import List, Optional
 
+from openai import OpenAI
+
+import mixedvoices
+
+
+def get_openai_client():
+    if mixedvoices.OPEN_AI_CLIENT is None:
+        mixedvoices.OPEN_AI_CLIENT = OpenAI()
+    return mixedvoices.OPEN_AI_CLIENT
+
 
 def stringify_subpoints_and_variants(standard_steps: List[dict]):
     for step in standard_steps:

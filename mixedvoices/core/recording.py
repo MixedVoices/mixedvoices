@@ -21,6 +21,8 @@ class Recording:
         duration: Optional[float] = None,
         processing_task_id: Optional[str] = None,
         metadata: Optional[Dict[str, Any]] = None,
+        llm_metrics: Optional[Dict[str, Any]] = None,
+        call_metrics: Optional[Dict[str, Any]] = None,
         task_status: Optional[str] = None,
     ):
         self.recording_id = recording_id
@@ -35,6 +37,8 @@ class Recording:
         self.duration = duration
         self.processing_task_id: Optional[str] = processing_task_id
         self.metadata = metadata or {}
+        self.llm_metrics = llm_metrics or {}
+        self.call_metrics = call_metrics or {}
         self.task_status = task_status or "Processing"
 
     @property
@@ -100,4 +104,6 @@ class Recording:
             "processing_task_id": self.processing_task_id,
             "metadata": self.metadata,
             "task_status": self.task_status,
+            "llm_metrics": self.llm_metrics,
+            "call_metrics": self.call_metrics,
         }

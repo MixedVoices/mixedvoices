@@ -9,7 +9,10 @@ import soundfile as sf
 
 import mixedvoices
 from mixedvoices.core.step import Step
+from mixedvoices.processors.call_metrics import get_call_metrics
+from mixedvoices.processors.llm_metrics import get_llm_metrics
 from mixedvoices.processors.speech_analyzer import script_to_step_names
+from mixedvoices.processors.summary import summarize_transcript
 from mixedvoices.processors.transcriber import (
     transcribe_and_combine_deepgram,
     transcribe_and_combine_openai,
@@ -60,20 +63,22 @@ def get_transcript_and_duration(audio_path, output_folder, user_channel="left"):
         user_audio_path, assistant_audio_path = separate_channels(
             y, sr, output_folder, user_channel
         )
-        combined_transcript = transcribe_and_combine_openai(
-            user_audio_path, assistant_audio_path
+        combined_transcript, user_words, assistant_words = (
+            transcribe_and_combine_openai(user_audio_path, assistant_audio_path)
         )
     elif mixedvoices.constants.TRANSCRIPTION_PROVIDER == "deepgram":
-        combined_transcript = transcribe_and_combine_deepgram(audio_path, user_channel)
-    return combined_transcript, duration
+        combined_transcript, user_words, assistant_words = (
+            transcribe_and_combine_deepgram(audio_path, user_channel)
+        )
+    return combined_transcript, user_words, assistant_words, duration
 
 
 def process_recording(recording: "Recording", version: "Version", user_channel="left"):
     try:
         audio_path = recording.audio_path
         output_folder = os.path.join(version.path, "recordings", recording.recording_id)
-        combined_transcript, duration = get_transcript_and_duration(
-            audio_path, output_folder, user_channel
+        combined_transcript, user_words, assistant_words, duration = (
+            get_transcript_and_duration(audio_path, output_folder, user_channel)
         )
         recording.combined_transcript = combined_transcript
         existing_step_names = [step.name for step in version.steps.values()]
@@ -105,7 +110,14 @@ def process_recording(recording: "Recording", version: "Version", user_channel="
             step.save()
         recording.step_ids = [step.step_id for step in all_steps]
         recording.duration = duration
-        recording.summary = recording.get_summary_from_metadata()
+        recording.summary = (
+            recording.get_summary_from_metadata()
+            or summarize_transcript(combined_transcript)
+        )
+        recording.llm_metrics = get_llm_metrics(combined_transcript, version.prompt)
+        recording.call_metrics = get_call_metrics(
+            audio_path, user_words, assistant_words, duration, user_channel
+        )
         recording.task_status = "COMPLETED"
         recording.save()
 
