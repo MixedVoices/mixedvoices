@@ -16,6 +16,14 @@ class RecordingViewer:
 
     def display_recordings_list(self, recordings: list) -> None:
         """Display list of recordings with details"""
+        # Header row with refresh button
+        header_row = st.columns([8, 1])
+        with header_row[0]:
+            st.write("## Recordings")
+        with header_row[1]:
+            if st.button("Refresh", help="Refresh recordings"):
+                st.rerun()
+
         # Create DataFrame and format dates
         display_df = pd.DataFrame(recordings)
         display_df["created_at"] = pd.to_datetime(
@@ -26,7 +34,7 @@ class RecordingViewer:
         )
 
         # Table header
-        header_cols = st.columns([3, 2, 1, 4])
+        header_cols = st.columns([3, 2, 1, 4, 1])
         with header_cols[0]:
             st.markdown("**Recording ID**")
         with header_cols[1]:
@@ -35,6 +43,8 @@ class RecordingViewer:
             st.markdown("**Success**")
         with header_cols[3]:
             st.markdown("**Summary**")
+        with header_cols[4]:
+            st.markdown("**Task Status**")
         st.markdown(
             "<hr style='margin: 0; padding: 0; background-color: #333; height: 1px;'>",
             unsafe_allow_html=True,
@@ -42,7 +52,7 @@ class RecordingViewer:
 
         # Table rows
         for idx, row in display_df.iterrows():
-            cols = st.columns([3, 2, 1, 4])
+            cols = st.columns([3, 2, 1, 4, 1])
             with cols[0]:
                 if st.button(
                     row["id"], key=f"id_btn_{row['id']}", help="Click to view details"
@@ -57,6 +67,8 @@ class RecordingViewer:
                     st.write("✅" if row["is_successful"] else "❌")
             with cols[3]:
                 st.write(row["summary"] or "None")
+            with cols[4]:
+                st.write(row["task_status"])
             st.markdown(
                 "<hr style='margin: 0; padding: 0; background-color: #333;"
                 " height: 1px;'>",
@@ -73,6 +85,7 @@ class RecordingViewer:
             st.audio(audio_path, format="audio/wav")
         except Exception as e:
             st.error(f"Unable to load audio: {str(e)}")
+        st.write("Task Status:", recording["task_status"])
 
         st.write("Duration:", f"{round(recording['duration'], 1)} seconds")
 
@@ -102,11 +115,11 @@ class RecordingViewer:
         st.write("Created:", created_time)
         # st.write("Audio Path:", recording["audio_path"])
         if recording["is_successful"] is None:
-            st.write("Status:", "N/A")
+            st.write("Success:", "N/A")
         else:
             st.write(
-                "Status:",
-                "✅ Successful" if recording["is_successful"] else "❌ Failed",
+                "Success",
+                "✅" if recording["is_successful"] else "❌",
             )
         if recording.get("metadata"):
             source = recording["metadata"].get("source")

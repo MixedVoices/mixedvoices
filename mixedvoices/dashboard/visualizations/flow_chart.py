@@ -94,50 +94,119 @@ class FlowChart:
         if not self.tree_roots:
             return
 
-        # Calculate the width needed for each tree
-        tree_widths = []
-        tree_nodes = []
-        max_level = 0
+        # First position each tree independently
+        for root_idx, root in enumerate(self.tree_roots):
+            self._position_single_tree(root, root_idx)
 
-        for root in self.tree_roots:
-            nodes = self._get_tree_nodes(root)
-            levels = self._calculate_node_levels(root)
-            max_level = max(max_level, max(levels.values()))
+        # Adjust tree spacing and center everything
+        self._adjust_tree_spacing()
+        self._center_entire_graph()
 
-            # Count nodes at each level
-            level_counts = defaultdict(int)
-            for node, level in levels.items():
-                level_counts[level] += 1
+    def _position_single_tree(self, root: str, tree_idx: int) -> None:
+        """Position nodes within a single tree using a modified hierarchical layout"""
+        tree_nodes = self._get_tree_nodes(root)
+        levels = self._calculate_node_levels(root)
 
-            tree_width = max(level_counts.values())
-            tree_widths.append(tree_width)
-            tree_nodes.append((nodes, levels))
+        # Group nodes by level
+        nodes_by_level = defaultdict(list)
+        for node in tree_nodes:
+            level = levels[node]
+            nodes_by_level[level].append(node)
 
-        # Calculate starting x-position for each tree
-        total_width = sum(tree_widths)
-        spacing = 2  # Space between trees
-        current_x = -(total_width + (len(tree_widths) - 1) * spacing) / 2
+        # Calculate x positions level by level
+        x_positions = {}
+        x_positions[root] = 0  # Start root at 0
 
-        # Position nodes for each tree
-        for tree_index, (nodes, levels) in enumerate(tree_nodes):
-            # Group nodes by level
-            nodes_by_level = defaultdict(list)
-            for node in nodes:
-                level = levels[node]
-                nodes_by_level[level].append(node)
+        # Process each level
+        max_level = max(levels.values())
+        for level in range(max_level + 1):
+            level_nodes = nodes_by_level[level]
 
-            # Calculate positions within this tree
-            tree_width = tree_widths[tree_index]
-            for level, level_nodes in nodes_by_level.items():
-                level_width = len(level_nodes)
-                for i, node in enumerate(level_nodes):
-                    x = current_x + (i - (level_width - 1) / 2)
-                    y = -level  # Negative to flow downward
-                    self.pos[node] = (x, y)
-                    self.node_tree_map[node] = tree_index
+            if level == 0:
+                continue  # Root already positioned
 
-            # Move to next tree position
-            current_x += tree_width + spacing
+            # First pass: position based on parents
+            for node in level_nodes:
+                parents = [p for p in self.parent_child[node] if p in tree_nodes]
+                if parents:
+                    parent_positions = [x_positions[p] for p in parents]
+                    x_positions[node] = sum(parent_positions) / len(parent_positions)
+                else:
+                    # Fallback for nodes with no positioned parents
+                    x_positions[node] = 0
+
+            # Second pass: ensure spacing
+            sorted_nodes = sorted(level_nodes, key=lambda n: x_positions[n])
+            min_spacing = 1.0
+
+            # Adjust positions to maintain minimum spacing
+            for i in range(1, len(sorted_nodes)):
+                curr_node = sorted_nodes[i]
+                prev_node = sorted_nodes[i - 1]
+                if x_positions[curr_node] - x_positions[prev_node] < min_spacing:
+                    x_positions[curr_node] = x_positions[prev_node] + min_spacing
+
+            # Center the level
+            if sorted_nodes:
+                level_min = x_positions[sorted_nodes[0]]
+                level_max = x_positions[sorted_nodes[-1]]
+                level_center = (level_min + level_max) / 2
+                offset = -level_center  # Center around 0
+                for node in sorted_nodes:
+                    x_positions[node] += offset
+
+        # Set final positions
+        for node in tree_nodes:
+            self.pos[node] = (x_positions[node], -levels[node])
+            self.node_tree_map[node] = tree_idx
+
+    def _adjust_tree_spacing(self) -> None:
+        """Adjust spacing between trees to prevent overlap"""
+        if len(self.tree_roots) <= 1:
+            return
+
+        # Calculate bounding box for each tree
+        tree_bounds = {}
+        for node, (x, y) in self.pos.items():
+            tree_idx = self.node_tree_map[node]
+            if tree_idx not in tree_bounds:
+                tree_bounds[tree_idx] = [float("inf"), float("-inf")]
+            tree_bounds[tree_idx][0] = min(tree_bounds[tree_idx][0], x)
+            tree_bounds[tree_idx][1] = max(tree_bounds[tree_idx][1], x)
+
+        # Adjust positions tree by tree
+        tree_spacing = 2
+        current_x = 0
+
+        for tree_idx in sorted(tree_bounds.keys()):
+            tree_width = tree_bounds[tree_idx][1] - tree_bounds[tree_idx][0]
+            tree_center = (tree_bounds[tree_idx][0] + tree_bounds[tree_idx][1]) / 2
+            offset = current_x - tree_center
+
+            # Move all nodes in this tree
+            for node, (x, y) in list(self.pos.items()):
+                if self.node_tree_map[node] == tree_idx:
+                    self.pos[node] = (x + offset, y)
+
+            current_x += tree_width + tree_spacing
+
+    def _center_entire_graph(self) -> None:
+        """Center the entire graph around (0,0)"""
+        if not self.pos:
+            return
+
+        # Calculate current bounds
+        min_x = min(x for x, y in self.pos.values())
+        max_x = max(x for x, y in self.pos.values())
+
+        # Calculate centering offset
+        center_x = (min_x + max_x) / 2
+        offset_x = -center_x
+
+        # Apply offset to all nodes
+        for node in self.pos:
+            x, y = self.pos[node]
+            self.pos[node] = (x + offset_x, y)
 
     def _create_edge_trace(self) -> go.Scatter:
         """Create edge trace for visualization with curved edges"""

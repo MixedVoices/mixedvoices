@@ -1,12 +1,20 @@
+import atexit
+import os
+from concurrent.futures import ThreadPoolExecutor
 from typing import List
 
+import requests
+from httpx import RequestError
 from openai import OpenAI
 from openai.types.audio import TranscriptionVerbose, TranscriptionWord
 
 import mixedvoices
 
+TRANSCRIPTION_POOL = ThreadPoolExecutor(max_workers=2, thread_name_prefix="Transcriber")
+atexit.register(lambda: TRANSCRIPTION_POOL.shutdown(wait=True))
 
-def transcribe_with_whisper(audio_path):
+
+def transcribe_with_openai(audio_path):
     # TODO: Remove long silences from script before
     # sending to whisper to speed up transcription and reduce cost
     # later adjust the time stamps according to silences
@@ -24,6 +32,65 @@ def transcribe_with_whisper(audio_path):
 
     assert json_response.words is not None
     return json_response.text, json_response.words
+
+
+def make_deepgram_request(audio_path):
+    api_key = os.getenv("DEEPGRAM_API_KEY")
+    if not api_key:
+        raise ValueError("DEEPGRAM_API_KEY environment variable not set")
+    url = "https://api.deepgram.com/v1/listen"
+    params = {
+        "utterances": "true",
+        "multichannel": "true",
+        "punctuate": "true",
+        "model": "nova-2",
+        "numerals": "true",
+    }
+    headers = {"Authorization": f"Token {api_key}", "Content-Type": "audio/wav"}
+
+    with open(audio_path, "rb") as audio_file:
+        try:
+            response = requests.post(
+                url, params=params, headers=headers, data=audio_file
+            )
+            response.raise_for_status()  # Raise exception for error status codes
+            return response.json()
+        except requests.exceptions.RequestException as e:
+            raise RequestError(f"API request failed: {str(e)}") from e
+
+
+def format_deepgram_words(words):
+    return [
+        TranscriptionWord(
+            word=word["punctuated_word"], start=word["start"], end=word["end"]
+        )
+        for word in words
+    ]
+
+
+def transcribe_with_deepgram(audio_path, user_channel="left"):
+    """
+    Transcribe audio using Deepgram API
+
+    Args:
+        audio_file_path (str): Path to the audio file to transcribe
+        user_channel (str): Channel containing user audio ("left" or "right")
+    """
+    response = make_deepgram_request(audio_path)
+
+    user_idx = 0 if user_channel == "left" else 1
+    assistant_idx = 1 - user_idx
+
+    user_response = response["results"]["channels"][user_idx]["alternatives"][0]
+    assistant_response = response["results"]["channels"][assistant_idx]["alternatives"][
+        0
+    ]
+    user_words = format_deepgram_words(user_response["words"])
+    user_transcript = user_response["transcript"]
+    assistant_words = format_deepgram_words(assistant_response["words"])
+    assistant_transcript = assistant_response["transcript"]
+
+    return user_transcript, user_words, assistant_transcript, assistant_words
 
 
 def create_combined_transcript(
@@ -66,7 +133,19 @@ def create_combined_transcript(
     return "\n".join(all_sentences)
 
 
-def transcribe_and_combine(user_audio_path, assistant_audio_path):
-    _, user_words = transcribe_with_whisper(user_audio_path)
-    _, assistant_words = transcribe_with_whisper(assistant_audio_path)
+def transcribe_and_combine_openai(user_audio_path, assistant_audio_path):
+    with TRANSCRIPTION_POOL as executor:
+        user_future = executor.submit(transcribe_with_openai, user_audio_path)
+        assistant_future = executor.submit(transcribe_with_openai, assistant_audio_path)
+
+        _, user_words = user_future.result()
+        _, assistant_words = assistant_future.result()
+
+    return create_combined_transcript(user_words, assistant_words)
+
+
+def transcribe_and_combine_deepgram(audio_path, user_channel="left"):
+    _, user_words, _, assistant_words = transcribe_with_deepgram(
+        audio_path, user_channel
+    )
     return create_combined_transcript(user_words, assistant_words)

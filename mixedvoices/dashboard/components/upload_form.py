@@ -23,7 +23,7 @@ class UploadForm:
             st.session_state.show_success = False
 
         if st.session_state.show_success:
-            st.success("Recording uploaded successfully!")
+            st.success("Recording queued for processing!")
             st.session_state.show_success = False
 
         # Create a container for loading status
@@ -40,11 +40,17 @@ class UploadForm:
             accept_multiple_files=False,
         )
 
-        # Add success status selection
         success_status = st.radio(
             "Call Status",
             options=["N/A", "Successful", "Unsuccessful"],
             key=f"success_status_{st.session_state.form_key}",
+            disabled=st.session_state.is_uploading,
+        )
+
+        user_channel = st.radio(
+            "User Audio Channel",
+            options=["left", "right"],
+            key=f"user_channel_{st.session_state.form_key}",
             disabled=st.session_state.is_uploading,
         )
 
@@ -79,7 +85,10 @@ class UploadForm:
                     response = self.api_client.post_data(
                         get_version_recordings_endpoint(self.project_id, self.version),
                         files=files,
-                        params={"is_successful": is_successful},
+                        params={
+                            "is_successful": is_successful,
+                            "user_channel": user_channel,
+                        },
                     )
 
                     if response:

@@ -44,6 +44,7 @@ class VersionCreate(BaseModel):
 class RecordingUpload(BaseModel):
     url: Optional[str] = None
     is_successful: Optional[bool] = None
+    user_channel: Optional[str] = None
 
 
 # API Routes
@@ -217,6 +218,7 @@ async def list_recordings(project_name: str, version_name: str):
                 "duration": recording.duration,
                 "is_successful": recording.is_successful,
                 "metadata": recording.metadata,
+                "task_status": recording.task_status,
             }
             for recording_id, recording in version.recordings.items()
         ]
@@ -239,6 +241,7 @@ async def add_recording(
     project_name: str,
     version_name: str,
     is_successful: Optional[bool] = None,
+    user_channel: Optional[str] = None,
     file: Optional[UploadFile] = None,
     recording_data: Optional[RecordingUpload] = None,
 ):
@@ -260,11 +263,14 @@ async def add_recording(
                     shutil.copyfileobj(file.file, buffer)
 
                 recording = version.add_recording(
-                    str(temp_path), blocking=True, is_successful=is_successful
+                    str(temp_path),
+                    blocking=False,
+                    is_successful=is_successful,
+                    user_channel=user_channel,
                 )
-                logger.info(f"Recording added successfully: {recording.recording_id}")
+                logger.info(f"Recording is being processed: {recording.recording_id}")
                 return {
-                    "message": "Recording added successfully",
+                    "message": "Recording is being processed",
                     "recording_id": recording.recording_id,
                 }
             finally:
@@ -293,7 +299,7 @@ async def add_recording(
 @app.get(
     "/api/projects/{project_name}/versions/{version_name}/steps/{step_id}/recordings"
 )
-async def get_step_recordings(project_name: str, version_name: str, step_id: str):
+async def list_step_recordings(project_name: str, version_name: str, step_id: str):
     """Get all recordings that reached a specific step"""
     try:
         project = mixedvoices.load_project(project_name)
@@ -314,6 +320,7 @@ async def get_step_recordings(project_name: str, version_name: str, step_id: str
                     "duration": recording.duration,
                     "is_successful": recording.is_successful,
                     "metadata": recording.metadata,
+                    "task_status": recording.task_status,
                 }
             )
 

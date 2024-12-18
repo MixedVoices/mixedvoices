@@ -63,12 +63,25 @@ class TaskManager:
         self.tasks: Dict[str, Task] = {}
         self.processing_thread = None
         self.monitor_thread = None
-        self.is_processing = False  # New flag to track active processing
-        self.tasks_folder = os.path.join(constants.ALL_PROJECTS_FOLDER, "_tasks")
-        os.makedirs(self.tasks_folder, exist_ok=True)
+        self.is_processing = False
+
+        self.tasks_root = os.path.join(constants.ALL_PROJECTS_FOLDER, "_tasks")
+        self.create_folders()
+
         self._load_pending_tasks()
         self._start_processing_thread()
         self._start_monitor_thread()
+
+    def create_folders(self):
+        self.folder_paths = {
+            TaskStatus.PENDING: os.path.join(self.tasks_root, "pending"),
+            TaskStatus.IN_PROGRESS: os.path.join(self.tasks_root, "in_progress"),
+            TaskStatus.COMPLETED: os.path.join(self.tasks_root, "completed"),
+            TaskStatus.FAILED: os.path.join(self.tasks_root, "failed"),
+        }
+
+        for folder in self.folder_paths.values():
+            os.makedirs(folder, exist_ok=True)
 
     def _monitor_status(self):
         main_thread = threading.main_thread()
@@ -116,6 +129,7 @@ class TaskManager:
                     "version_id": version.version_id,
                     "project_id": version.project_id,
                 },
+                "user_channel": params["user_channel"],
             }
         return params
 
@@ -129,6 +143,7 @@ class TaskManager:
 
             recording_data = params["recording_data"]
             version_data = params["version_data"]
+            user_channel = params["user_channel"]
 
             recording = Recording(
                 recording_id=recording_data["recording_id"],
@@ -144,44 +159,75 @@ class TaskManager:
                 version_id=version_data["version_id"],
             )
 
-            return {"recording": recording, "version": version}
+            return {
+                "recording": recording,
+                "version": version,
+                "user_channel": user_channel,
+            }
         return params
 
     def _save_task(self, task: Task):
-        """Save task state to disk."""
-        task_path = os.path.join(self.tasks_folder, f"{task.task_id}.json")
-        with open(task_path, "w") as f:
+        """Save task state to appropriate folder based on status."""
+        file_name = f"{task.task_id}.json"
+        for folder in self.folder_paths.values():
+            old_path = os.path.join(folder, file_name)
+            if os.path.exists(old_path):
+                os.remove(old_path)
+
+        new_path = os.path.join(self.folder_paths[task.status], file_name)
+        with open(new_path, "w") as f:
             json.dump(task.to_dict(), f)
 
     def _load_pending_tasks(self):
-        """Load any pending tasks from disk that weren't completed in previous runs."""
-        if not os.path.exists(self.tasks_folder):
-            return
-
-        for task_file in os.listdir(self.tasks_folder):
-            if not task_file.endswith(".json"):
+        """Load pending and in-progress tasks, ordered by creation time."""
+        pending_tasks = []
+        # Load from both pending and in-progress folders
+        for status in [TaskStatus.PENDING, TaskStatus.IN_PROGRESS]:
+            folder = self.folder_paths[status]
+            if not os.path.exists(folder):
                 continue
 
-            task_path = os.path.join(self.tasks_folder, task_file)
-            try:
-                with open(task_path, "r") as f:
-                    task_data = json.load(f)
-                    task = Task(
-                        task_id=task_data["task_id"],
-                        task_type=task_data["task_type"],
-                        params=task_data["params"],
-                        status=TaskStatus(task_data["status"]),
-                        created_at=task_data["created_at"],
-                        started_at=task_data.get("started_at"),
-                        completed_at=task_data.get("completed_at"),
-                        error=task_data.get("error"),
-                    )
+            for filename in os.listdir(folder):
+                if not filename.endswith(".json"):
+                    continue
 
-                    if task.status in [TaskStatus.PENDING, TaskStatus.IN_PROGRESS]:
-                        self.tasks[task.task_id] = task
-                        self.task_queue.put(task.task_id)
-            except Exception as e:
-                logging.error(f"Error loading task {task_file}: {str(e)}")
+                task = self._load_task_from_file(folder, filename)
+                if task:
+                    pending_tasks.append(task)
+
+        # Sort tasks by creation time
+        pending_tasks.sort(key=lambda x: x.created_at)
+
+        # Add to queue and dictionary
+        for task in pending_tasks:
+            # Reset in-progress tasks to pending
+            if task.status == TaskStatus.IN_PROGRESS:
+                task.status = TaskStatus.PENDING
+                task.started_at = None
+                self._save_task(task)
+
+            self.tasks[task.task_id] = task
+            self.task_queue.put(task.task_id)
+
+    def _load_task_from_file(self, folder_path: str, filename: str) -> Optional[Task]:
+        """Load a single task from a file."""
+        task_path = os.path.join(folder_path, filename)
+        try:
+            with open(task_path, "r") as f:
+                task_data = json.load(f)
+                return Task(
+                    task_id=task_data["task_id"],
+                    task_type=task_data["task_type"],
+                    params=task_data["params"],
+                    status=TaskStatus(task_data["status"]),
+                    created_at=task_data["created_at"],
+                    started_at=task_data.get("started_at"),
+                    completed_at=task_data.get("completed_at"),
+                    error=task_data.get("error"),
+                )
+        except Exception as e:
+            logging.error(f"Error loading task {filename}: {str(e)}")
+            return None
 
     def _start_processing_thread(self):
         """Start the processing thread if it's not already running."""
@@ -265,7 +311,6 @@ class TaskManager:
         return task_id
 
     def get_task(self, task_id: str) -> Optional[Task]:
-        """Get the current status of a task."""
         return self.tasks.get(task_id)
 
     def get_pending_task_count(self) -> int:

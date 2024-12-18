@@ -3,10 +3,10 @@ import os
 from typing import Any, Dict, Iterator, Optional
 from uuid import uuid4
 
+import mixedvoices
 import mixedvoices.constants as constants
 from mixedvoices.core.recording import Recording
 from mixedvoices.core.step import Step
-from mixedvoices.core.task_manager import TaskManager
 from mixedvoices.evaluation.eval_agent import EvalAgent
 from mixedvoices.evaluation.eval_case_generation import generate_eval_prompts
 from mixedvoices.utils import process_recording
@@ -24,7 +24,6 @@ class Version:
         self.project_id = project_id
         self.prompt = prompt
         self.metadata = metadata
-        self.task_manager = TaskManager()
         self.load_recordings()
         self.load_steps()
         self.create_flowchart()
@@ -41,11 +40,14 @@ class Version:
         recordings_path = os.path.join(self.path, "recordings")
         recording_files = os.listdir(recordings_path)
         for recording_file in recording_files:
-            filename = os.path.basename(recording_file)
-            recording_id = os.path.splitext(filename)[0]
-            self.recordings[recording_id] = Recording.load(
-                self.project_id, self.version_id, recording_id
-            )
+            try:
+                filename = os.path.basename(recording_file)
+                recording_id = os.path.splitext(filename)[0]
+                self.recordings[recording_id] = Recording.load(
+                    self.project_id, self.version_id, recording_id
+                )
+            except Exception as e:
+                print(f"Error loading recording {recording_file}: {e}")
 
     def load_steps(self):
         self.steps: Dict[str, Step] = {}
@@ -82,6 +84,7 @@ class Version:
         is_successful: Optional[bool] = None,
         blocking: bool = True,
         metadata: Optional[Dict[str, Any]] = None,
+        user_channel: str = "left",
     ):
         recording_id = str(uuid4())
         if not os.path.exists(audio_path):
@@ -109,12 +112,14 @@ class Version:
         recording.save()
 
         if blocking:
-            process_recording(recording, self)
+            process_recording(recording, self, user_channel)
         else:
-            task_id = self.task_manager.add_task(
-                "process_recording", recording=recording, version=self
+            recording.processing_task_id = mixedvoices.TASK_MANAGER.add_task(
+                "process_recording",
+                recording=recording,
+                version=self,
+                user_channel=user_channel,
             )
-            recording.processing_task_id = task_id
 
         return recording
 
