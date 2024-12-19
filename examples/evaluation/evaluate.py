@@ -1,7 +1,8 @@
 from time import sleep
 
+from agent import DentalAssistant, conversation_ended
+
 import mixedvoices as mv
-from tinkerers.agent import DentalAssistant, conversation_ended
 
 project = mv.load_project("dental_clinic")
 version = project.load_version("v1")
