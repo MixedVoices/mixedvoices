@@ -133,5 +133,6 @@ def process_recording(recording: "Recording", version: "Version", user_channel="
 
 
 def validate_name(name: str, identifier: str):
-    if not name.isalnum() and name not in ["-", "_"]:
+    allowed_special_chars = {"-", "_"}
+    if not all(c.isalnum() or c in allowed_special_chars for c in name):
         raise ValueError(f"{identifier} can only contain a-z, A-Z, 0-9, -, _")
