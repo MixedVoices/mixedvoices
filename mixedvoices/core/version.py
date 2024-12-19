@@ -18,11 +18,13 @@ class Version:
         version_id: str,
         project_id: str,
         prompt: str,
+        success_criteria: Optional[str] = None,
         metadata: Optional[Dict[str, Any]] = None,
     ):
         self.version_id = version_id
         self.project_id = project_id
         self.prompt = prompt
+        self.success_criteria = success_criteria
         self.metadata = metadata
         self.load_recordings()
         self.load_steps()
@@ -86,6 +88,10 @@ class Version:
         metadata: Optional[Dict[str, Any]] = None,
         user_channel: str = "left",
     ):
+        if self.success_criteria and is_successful is not None:
+            raise ValueError(
+                f"Version {self.version_id} already has success criteria set for automatic evaluation, cannot set is_successful"
+            )
         recording_id = str(uuid4())
         if not os.path.exists(audio_path):
             raise FileNotFoundError(f"Audio path {audio_path} does not exist")
@@ -126,7 +132,11 @@ class Version:
     def save(self):
         save_path = os.path.join(self.path, "info.json")
         with open(save_path, "w") as f:
-            d = {"prompt": self.prompt, "metadata": self.metadata}
+            d = {
+                "prompt": self.prompt,
+                "success_criteria": self.success_criteria,
+                "metadata": self.metadata,
+            }
             f.write(json.dumps(d))
 
     @classmethod
@@ -136,7 +146,10 @@ class Version:
         )
         with open(load_path, "r") as f:
             d = json.loads(f.read())
-        return cls(version_id, project_id, d["prompt"], d["metadata"])
+        prompt = d["prompt"]
+        success_criteria = d.get("success_criteria", None)
+        metadata = d.get("metadata", None)
+        return cls(version_id, project_id, prompt, success_criteria, metadata)
 
     def get_paths(self):
         # TODO implement

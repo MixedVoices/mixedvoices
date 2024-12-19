@@ -1,4 +1,15 @@
+import re
 from typing import List, Optional
+
+from openai import OpenAI
+
+import mixedvoices
+
+
+def get_openai_client():
+    if mixedvoices.OPEN_AI_CLIENT is None:
+        mixedvoices.OPEN_AI_CLIENT = OpenAI()
+    return mixedvoices.OPEN_AI_CLIENT
 
 
 def stringify_subpoints_and_variants(standard_steps: List[dict]):
@@ -101,3 +112,55 @@ def get_standard_steps_string(existing_step_names: Optional[List[str]] = None):
         f"{i + 1}. {step['name']}{step['subpoints'] or ''}{step['variants'] or ''}"
         for i, step in enumerate(standard_steps)
     )
+
+
+def parse_explanation_response(
+    response: str,
+) -> dict:
+    """
+    Parse the response string to extract explanation and success/score.
+
+    Args:
+        response: String response from the API
+
+    Returns:
+        dict: Parsed explanation and success/score
+
+    Raises:
+        ValueError: If parsing fails
+    """
+    explanation_match = re.search(
+        r"Explanation:\s*(.+?)(?=(?:\nSuccess:|\nScore:|$))",
+        response,
+        re.DOTALL | re.IGNORECASE,
+    )
+
+    success_match = re.search(r"Success:\s*(True|False|N/A)", response, re.IGNORECASE)
+    score_match = re.search(
+        r"Score:\s*((?:\d|10|N/A|PASS|FAIL))", response, re.IGNORECASE
+    )
+
+    if not explanation_match:
+        raise ValueError("Could not parse explanation")
+
+    explanation = explanation_match[1].strip()
+
+    if success_match:
+        success_value = success_match[1].strip()
+        if success_value not in ["TRUE", "FALSE", "N/A"]:
+            raise ValueError("Invalid success format")
+        mapping = {"TRUE": True, "FALSE": False, "N/A": None}
+        success_output = mapping[success_value]
+        return {"explanation": explanation, "success": success_output}
+    elif score_match:
+        score = score_match[1].strip()
+        if score in ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10"]:
+            score_output = int(score)
+        elif score in ["N/A", "FAIL", "PASS"]:
+            score_output = score
+        else:
+            raise ValueError("Invalid score format")
+
+        return {"explanation": explanation, "score": score_output}
+    else:
+        raise ValueError("Could not parse success or score")

@@ -5,23 +5,16 @@ from typing import List
 
 import requests
 from httpx import RequestError
-from openai import OpenAI
 from openai.types.audio import TranscriptionVerbose, TranscriptionWord
 
-import mixedvoices
+from mixedvoices.processors.utils import get_openai_client
 
 TRANSCRIPTION_POOL = ThreadPoolExecutor(max_workers=2, thread_name_prefix="Transcriber")
 atexit.register(lambda: TRANSCRIPTION_POOL.shutdown(wait=True))
 
 
 def transcribe_with_openai(audio_path):
-    # TODO: Remove long silences from script before
-    # sending to whisper to speed up transcription and reduce cost
-    # later adjust the time stamps according to silences
-    if mixedvoices.OPEN_AI_CLIENT is None:
-        mixedvoices.OPEN_AI_CLIENT = OpenAI()
-
-    client = mixedvoices.OPEN_AI_CLIENT
+    client = get_openai_client()
     with open(audio_path, "rb") as audio_file:
         json_response: TranscriptionVerbose = client.audio.transcriptions.create(
             model="whisper-1",
@@ -141,11 +134,19 @@ def transcribe_and_combine_openai(user_audio_path, assistant_audio_path):
         _, user_words = user_future.result()
         _, assistant_words = assistant_future.result()
 
-    return create_combined_transcript(user_words, assistant_words)
+    return (
+        create_combined_transcript(user_words, assistant_words),
+        user_words,
+        assistant_words,
+    )
 
 
 def transcribe_and_combine_deepgram(audio_path, user_channel="left"):
     _, user_words, _, assistant_words = transcribe_with_deepgram(
         audio_path, user_channel
     )
-    return create_combined_transcript(user_words, assistant_words)
+    return (
+        create_combined_transcript(user_words, assistant_words),
+        user_words,
+        assistant_words,
+    )
