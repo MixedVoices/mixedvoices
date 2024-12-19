@@ -160,6 +160,7 @@ def get_call_metrics(
     stereo_snr = calculate_stereo_snr(audio_file_path, user_channel)
     wpm = calculate_wpm(assistant_words)
     res = calculate_latency_and_interruptions(user_words, assistant_words, duration)
-    res["stereo_snr"] = stereo_snr
+    res["user_snr"] = stereo_snr[0]
+    res["assistant_snr"] = stereo_snr[1]
     res["wpm"] = wpm
     return res
