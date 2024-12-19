@@ -85,7 +85,14 @@ class RecordingViewer:
             st.audio(audio_path, format="audio/wav")
         except Exception as e:
             st.error(f"Unable to load audio: {str(e)}")
-        st.write("Task Status:", recording["task_status"])
+
+        created_time = datetime.fromtimestamp(
+            int(recording["created_at"]), tz=timezone.utc
+        ).strftime("%-I:%M%p %-d %B %Y")
+        st.write("Created:", created_time)
+
+        if recording["task_status"] != "COMPLETED":
+            st.write("Task Status:", recording["task_status"])
 
         st.write("Duration:", f"{round(recording['duration'], 1)} seconds")
 
@@ -109,21 +116,17 @@ class RecordingViewer:
 
         # col1 = st.columns(1)
         # with col1:
-        created_time = datetime.fromtimestamp(
-            int(recording["created_at"]), tz=timezone.utc
-        ).strftime("%-I:%M%p %-d %B %Y")
-        st.write("Created:", created_time)
         # st.write("Audio Path:", recording["audio_path"])
         if recording["is_successful"] is None:
             st.write("Success:", "N/A")
         else:
-            st.write(
-                "Success",
-                "✅" if recording["is_successful"] else "❌",
-            )
+            success_value = "✅" if recording["is_successful"] else "❌"
             if recording["success_explanation"]:
-                with st.expander("Success Explanation", expanded=False):
-                    st.write(recording["success_explanation"])
+                with st.expander(f"Success: {success_value}", expanded=False):
+                    st.write("Explanation:", recording["success_explanation"])
+            else:
+                st.write("Success:", success_value)
+
         if recording.get("llm_metrics"):
             with st.expander("LLM Metrics", expanded=False):
                 for metric, value in recording["llm_metrics"].items():
