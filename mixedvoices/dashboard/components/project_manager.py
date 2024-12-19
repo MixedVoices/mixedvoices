@@ -17,9 +17,10 @@ class ProjectManager:
 
     def _reset_form(self):
         """Reset all form-related session state"""
-        # Reset version name and prompt
+        # Reset version name, prompt, and success criteria
         st.session_state.version_name = ""
         st.session_state.prompt = ""
+        st.session_state.success_criteria = ""
 
         # Reset metadata pairs to a single empty pair
         st.session_state.metadata_pairs = [{"key": "", "value": ""}]
@@ -45,6 +46,8 @@ class ProjectManager:
             st.session_state.version_name = ""
         if "prompt" not in st.session_state:
             st.session_state.prompt = ""
+        if "success_criteria" not in st.session_state:
+            st.session_state.success_criteria = ""
         if "form_key" not in st.session_state:
             st.session_state.form_key = 0
         if "show_version_success" not in st.session_state:
@@ -84,6 +87,9 @@ class ProjectManager:
             current_prompt = st.session_state.get(
                 f"prompt_{st.session_state.form_key}", ""
             ).strip()
+            current_success_criteria = st.session_state.get(
+                f"success_criteria_{st.session_state.form_key}", ""
+            ).strip()
 
             if not current_version_name:
                 st.session_state.version_error = "Please enter a version name"
@@ -111,13 +117,20 @@ class ProjectManager:
                 if pair["key"].strip() and len(pair["key"]) <= MAX_KEY_LENGTH
             }
 
+            # Create request payload
+            payload = {
+                "name": current_version_name,
+                "prompt": current_prompt,
+                "metadata": metadata_dict,
+            }
+
+            # Only add success_criteria if it's not empty
+            if current_success_criteria:
+                payload["success_criteria"] = current_success_criteria
+
             response = self.api_client.post_data(
                 get_project_versions_endpoint(self.project_id),
-                {
-                    "name": current_version_name,
-                    "prompt": current_prompt,
-                    "metadata": metadata_dict,
-                },
+                payload,
             )
 
             if response.get("message"):
@@ -139,6 +152,13 @@ class ProjectManager:
             st.text_area(
                 "Prompt",
                 key=prompt_key,
+                on_change=handle_input_change,
+            )
+
+            success_criteria_key = f"success_criteria_{st.session_state.form_key}"
+            st.text_area(
+                "Success Criteria (Optional)",
+                key=success_criteria_key,
                 on_change=handle_input_change,
             )
 
@@ -246,6 +266,16 @@ class ProjectManager:
                         font-size: 0.95rem;
                         line-height: 1.4;
                     }
+                    .success-criteria-section {
+                        margin: 0.5rem 0;
+                        padding: 0.5rem 0;
+                        border-bottom: 1px solid #333;
+                    }
+                    .success-criteria-content {
+                        color: #B0B0B0;
+                        font-size: 0.95rem;
+                        line-height: 1.4;
+                    }
                     .metadata-section {
                         margin-top: 0.5rem;
                     }
@@ -280,6 +310,12 @@ class ProjectManager:
                         text-align: center;
                         padding: 1rem 0;
                     }
+                    .no-success-criteria {
+                        color: #666;
+                        font-style: italic;
+                        text-align: center;
+                        padding: 1rem 0;
+                    }
                 </style>
             """,
                 unsafe_allow_html=True,
@@ -291,15 +327,12 @@ class ProjectManager:
                     if i + j < len(versions):
                         version = versions[i + j]
                         with col:
-                            # Prepare prompt section
-                            prompt_content = f"""
-                            <div class="prompt-section">
-                                <div class="prompt-label">Prompt:</div>
-                                <div class="prompt-content">{html.escape(version.get('prompt', ''))}</div>
-                            </div>
-                            """
-
-                            metadata_content = ""
+                            if version["success_criteria"]:
+                                success_criteria_content = f'<div class="success-criteria-content">{html.escape(version["success_criteria"])}</div>'
+                            else:
+                                success_criteria_content = (
+                                    '<div class="no-success-criteria">Not set</div>'
+                                )
                             if version["metadata"]:
                                 metadata_items = []
                                 for key, value in version["metadata"].items():
@@ -341,6 +374,10 @@ class ProjectManager:
                                 <div class="prompt-section">
                                     <div class="prompt-label">Prompt:</div>
                                     <div class="prompt-content">{html.escape(version.get('prompt', ''))}</div>
+                                </div>
+                                <div class="success-criteria-section">
+                                    <div class="success-criteria-label">Success Criteria:</div>
+                                    {success_criteria_content}
                                 </div>
                                 <div class="metadata-section">
                                     <div class="metadata-label">Metadata:</div>

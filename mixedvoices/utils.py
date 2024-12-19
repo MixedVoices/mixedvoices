@@ -12,6 +12,7 @@ from mixedvoices.core.step import Step
 from mixedvoices.processors.call_metrics import get_call_metrics
 from mixedvoices.processors.llm_metrics import get_llm_metrics
 from mixedvoices.processors.speech_analyzer import script_to_step_names
+from mixedvoices.processors.success import get_success
 from mixedvoices.processors.summary import summarize_transcript
 from mixedvoices.processors.transcriber import (
     transcribe_and_combine_deepgram,
@@ -81,6 +82,10 @@ def process_recording(recording: "Recording", version: "Version", user_channel="
             get_transcript_and_duration(audio_path, output_folder, user_channel)
         )
         recording.combined_transcript = combined_transcript
+        if version.success_criteria:
+            response = get_success(combined_transcript, version.success_criteria)
+            recording.is_successful = response["success"]
+            recording.success_explanation = response["explanation"]
         existing_step_names = [step.name for step in version.steps.values()]
         step_names = script_to_step_names(combined_transcript, existing_step_names)
 

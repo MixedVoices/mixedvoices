@@ -38,6 +38,7 @@ app.add_middleware(
 class VersionCreate(BaseModel):
     name: str
     prompt: str
+    success_criteria: Optional[str]
     metadata: Dict[str, Any]
 
 
@@ -91,6 +92,7 @@ async def list_versions(project_name: str):
                     "name": version_id,
                     "prompt": version.prompt,
                     "metadata": version.metadata,
+                    "success_criteria": version.success_criteria,
                     "recording_count": len(version.recordings),
                 }
             )
@@ -114,6 +116,7 @@ async def create_version(project_name: str, version_data: VersionCreate):
         project.create_version(
             version_data.name,
             prompt=version_data.prompt,
+            success_criteria=version_data.success_criteria,
             metadata=version_data.metadata,
         )
         logger.info(
@@ -217,6 +220,7 @@ async def list_recordings(project_name: str, version_name: str):
                 "summary": recording.summary,
                 "duration": recording.duration,
                 "is_successful": recording.is_successful,
+                "success_explanation": recording.success_explanation,
                 "metadata": recording.metadata,
                 "task_status": recording.task_status,
                 "llm_metrics": recording.llm_metrics,
@@ -321,6 +325,7 @@ async def list_step_recordings(project_name: str, version_name: str, step_id: st
                     "summary": recording.summary,
                     "duration": recording.duration,
                     "is_successful": recording.is_successful,
+                    "success_explanation": recording.success_explanation,
                     "metadata": recording.metadata,
                     "task_status": recording.task_status,
                     "llm_metrics": recording.llm_metrics,

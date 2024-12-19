@@ -1,6 +1,4 @@
-import re
-
-from mixedvoices.processors.utils import get_openai_client
+from mixedvoices.processors.utils import get_openai_client, parse_explanation_response
 
 
 # TODO: add more metrics, define better
@@ -34,25 +32,7 @@ def analyze_metric(transcript: str, metric_name: str, metric_definition: str):
             ],
         )
 
-        full_response = response.choices[0].message.content
-        # print(full_response)
-        explanation_match = re.search(
-            r"Explanation:\s*(.+?)(?:\n|$)", full_response, re.DOTALL
-        )
-        score_match = re.search(r"Score:\s*((?:\d|10|N/A|PASS|FAIL))", full_response)
-
-        if not explanation_match or not score_match:
-            raise ValueError("Could not parse explanation or score")
-
-        explanation = explanation_match[1].strip()
-        score = score_match[1]
-
-        if score in ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10"]:
-            score = int(score)
-        elif score not in ["N/A", "FAIL", "PASS"]:
-            raise ValueError("Could not parse score")
-
-        return {"explanation": explanation, "score": score}
+        return parse_explanation_response(response.choices[0].message.content)
 
     except Exception as e:
         print(f"Error analyzing metric: {e}")

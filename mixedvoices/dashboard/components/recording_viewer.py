@@ -121,6 +121,9 @@ class RecordingViewer:
                 "Success",
                 "✅" if recording["is_successful"] else "❌",
             )
+            if recording["success_explanation"]:
+                with st.expander("Success Explanation", expanded=False):
+                    st.write(recording["success_explanation"])
         if recording.get("llm_metrics"):
             with st.expander("LLM Metrics", expanded=False):
                 for metric, value in recording["llm_metrics"].items():
