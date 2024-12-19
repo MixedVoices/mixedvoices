@@ -219,6 +219,8 @@ async def list_recordings(project_name: str, version_name: str):
                 "is_successful": recording.is_successful,
                 "metadata": recording.metadata,
                 "task_status": recording.task_status,
+                "llm_metrics": recording.llm_metrics,
+                "call_metrics": recording.call_metrics,
             }
             for recording_id, recording in version.recordings.items()
         ]
@@ -321,6 +323,8 @@ async def list_step_recordings(project_name: str, version_name: str, step_id: st
                     "is_successful": recording.is_successful,
                     "metadata": recording.metadata,
                     "task_status": recording.task_status,
+                    "llm_metrics": recording.llm_metrics,
+                    "call_metrics": recording.call_metrics,
                 }
             )
 

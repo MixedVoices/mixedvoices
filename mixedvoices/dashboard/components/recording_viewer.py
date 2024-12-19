@@ -121,6 +121,18 @@ class RecordingViewer:
                 "Success",
                 "✅" if recording["is_successful"] else "❌",
             )
+        if recording.get("llm_metrics"):
+            with st.expander("LLM Metrics", expanded=False):
+                for metric, value in recording["llm_metrics"].items():
+                    score = value["score"]
+                    explanation = value["explanation"]  # TODO: show explanation
+                    st.write(f"{metric}: {score}")
+
+        if recording.get("call_metrics"):
+            with st.expander("Call Metrics", expanded=False):
+                for metric, value in recording["call_metrics"].items():
+                    st.write(f"{metric}: {value}")
+
         if recording.get("metadata"):
             source = recording["metadata"].get("source")
             supported_sources = ["vapi"]
