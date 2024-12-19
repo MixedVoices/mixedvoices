@@ -147,10 +147,10 @@ def parse_explanation_response(
 
     if success_match:
         success_value = success_match[1].strip()
-        if success_value in ["TRUE", "FALSE", "N/A"]:
-            success_output = success_value
-        else:
+        if success_value not in ["TRUE", "FALSE", "N/A"]:
             raise ValueError("Invalid success format")
+        mapping = {"TRUE": True, "FALSE": False, "N/A": None}
+        success_output = mapping[success_value]
         return {"explanation": explanation, "success": success_output}
     elif score_match:
         score = score_match[1].strip()
