@@ -9,15 +9,14 @@ def analyze_metric(transcript: str, metric_name: str, metric_definition: str):
 
     Metric:
     {metric_definition}
-    Respond with an explanation of how the bot performed on the metric in 2-3 sentences, followed by score. 
-    DONT add blank lines between explanation and score.
+    Respond with short explanation of how the bot performed in MAXIMUM 2-3 sentences, followed by score. 
 
     >Format example
 
     Output:-
     Explanation: Lorem ipsum
     Score: 6
-    """
+    """  # noqa E501
 
     try:
         response = client.chat.completions.create(
@@ -25,7 +24,7 @@ def analyze_metric(transcript: str, metric_name: str, metric_definition: str):
             messages=[
                 {
                     "role": "system",
-                    "content": f"You're an expert at analyzing {metric_name} in transcripts",
+                    "content": f"You're an expert at analyzing {metric_name} in transcripts",  # noqa E501,
                 },
                 {"role": "user", "content": prompt},
                 {"role": "assistant", "content": "Output:-"},
@@ -57,7 +56,7 @@ def analyze_verbatim_repetition(transcript: str):
     Did the bot repeat itself verbatim when asked the same/similar question?
     Similar answers are not repetition.
     Scoring: FAIL if it repeated VERBATIM for any question, PASS if never repeated, N/A if didn't encounter similar questions.
-    """
+    """  # noqa E501
 
     return analyze_metric(transcript, metric_name, metric_definition)
 
@@ -66,19 +65,19 @@ def analyze_conciseness(transcript: str):
     metric_name = "Conciseness"
     metric_definition = """Did the bot concisely answe the questions/objections? Concise answers should be less than 50 words.
     Scoring: 0 to 10. 10 being the best.
-    """
+    """  # noqa E501
 
     return analyze_metric(transcript, metric_name, metric_definition)
 
 
 def analyze_hallucination(transcript: str, prompt: str):
     metric_name = "Hallucination"
-    metric_definition = """Does the bot answer any question with information that isn't present in the prompt?
+    metric_definition = f"""Does the bot answer any question with information that isn't present in the prompt?
     Scoring: FAIL if it hallucinated, PASS if it didn't hallucinate.
 
     Prompt:
     {prompt}
-    """
+    """  # noqa E501
 
     return analyze_metric(transcript, metric_name, metric_definition)
 
@@ -88,7 +87,7 @@ def analyze_context_awareness(transcript: str):
     metric_definition = """Does the bot maintain awareness of the context/information provided by user?
     The bot should make its answers contextual by acknowledging what the user said and customizing its responses.
     Scoring: FAIL if it loses context, PASS if it maintains context.
-    """
+    """  # noqa E501
 
     return analyze_metric(transcript, metric_name, metric_definition)
 
@@ -98,7 +97,7 @@ def analyze_scheduling(transcript: str):
     metric_definition = """Does the bot properly schedule appointments? 
     This includes asking for relevant information, figuring out date and time, and confirming with the user.
     Scoring: 0 to 10. 10 being the best. N/A if no scheduling is involved
-    """
+    """  # noqa E501
 
     return analyze_metric(transcript, metric_name, metric_definition)
 
