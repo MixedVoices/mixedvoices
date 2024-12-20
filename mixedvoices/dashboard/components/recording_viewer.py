@@ -36,16 +36,18 @@ class RecordingViewer:
         )
 
         # Table header
-        header_cols = st.columns([0.7, 1, 0.5, 2, 2])
+        header_cols = st.columns([0.7, 0.7, 0.7, 0.5, 1.5, 2])
         with header_cols[0]:
             st.markdown("**Recording ID**")
         with header_cols[1]:
-            st.markdown("**Created At**")
+            st.markdown("**Task Status**")
         with header_cols[2]:
-            st.markdown("**Success**")
+            st.markdown("**Created At**")
         with header_cols[3]:
-            st.markdown("**Summary**")
+            st.markdown("**Success**")
         with header_cols[4]:
+            st.markdown("**Summary**")
+        with header_cols[5]:
             st.markdown("**LLM Metrics**")
         st.markdown(
             "<hr style='margin: 0; padding: 0; background-color: #333; height: 1px;'>",
@@ -54,7 +56,7 @@ class RecordingViewer:
 
         # Table rows
         for idx, row in display_df.iterrows():
-            cols = st.columns([0.7, 1, 0.5, 2, 2])
+            cols = st.columns([0.7, 0.7, 0.7, 0.5, 1.5, 2])
             with cols[0]:
                 recording_id = row["id"][:7] + "..."
                 if st.button(
@@ -64,15 +66,17 @@ class RecordingViewer:
                 ):
                     self.show_recording_dialog(recordings[idx])
             with cols[1]:
-                st.write(row["created_at"])
+                st.write(row["task_status"])
             with cols[2]:
+                st.write(row["created_at"])
+            with cols[3]:
                 if row["is_successful"] is None:
                     st.write("N/A")
                 else:
                     st.write("✅" if row["is_successful"] else "❌")
-            with cols[3]:
-                st.write(row["summary"] or "None")
             with cols[4]:
+                st.write(row["summary"] or "None")
+            with cols[5]:
                 if recordings[idx].get("llm_metrics"):
                     llm_metrics_dict = recordings[idx]["llm_metrics"]
                     display_llm_metrics_preview(llm_metrics_dict)
