@@ -22,7 +22,7 @@ class Step:
         next_step_ids: Optional[list] = None,
         step_id: Optional[str] = None,
     ):
-        self.step_id = step_id or str(uuid4())
+        self.step_id = step_id or uuid4().hex
         self.name = name
         self.version_id = version_id
         self.project_id = project_id

@@ -9,6 +9,7 @@ from mixedvoices.core.recording import Recording
 from mixedvoices.core.step import Step
 from mixedvoices.evaluation.eval_agent import EvalAgent
 from mixedvoices.evaluation.eval_case_generation import generate_eval_prompts
+from mixedvoices.evaluation.evaluation_run import EvaluationRun
 from mixedvoices.utils import process_recording
 
 
@@ -20,16 +21,17 @@ class Version:
         prompt: str,
         success_criteria: Optional[str] = None,
         metadata: Optional[Dict[str, Any]] = None,
+        evaluation_runs: Optional[Dict[str, EvaluationRun]] = None,
     ):
         self.version_id = version_id
         self.project_id = project_id
         self.prompt = prompt
         self.success_criteria = success_criteria
         self.metadata = metadata
+        self.evaluation_runs = evaluation_runs or {}
         self.load_recordings()
         self.load_steps()
         self.create_flowchart()
-        self.analytics = []
 
     @property
     def path(self):
@@ -92,7 +94,7 @@ class Version:
             raise ValueError(
                 f"Version {self.version_id} already has success criteria set for automatic evaluation, cannot set is_successful"
             )
-        recording_id = str(uuid4())
+        recording_id = uuid4().hex
         if not os.path.exists(audio_path):
             raise FileNotFoundError(f"Audio path {audio_path} does not exist")
 
@@ -129,6 +131,9 @@ class Version:
 
         return recording
 
+    def get_evaluation_run_ids(self):
+        return list(self.evaluation_runs.keys())
+
     def save(self):
         save_path = os.path.join(self.path, "info.json")
         with open(save_path, "w") as f:
@@ -136,6 +141,7 @@ class Version:
                 "prompt": self.prompt,
                 "success_criteria": self.success_criteria,
                 "metadata": self.metadata,
+                "evaluation_run_ids": self.get_evaluation_run_ids(),
             }
             f.write(json.dumps(d))
 
@@ -149,7 +155,19 @@ class Version:
         prompt = d["prompt"]
         success_criteria = d.get("success_criteria", None)
         metadata = d.get("metadata", None)
-        return cls(version_id, project_id, prompt, success_criteria, metadata)
+        evaluation_run_ids = d.get("evaluation_run_ids", [])
+        evaluation_runs = {
+            run_id: EvaluationRun.load(project_id, version_id, run_id)
+            for run_id in evaluation_run_ids
+        }
+        return cls(
+            version_id,
+            project_id,
+            prompt,
+            success_criteria,
+            metadata,
+            evaluation_runs,
+        )
 
     def get_paths(self):
         # TODO implement
@@ -159,7 +177,7 @@ class Version:
         # TODO implement
         return []
 
-    def create_evaluator(
+    def create_evaluation_run(
         self,
         empathy: bool = True,
         verbatim_repetition: bool = True,
@@ -184,6 +202,18 @@ class Version:
         all_failure_reasons = self.get_failure_reasons()
         print("Generating Evaluation Prompts")
         prompts = generate_eval_prompts(self.prompt, all_failure_reasons, all_paths)
-        print(prompts)
-        for prompt in prompts:
-            yield EvalAgent(self, prompt, metrics_dict)
+        # print(prompts)
+
+        run_id = uuid4().hex
+        eval_run = EvaluationRun(
+            run_id,
+            self.project_id,
+            self.version_id,
+            self.prompt,
+            metrics_dict,
+            prompts,
+        )
+
+        self.evaluation_runs[run_id] = eval_run
+        self.save()
+        return iter(eval_run.eval_agents)

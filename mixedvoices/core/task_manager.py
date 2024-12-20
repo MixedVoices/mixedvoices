@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from enum import Enum
 from queue import Empty, Queue
 from typing import Any, Dict, Optional
+from uuid import uuid4
 
 import mixedvoices.constants as constants
 
@@ -292,9 +293,7 @@ class TaskManager:
 
     def add_task(self, task_type: str, **params) -> str:
         """Add a new task to the queue."""
-        import uuid
-
-        task_id = str(uuid.uuid4())
+        task_id = uuid4().hex
         serialized_params = self._serialize_task_params(task_type, params)
 
         task = Task(

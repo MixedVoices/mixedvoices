@@ -417,6 +417,51 @@ async def handle_webhook(
         raise HTTPException(status_code=500, detail=str(e)) from e
 
 
+@app.get("/api/projects/{project_name}/versions/{version_name}/eval_runs")
+async def list_eval_runs(project_name: str, version_name: str):
+    try:
+        project = mixedvoices.load_project(project_name)
+        version = project.load_version(version_name)
+        eval_runs = version.evaluation_runs
+        eval_data = []
+        for run_id in eval_runs:
+            eval_run = eval_runs[run_id]
+            eval_data.append(
+                {
+                    "run_id": run_id,
+                    "created_at": eval_run.created_at,
+                }
+            )
+        return {"eval_runs": eval_data}
+    except Exception as e:
+        logger.error(f"Error listing eval runs: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+@app.get("/api/projects/{project_name}/versions/{version_name}/eval_runs/{run_id}")
+async def get_eval_run(project_name: str, version_name: str, run_id: str):
+    try:
+        project = mixedvoices.load_project(project_name)
+        version = project.load_version(version_name)
+        eval_run = version.evaluation_runs[run_id]
+        agents = eval_run.eval_agents
+        agent_data = []
+        for agent in agents:
+            agent_data.append(
+                {
+                    "prompt": agent.eval_prompt,
+                    "end": agent.end,
+                    "transcript": agent.transcript,
+                    "scores": agent.scores,
+                }
+            )
+
+        return {"agents": agent_data}
+    except Exception as e:
+        logger.error(f"Error getting eval run: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
 def run_server(port: int = 7760):
     """Run the FastAPI server"""
     logger.info(f"Starting server on port {port}")
