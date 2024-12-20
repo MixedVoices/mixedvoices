@@ -113,7 +113,7 @@ def evaluation_details_page():
                 if agent.get("prompt"):
                     st.markdown("**Prompt:**")
                     st.text_area(
-                        "",
+                        "Prompt",
                         agent["prompt"],
                         height=200,
                         disabled=True,
