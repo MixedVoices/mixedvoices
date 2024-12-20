@@ -208,6 +208,9 @@ class Version:
 
     def create_evaluation_run(
         self,
+        test_cases_per_path: int = 2,
+        test_cases_per_failure_reason: int = 2,
+        total_test_cases_for_edge_scenarios: int = 4,
         empathy: bool = True,
         verbatim_repetition: bool = True,
         conciseness: bool = True,
@@ -230,7 +233,14 @@ class Version:
         all_paths = self.get_paths()
         all_failure_reasons = self.get_failure_reasons()
         print("Generating Evaluation Prompts")
-        prompts = generate_eval_prompts(self.prompt, all_failure_reasons, all_paths)
+        prompts = generate_eval_prompts(
+            self.prompt,
+            all_failure_reasons,
+            all_paths,
+            test_cases_per_path,
+            test_cases_per_failure_reason,
+            total_test_cases_for_edge_scenarios,
+        )
         # print(prompts)
 
         run_id = uuid4().hex

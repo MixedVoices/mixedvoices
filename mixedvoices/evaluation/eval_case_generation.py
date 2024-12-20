@@ -127,24 +127,18 @@ def generate_eval_prompts(
     agent_prompt: str,
     failure_reasons: List[str],
     new_paths: List[str],
+    test_cases_per_path: int,
+    test_cases_per_failure_reason: int,
+    total_test_cases_for_edge_scenarios: int,
 ):
-    failure_reasons = []
-    new_paths = [
-        "Greeting->Inquiry Handling->Set Appointment->Farewell",
-        "Greeting->Caller Complaint Handling->Farewell",
-    ]
-    # TODO: remove hard coded values and counts
-    testcases_per_path = 1
-    testcases_per_failure_reason = 1
-    testcases_for_edge_cases = 1
     new_path_prompts = generate_eval_prompts_for_new_paths(
-        agent_prompt, new_paths, testcases_per_path
+        agent_prompt, new_paths, test_cases_per_path
     )
     failure_prompts = generate_eval_prompts_for_failure_reasons(
-        agent_prompt, failure_reasons, testcases_per_failure_reason
+        agent_prompt, failure_reasons, test_cases_per_failure_reason
     )
     edge_case_prompts = generate_eval_prompts_for_edge_cases(
-        agent_prompt, testcases_for_edge_cases
+        agent_prompt, total_test_cases_for_edge_scenarios
     )
     return new_path_prompts + failure_prompts + edge_case_prompts
 
