@@ -2,7 +2,7 @@ import streamlit as st
 
 from mixedvoices.dashboard.api.client import APIClient
 from mixedvoices.dashboard.api.endpoints import get_eval_run_endpoint
-from mixedvoices.dashboard.utils import display_llm_metrics
+from mixedvoices.dashboard.utils import display_llm_metrics, display_llm_metrics_preview
 
 
 @st.dialog("Agent Details", width="large")
@@ -82,32 +82,8 @@ def evaluation_details_page():
             with preview_cols[1]:
                 if agent.get("scores"):
                     st.markdown("**LLM Metrics:**")
-                    score_cols = st.columns(2)
-                    for i, (metric, score_data) in enumerate(agent["scores"].items()):
-                        with score_cols[i % 2]:
-                            score = score_data["score"]
-                            if isinstance(score, (int, float)):
-                                formatted_score = f"{score}/10"
-                            else:
-                                formatted_score = str(score)
-
-                            if score == "PASS" or (
-                                isinstance(score, (int, float)) and score >= 7
-                            ):
-                                color = "green"
-                            elif score == "FAIL" or (
-                                isinstance(score, (int, float)) and score < 5
-                            ):
-                                color = "red"
-                            elif score == "NA":
-                                color = "gray"
-                            else:
-                                color = "orange"
-
-                            st.markdown(
-                                f"**{metric}:** <span style='color: {color}'>{formatted_score}</span>",
-                                unsafe_allow_html=True,
-                            )
+                    llm_metrics_dict = agent["scores"]
+                    display_llm_metrics_preview(llm_metrics_dict)
 
             if st.button("View Details", key=f"details_btn_{idx}"):
                 show_agent_details_dialog(agent, idx)

@@ -5,7 +5,7 @@ import streamlit as st
 from api.client import APIClient
 from api.endpoints import get_recording_flow_endpoint
 
-from mixedvoices.dashboard.utils import display_llm_metrics
+from mixedvoices.dashboard.utils import display_llm_metrics, display_llm_metrics_preview
 from mixedvoices.dashboard.visualizations.flow_chart import FlowChart
 
 
@@ -36,7 +36,7 @@ class RecordingViewer:
         )
 
         # Table header
-        header_cols = st.columns([0.7, 1, 0.5, 4, 0.7])
+        header_cols = st.columns([0.7, 1, 0.5, 2, 2])
         with header_cols[0]:
             st.markdown("**Recording ID**")
         with header_cols[1]:
@@ -46,7 +46,7 @@ class RecordingViewer:
         with header_cols[3]:
             st.markdown("**Summary**")
         with header_cols[4]:
-            st.markdown("**Task Status**")
+            st.markdown("**LLM Metrics**")
         st.markdown(
             "<hr style='margin: 0; padding: 0; background-color: #333; height: 1px;'>",
             unsafe_allow_html=True,
@@ -54,7 +54,7 @@ class RecordingViewer:
 
         # Table rows
         for idx, row in display_df.iterrows():
-            cols = st.columns([0.7, 1, 0.5, 4, 0.7])
+            cols = st.columns([0.7, 1, 0.5, 2, 2])
             with cols[0]:
                 recording_id = row["id"][:7] + "..."
                 if st.button(
@@ -73,7 +73,11 @@ class RecordingViewer:
             with cols[3]:
                 st.write(row["summary"] or "None")
             with cols[4]:
-                st.write(row["task_status"])
+                if recordings[idx].get("llm_metrics"):
+                    llm_metrics_dict = recordings[idx]["llm_metrics"]
+                    display_llm_metrics_preview(llm_metrics_dict)
+                else:
+                    st.write("No metrics")
             st.markdown(
                 "<hr style='margin: 0; padding: 0; background-color: #333;"
                 " height: 1px;'>",
