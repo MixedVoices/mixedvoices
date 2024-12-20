@@ -1,12 +1,17 @@
 import json
 import os
+import random
 from datetime import datetime
+from typing import TYPE_CHECKING, Type
 
 from openai import OpenAI
 
 import mixedvoices.constants as constants
 from mixedvoices.evaluation.utils import history_to_transcript
 from mixedvoices.processors.llm_metrics import get_llm_metrics
+
+if TYPE_CHECKING:
+    from mixedvoices import BaseAgent
 
 client = OpenAI()
 
@@ -42,12 +47,9 @@ class EvalAgent:
         self.scores = scores or None
         self.error = error or None
 
-    def respond(self, input, end=False):
+    def respond(self, input):
         if input:
             self.history.append({"role": "user", "content": input})
-        if end:
-            self.handle_conversation_end()
-            return
         messages = [self.get_system_prompt()] + self.history
         try:
             response = client.chat.completions.create(model=model, messages=messages)
@@ -63,6 +65,7 @@ class EvalAgent:
         self.scores = get_llm_metrics(
             self.transcript, self.prompt, **self.enabled_llm_metrics
         )
+        print(self.scores)
         self.save()
 
     def handle_exception(self, e):
@@ -117,8 +120,11 @@ class EvalAgent:
             agent_id,
             "info.json",
         )
-        with open(load_path, "r") as f:
-            d = json.loads(f.read())
+        try:
+            with open(load_path, "r") as f:
+                d = json.loads(f.read())
+        except FileNotFoundError:
+            return
 
         d.update(
             {
@@ -129,3 +135,22 @@ class EvalAgent:
             }
         )
         return cls(**d)
+
+    def evaluate(self, agent_class: Type["BaseAgent"]):
+        assistant = agent_class()
+
+        assistant_starts = assistant.starts_conversation
+
+        if assistant_starts is None:
+            assistant_starts = random.choice([True, False])
+
+        assistant_message = assistant.respond("") if assistant_starts else ""
+        # TODO: Add case when evaluator ends conversation
+        while 1:
+            if assistant.conversation_ended:
+                self.handle_conversation_end()
+                break
+            evaluator_message = self.respond(assistant_message)
+            assistant_message = assistant.respond(evaluator_message)
+            print(f"Evaluator: {evaluator_message}")
+            print(f"Assistant: {assistant_message}\n")

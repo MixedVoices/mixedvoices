@@ -1,13 +1,12 @@
 import json
 import os
-from typing import Any, Dict, Iterator, Optional
+from typing import Any, Dict, Optional
 from uuid import uuid4
 
 import mixedvoices
 import mixedvoices.constants as constants
 from mixedvoices.core.recording import Recording
 from mixedvoices.core.step import Step
-from mixedvoices.evaluation.eval_agent import EvalAgent
 from mixedvoices.evaluation.eval_case_generation import generate_eval_prompts
 from mixedvoices.evaluation.evaluation_run import EvaluationRun
 from mixedvoices.utils import process_recording
@@ -160,6 +159,7 @@ class Version:
             run_id: EvaluationRun.load(project_id, version_id, run_id)
             for run_id in evaluation_run_ids
         }
+        evaluation_runs = {k: v for k, v in evaluation_runs.items() if v}
         return cls(
             version_id,
             project_id,
@@ -187,7 +187,7 @@ class Version:
         scheduling: bool = True,
         adaptive_qa: bool = True,
         objection_handling: bool = True,
-    ) -> Iterator[EvalAgent]:
+    ) -> EvaluationRun:
         metrics_dict = {
             "empathy": empathy,
             "verbatim_repetition": verbatim_repetition,
@@ -216,4 +216,4 @@ class Version:
 
         self.evaluation_runs[run_id] = eval_run
         self.save()
-        return iter(eval_run.eval_agents)
+        return eval_run

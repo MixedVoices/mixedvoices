@@ -1,11 +1,14 @@
 import json
 import os
 import time
-from typing import List, Optional
+from typing import TYPE_CHECKING, List, Optional, Type
 from uuid import uuid4
 
 import mixedvoices.constants as constants
 from mixedvoices.evaluation.eval_agent import EvalAgent
+
+if TYPE_CHECKING:
+    from mixedvoices import BaseAgent
 
 
 class EvaluationRun:
@@ -52,8 +55,6 @@ class EvaluationRun:
         )
 
     def save(self):
-        for agent in self.eval_agents:
-            agent.save()
         os.makedirs(self.path, exist_ok=True)
         save_path = os.path.join(self.path, "info.json")
         with open(save_path, "w") as f:
@@ -76,14 +77,18 @@ class EvaluationRun:
             run_id,
             "info.json",
         )
-        with open(load_path, "r") as f:
-            d = json.loads(f.read())
+        try:
+            with open(load_path, "r") as f:
+                d = json.loads(f.read())
+        except FileNotFoundError:
+            return
 
         eval_agent_ids = d.pop("eval_agent_ids")
         eval_agents = [
             EvalAgent.load(project_id, version_id, run_id, agent_id)
             for agent_id in eval_agent_ids
         ]
+        eval_agents = [a for a in eval_agents if a]
         d.update(
             {
                 "project_id": project_id,
@@ -97,3 +102,8 @@ class EvaluationRun:
 
     def __iter__(self):
         yield from self.eval_agents
+
+    def evaluate(self, agent_class: Type["BaseAgent"]):
+        for eval_agent in self.eval_agents:
+            eval_agent.evaluate(agent_class)
+            self.save()

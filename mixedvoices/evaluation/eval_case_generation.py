@@ -134,9 +134,9 @@ def generate_eval_prompts(
         "Greeting->Caller Complaint Handling->Farewell",
     ]
     # TODO: remove hard coded values and counts
-    testcases_per_path = 2
-    testcases_per_failure_reason = 2
-    testcases_for_edge_cases = 4
+    testcases_per_path = 1
+    testcases_per_failure_reason = 1
+    testcases_for_edge_cases = 1
     new_path_prompts = generate_eval_prompts_for_new_paths(
         agent_prompt, new_paths, testcases_per_path
     )
