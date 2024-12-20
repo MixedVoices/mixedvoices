@@ -5,6 +5,7 @@ import streamlit as st
 from api.client import APIClient
 from api.endpoints import get_recording_flow_endpoint
 
+from mixedvoices.dashboard.utils import display_llm_metrics
 from mixedvoices.dashboard.visualizations.flow_chart import FlowChart
 
 
@@ -133,10 +134,7 @@ class RecordingViewer:
 
         if recording.get("llm_metrics"):
             with st.expander("LLM Metrics", expanded=False):
-                for metric, value in recording["llm_metrics"].items():
-                    score = value["score"]
-                    explanation = value["explanation"]  # TODO: show explanation
-                    st.write(f"{metric}: {score}")
+                display_llm_metrics(recording["llm_metrics"])
 
         if recording.get("call_metrics"):
             with st.expander("Call Metrics", expanded=False):

@@ -40,7 +40,7 @@ class EvaluationViewer:
         )
 
         # Table rows
-        for idx, row in display_df.iterrows():
+        for _, row in display_df.iterrows():
             cols = st.columns([3, 2])
             with cols[0]:
                 if st.button(
