@@ -1,6 +1,6 @@
 import json
 import os
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 from uuid import uuid4
 
 import mixedvoices
@@ -10,6 +10,24 @@ from mixedvoices.core.step import Step
 from mixedvoices.evaluation.eval_case_generation import generate_eval_prompts
 from mixedvoices.evaluation.evaluation_run import EvaluationRun
 from mixedvoices.utils import process_recording
+
+
+def dfs(
+    current_step: Step,
+    current_path: list[Step],
+    all_paths: List[str],
+):
+    current_path.append(current_step)
+
+    if not current_step.next_steps:  # leaf node => complete path
+        current_path_names = [step.name for step in current_path]
+        current_path_str = "->".join(current_path_names)
+        all_paths.append(current_path_str)
+    else:
+        for next_step in current_step.next_steps:
+            dfs(next_step, current_path, all_paths)
+
+    current_path.pop()  # Backtrack
 
 
 class Version:
@@ -170,8 +188,19 @@ class Version:
         )
 
     def get_paths(self):
-        # TODO implement
-        return []
+        """
+        Returns all possible paths through the conversation flow using DFS.
+        Each path is a list of Step objects representing a complete conversation path.
+
+        Returns:
+            List[str]: List of all possible paths through the conversation
+        """
+
+        all_paths = []
+        for start_step in self.starting_steps:
+            dfs(start_step, [], all_paths)
+
+        return all_paths
 
     def get_failure_reasons(self):
         # TODO implement
