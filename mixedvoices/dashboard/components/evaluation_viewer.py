@@ -4,6 +4,8 @@ import pandas as pd
 import streamlit as st
 from api.client import APIClient
 
+from mixedvoices.dashboard.api.endpoints import get_eval_run_endpoint
+
 
 class EvaluationViewer:
     def __init__(self, api_client: APIClient, project_id: str, version: str):
@@ -61,6 +63,11 @@ class EvaluationViewer:
     @st.dialog("Evaluation Details", width="large")
     def show_evaluation_dialog(self, eval_run: dict) -> None:
         """Show evaluation run details in a dialog"""
+        # Fetch detailed evaluation data
+        eval_details = self.api_client.fetch_data(
+            get_eval_run_endpoint(self.project_id, self.version, eval_run["run_id"])
+        )
+
         st.subheader(f"Evaluation ID: {eval_run['run_id']}")
 
         created_time = datetime.fromtimestamp(
@@ -68,15 +75,16 @@ class EvaluationViewer:
         ).strftime("%-I:%M%p %-d %B %Y")
         st.write("Created:", created_time)
 
-        if eval_run.get("agents"):
-            for idx, agent in enumerate(eval_run["agents"], 1):
-                with st.expander(f"Agent {idx}", expanded=True):
+        if eval_details and eval_details.get("agents"):
+            for idx, agent in enumerate(eval_details["agents"], 1):
+                with st.expander(f"Test {idx}", expanded=False):
                     if agent.get("prompt"):
                         st.text_area(
                             "Evaluation Prompt",
                             agent["prompt"],
                             height=100,
                             key=f"prompt_{eval_run['run_id']}_{idx}",
+                            disabled=True,
                         )
 
                     if agent.get("transcript"):
@@ -85,12 +93,46 @@ class EvaluationViewer:
                             agent["transcript"],
                             height=200,
                             key=f"transcript_{eval_run['run_id']}_{idx}",
+                            disabled=True,
                         )
 
                     if agent.get("scores"):
                         st.write("### Scores")
-                        for metric, score in agent["scores"].items():
-                            st.write(f"{metric}: {score}")
+                        for metric, score_data in agent["scores"].items():
+                            score = score_data["score"]
+                            # Format score based on type
+                            if isinstance(score, (int, float)):
+                                formatted_score = f"{score}/10"
+                            else:
+                                formatted_score = str(
+                                    score
+                                )  # Handle PASS/FAIL/N/A cases
+
+                            # Create score display with color coding
+                            if score == "PASS" or (
+                                isinstance(score, (int, float)) and score >= 7
+                            ):
+                                score_html = f'<span style="color: green">{formatted_score}</span>'
+                            elif score == "FAIL" or (
+                                isinstance(score, (int, float)) and score < 5
+                            ):
+                                score_html = (
+                                    f'<span style="color: red">{formatted_score}</span>'
+                                )
+                            elif score == "N/A":
+                                score_html = f'<span style="color: gray">{formatted_score}</span>'
+                            else:
+                                score_html = f'<span style="color: orange">{formatted_score}</span>'
+
+                            st.markdown(
+                                f"**{metric}:** {score_html}", unsafe_allow_html=True
+                            )
+                            st.markdown(
+                                f"*{score_data.get('explanation', 'No explanation provided')}*"
+                            )
+                            st.markdown("---")
 
                     if agent.get("end"):
-                        st.write("End Status:", agent["end"])
+                        st.write(f"End Status: {agent['end']}")
+        else:
+            st.error("Failed to load evaluation details")
