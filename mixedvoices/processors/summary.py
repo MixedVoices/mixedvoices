@@ -8,9 +8,10 @@ def summarize_transcript(transcript: str):
         messages=[
             {
                 "role": "system",
-                "content": "You're an expert at summarizing transcripts into short paragraphs. Keep the summary under 200 words.",
+                "content": "You're an expert note taker. "
+                "Summarize given transcript in 2-3 sentences.",
             },
-            {"role": "user", "content": transcript},
+            {"role": "user", "content": f"Transcript: {transcript}"},
             {"role": "assistant", "content": "Summary:-"},
         ],
     )
