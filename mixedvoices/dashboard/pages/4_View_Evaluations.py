@@ -5,6 +5,7 @@ from mixedvoices.dashboard.api.endpoints import (
     get_eval_runs_endpoint,
 )
 from mixedvoices.dashboard.components.evaluation_viewer import EvaluationViewer
+from mixedvoices.dashboard.utils import disable_evaluation_details_page
 
 
 def evaluations_page():
@@ -14,6 +15,7 @@ def evaluations_page():
     ):
         st.switch_page("Home.py")
         return
+    disable_evaluation_details_page()
 
     st.title(f"{st.session_state.current_project} | {st.session_state.current_version}")
 
