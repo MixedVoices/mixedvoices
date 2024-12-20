@@ -450,9 +450,11 @@ async def get_eval_run(project_name: str, version_name: str, run_id: str):
             agent_data.append(
                 {
                     "prompt": agent.eval_prompt,
-                    "end": agent.end,
+                    "started": agent.started,
+                    "ended": agent.ended,
                     "transcript": agent.transcript,
                     "scores": agent.scores,
+                    "error": agent.error,
                 }
             )
 

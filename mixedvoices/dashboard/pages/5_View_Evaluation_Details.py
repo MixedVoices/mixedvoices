@@ -8,9 +8,12 @@ from mixedvoices.dashboard.api.endpoints import get_eval_run_endpoint
 def show_agent_details_dialog(agent: dict, agent_number: int) -> None:
     st.subheader(f"Agent {agent_number} Details")
 
-    if agent.get("end") is False:
-        st.markdown(f"**Status:** {agent['end']}")
-
+    if agent.get("error"):
+        st.markdown("**Status:** Failed")
+        st.markdown(f"{agent['error']}")
+    if agent.get("ended") is False:
+        status = "In Progress" if agent.get("started") else "Not Started"
+        st.markdown(f"**Status:** {status}")
     if agent.get("transcript"):
         st.markdown("### Transcript")
         st.text_area(

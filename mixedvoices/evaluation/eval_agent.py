@@ -29,7 +29,8 @@ class EvalAgent:
         eval_prompt,
         enabled_llm_metrics,
         history=None,
-        end=None,
+        started=False,
+        ended=False,
         transcript=None,
         scores=None,
         error=None,
@@ -42,12 +43,16 @@ class EvalAgent:
         self.eval_prompt = eval_prompt
         self.enabled_llm_metrics = enabled_llm_metrics
         self.history = history or []
-        self.end = end or False
+        self.started = started
+        self.ended = ended
         self.transcript = transcript or None
         self.scores = scores or None
         self.error = error or None
 
     def respond(self, input):
+        if not self.started:
+            self.started = True
+            self.save()
         if input:
             self.history.append({"role": "user", "content": input})
         messages = [self.get_system_prompt()] + self.history
@@ -57,21 +62,24 @@ class EvalAgent:
             self.history.append({"role": "assistant", "content": assistant_response})
             return assistant_response
         except Exception as e:
-            self.handle_exception(e)
+            self.handle_exception(e, "Conversation")
 
     def handle_conversation_end(self):
-        self.end = True
+        self.ended = True
         self.transcript = history_to_transcript(self.history)
-        self.scores = get_llm_metrics(
-            self.transcript, self.prompt, **self.enabled_llm_metrics
-        )
-        print(self.scores)
-        self.save()
+        try:
+            self.scores = get_llm_metrics(
+                self.transcript, self.prompt, **self.enabled_llm_metrics
+            )
+            print(self.scores)
+            self.save()
+        except Exception as e:
+            self.handle_exception(e, "Metric Calculation")
 
-    def handle_exception(self, e):
-        self.error = str(e)
-        self.end = True
-        self.transcript = history_to_transcript(self.history)
+    def handle_exception(self, e, source):
+        self.error = f"Error Source: {source} \nError: {str(e)}"
+        self.ended = True
+        self.transcript = self.transcript or history_to_transcript(self.history)
         self.save()
 
     def get_system_prompt(self):
@@ -101,7 +109,8 @@ class EvalAgent:
                 "eval_prompt": self.eval_prompt,
                 "enabled_llm_metrics": self.enabled_llm_metrics,
                 "history": self.history,
-                "end": self.end,
+                "started": self.started,
+                "ended": self.ended,
                 "transcript": self.transcript,
                 "scores": self.scores,
                 "error": self.error,
