@@ -18,7 +18,7 @@ prompt = """You are a voice assistant for Locoto's Dental, a dental office locat
     - Don't use emojis.
     """
 
-project = mv.create_project("dental_clinic2")
+project = mv.create_project("dental_clinic")
 version = project.create_version("v1", prompt=prompt)
 version.add_recording("/Users/abhinavtuli/Documents/MixedVoices/data/call1.wav")
 version.add_recording("/Users/abhinavtuli/Documents/MixedVoices/data/call2.wav")

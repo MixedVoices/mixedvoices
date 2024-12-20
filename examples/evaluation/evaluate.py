@@ -1,30 +1,39 @@
-from time import sleep
-
-from agent import DentalAssistant, conversation_ended
+from agent import DentalAssistant
 
 import mixedvoices as mv
+from mixedvoices import BaseAgent
+
+
+def check_conversation_ended(assistant_message):
+    return (
+        "bye" in assistant_message.lower()
+        or "see you" in assistant_message.lower()
+        or "see ya" in assistant_message.lower()
+        or "catch you" in assistant_message.lower()
+        or "talk to you" in assistant_message.lower()
+    )
+
+
+class DentalAgent(BaseAgent):
+    def __init__(self):
+        self.assistant = DentalAssistant(mode="text")
+        self.has_conversation_ended = False
+
+    def respond(self, input_text: str) -> str:
+        response = self.assistant.get_assistant_response(input_text)
+        self.has_conversation_ended = check_conversation_ended(response)
+        return response
+
+    @property
+    def conversation_ended(self):
+        return self.has_conversation_ended
+
+    @property
+    def starts_conversation(self):
+        return None
+
 
 project = mv.load_project("dental_clinic")
 version = project.load_version("v1")
 evaluator = version.create_evaluation_run()
-
-
-for i, eval_agent in enumerate(evaluator):
-    text_assistant = DentalAssistant(mode="text")
-    conversation = text_assistant.conversation_loop()
-    next(conversation)
-    assistant_message = ""
-    print("----------------")
-    print("Starting test case", i)
-    print("Evaluator Prompt: ", eval_agent.eval_prompt)
-    while 1:
-        if conversation_ended(assistant_message):
-            scores = eval_agent.respond(assistant_message, end=True)
-            print(scores)
-            break
-        evaluator_message = eval_agent.respond(assistant_message)
-        _, assistant_message = conversation.send(evaluator_message)
-        print(f"Evaluator: {evaluator_message}")
-        print(f"Assistant: {assistant_message}\n")
-
-    sleep(5)
+evaluator.evaluate(DentalAgent)

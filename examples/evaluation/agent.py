@@ -64,14 +64,6 @@ class DentalAssistant:
         }
         self.path = "./data/call1.wav"
 
-    def process_message(self, message: str) -> str:
-        """
-        Process a single message and return the assistant's response.
-        This is the core method for programmatic text mode.
-        """
-        response = self.get_assistant_response(message)
-        return response
-
     def conversation_loop(self) -> Generator[Tuple[str, str], str, None]:
         """
         Generator that yields (user_message, assistant_response) tuples.
@@ -79,7 +71,7 @@ class DentalAssistant:
         """
         user_message = yield
         while user_message is not None:
-            response = self.process_message(user_message)
+            response = self.get_assistant_response(user_message)
             user_message = yield (user_message, response)
 
     def segment_text_by_sentence(self, text: str) -> List[str]:
@@ -238,7 +230,7 @@ class DentalAssistant:
             self.run_cli_mode()
         else:  # text mode
             # In text mode, we don't automatically start a loop
-            # Instead, the user should use process_message() or conversation_loop()
+            # Instead, the user should use get_assistant_response() or conversation_loop()
             pass
 
     def get_combined_transcript(self):
@@ -262,7 +254,7 @@ if __name__ == "__main__":
     # assistant_text = DentalAssistant(mode='text')
 
     # Simple single message processing
-    # response = assistant_text.process_message("What are your office hours?")
+    # response = assistant_text.get_assistant_response("What are your office hours?")
     # print(f"Response: {response}")
     # exit()
 
