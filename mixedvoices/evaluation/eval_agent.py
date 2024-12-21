@@ -18,6 +18,7 @@ client = OpenAI()
 model = "gpt-4o"
 
 
+# TODO: Better logging and better model management throughout
 class EvalAgent:
     def __init__(
         self,
@@ -54,15 +55,23 @@ class EvalAgent:
             self.started = True
             self.save()
         if input:
-            self.history.append({"role": "user", "content": input})
+            self.add_user_message(input)
         messages = [self.get_system_prompt()] + self.history
         try:
             response = client.chat.completions.create(model=model, messages=messages)
             assistant_response = response.choices[0].message.content
-            self.history.append({"role": "assistant", "content": assistant_response})
+            self.add_assistant_message(assistant_response)
             return assistant_response
         except Exception as e:
             self.handle_exception(e, "Conversation")
+
+    def add_user_message(self, message):
+        self.history.append({"role": "user", "content": message})
+        print(f"Assistant: {message}\n")  # Here user is REAL agent
+
+    def add_assistant_message(self, message):
+        self.history.append({"role": "assistant", "content": message})
+        print(f"Evaluator: {message}")  # Here assistant is EVAL agent
 
     def handle_conversation_end(self):
         self.ended = True
@@ -86,6 +95,8 @@ class EvalAgent:
         return {
             "role": "system",
             "content": f"{self.eval_prompt}"
+            "\nWhen conversation is complete, along with final response, return HANGUP to end."
+            "\nEg: Have a good day. HANGUP"
             f"\nDate/time: {datetime.now().strftime('%I%p, %a, %d %b').lower().lstrip('0')}."
             "\nKeep responses short, under 20 words.",
         }
@@ -147,21 +158,24 @@ class EvalAgent:
         )
         return cls(**d)
 
+    @property
+    def conversation_ended(self):
+        return "HANGUP" in self.history[-1]["content"]
+
     def evaluate(self, agent_class: Type["BaseAgent"]):
         assistant = agent_class()
-
         assistant_starts = assistant.starts_conversation
-
         if assistant_starts is None:
             assistant_starts = random.choice([True, False])
 
         assistant_message = assistant.respond("") if assistant_starts else ""
-        # TODO: Add case when evaluator ends conversation
         while 1:
-            if assistant.conversation_ended:
-                self.handle_conversation_end()
-                break
             evaluator_message = self.respond(assistant_message)
+            if self.conversation_ended:
+                break
             assistant_message = assistant.respond(evaluator_message)
-            print(f"Evaluator: {evaluator_message}")
-            print(f"Assistant: {assistant_message}\n")
+            if assistant.conversation_ended:
+                self.add_user_message(assistant_message)
+                break
+
+        self.handle_conversation_end()
