@@ -7,7 +7,7 @@ import mixedvoices
 import mixedvoices.constants as constants
 from mixedvoices.core.recording import Recording
 from mixedvoices.core.step import Step
-from mixedvoices.evaluation.eval_case_generation import generate_eval_prompts
+from mixedvoices.evaluation.eval_case_generation import get_eval_prompts
 from mixedvoices.evaluation.evaluation_run import EvaluationRun
 from mixedvoices.utils import process_recording
 
@@ -233,7 +233,7 @@ class Version:
         all_paths = self.get_paths()
         all_failure_reasons = self.get_failure_reasons()
         print("Generating Evaluation Prompts")
-        prompts = generate_eval_prompts(
+        prompts = get_eval_prompts(
             self.prompt,
             all_failure_reasons,
             all_paths,

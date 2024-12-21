@@ -83,12 +83,11 @@ class EvalAgent:
         self.save()
 
     def get_system_prompt(self):
-        # TODO: this is local time on server
         return {
             "role": "system",
             "content": f"{self.eval_prompt}"
-            f"\nCurrent date and time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}."
-            "\nYou will start by greeting. Keep your response short, under 20 words.",
+            f"\nDate/time: {datetime.now().strftime('%I%p, %a, %d %b').lower().lstrip('0')}."
+            "\nKeep responses short, under 20 words.",
         }
 
     @property
