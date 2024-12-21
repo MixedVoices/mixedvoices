@@ -112,7 +112,7 @@ class DentalAssistant:
         messages.extend(self.conversation_memory)
 
         chat_completion = self.openai_client.chat.completions.create(
-            model="gpt-4o", messages=messages
+            model="gpt-4o-mini", messages=messages
         )
         response = chat_completion.choices[0].message.content.strip()
         self.conversation_memory.append({"role": "assistant", "content": response})
