@@ -67,6 +67,7 @@ class Recording:
             return summary
 
     def get_combined_transcript_from_metadata(self):
+        # TODO: expose transcript in api instead
         combined_transcript = self.metadata.get("transcript", {})
         if combined_transcript:
             return combined_transcript

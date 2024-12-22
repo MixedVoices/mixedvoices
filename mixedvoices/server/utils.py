@@ -2,9 +2,9 @@ def process_vapi_webhook(webhook_data):
     message_data = webhook_data["message"]
     return {
         "source": "vapi",
+        "transcript": message_data["transcript"],
         "call_info": {
             "messages": message_data["messages"],
-            "transcript": message_data["transcript"],
             "stereo_recording_url": message_data["stereoRecordingUrl"],
             "recording_url": message_data["recordingUrl"],
             "started_at": message_data["startedAt"],
