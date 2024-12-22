@@ -241,8 +241,6 @@ class Version:
             test_cases_per_failure_reason,
             total_test_cases_for_edge_scenarios,
         )
-        # print(prompts)
-
         run_id = uuid4().hex
         eval_run = EvaluationRun(
             run_id,
