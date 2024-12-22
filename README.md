@@ -46,7 +46,7 @@ export OPENAI_API_KEY='your-api-key'
 
 ## Quick Start
 
-### Using Python API
+### Using Python API to analyze recordings
 ```python
 import mixedvoices as mv
 
@@ -64,11 +64,36 @@ version = project.create_version(
 # or load an existing version
 version = project.load_version("v1")
 
-# Add recording to analyze, by default this is non blocking and runs on a separate thread
+# Add recording to analyze, by default this is blocking and may take a few seconds
 version.add_recording("path/to/recording.wav", is_successful=True)
 
-# run in blocking mode
-version.add_recording("path/to/recording2.wav", blocking=True, is_successful=False)
+# run in non blocking mode in a separate thread
+version.add_recording("path/to/recording2.wav", blocking=False, is_successful=False)
+```
+
+### Using Python API to run simulations to evaluate agent
+```python
+import mixedvoices as mv
+
+# create a new class that inherits from `BaseAgent`. Must implement respond and starts_conversation
+class ReceptionistAgent(mv.BaseAgent):
+    def __init__(self):
+        self.assistant = ReceptionistAssistant(model="gpt-4o")
+
+    def respond(self, input_text: str) -> Tuple[str, bool]:
+        response = self.assistant.get_assistant_response(input_text)
+        has_conversation_ended = check_conversation_ended(response)
+        return response, has_conversation_ended
+
+    @property
+    def starts_conversation(self):
+        return True
+
+
+project = mv.load_project("receptionist")
+version = project.load_version("v1")
+evaluator = version.create_evaluation_run()
+evaluator.evaluate(DentalAgent) # can specify which metrics to measure
 ```
 
 ### Using Dashboard
@@ -148,7 +173,6 @@ Please report security vulnerabilities to security@mixedvoices.ai -->
 
 ## Roadmap
 - [ ] Unit Tests
-- [ ] Async recording analysis
 - [ ] Support other APIs and Open Source LLMs
 - [ ] Team collaboration features
 - [ ] Custom analytics plugins
