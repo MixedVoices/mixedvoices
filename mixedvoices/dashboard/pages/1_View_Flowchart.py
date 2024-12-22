@@ -7,6 +7,21 @@ from mixedvoices.dashboard.utils import disable_evaluation_details_page
 from mixedvoices.dashboard.visualizations.flow_chart import FlowChart
 
 
+def get_path_to_node(flow_data: dict, target_node_id: str) -> list:
+    """Calculate path to node using previous_node_id"""
+    nodes_map = {step["id"]: step for step in flow_data["steps"]}
+    path = []
+    current_node_id = target_node_id
+    while current_node_id:
+        current_node = nodes_map.get(current_node_id)
+        if current_node:
+            path.append(current_node["name"])
+            current_node_id = current_node.get("previous_step_id")
+        else:
+            break
+    return list(reversed(path))
+
+
 def flow_page():
     if (
         "current_project" not in st.session_state
