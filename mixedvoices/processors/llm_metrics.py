@@ -1,4 +1,5 @@
-from mixedvoices.processors.utils import get_openai_client, parse_explanation_response
+from mixedvoices.processors.utils import parse_explanation_response
+from mixedvoices.utils import get_openai_client
 
 
 # TODO: add more metrics, define better
@@ -7,17 +8,15 @@ def analyze_metric(transcript: str, metric_name: str, metric_definition: str):
     prompt = f"""Transcript:
     {transcript}
 
+    Respond with short 1 line explanation of how the bot performed on {metric_name}, followed by score. 
     Metric:
     {metric_definition}
-    Respond with an explanation of how the bot performed on the metric in 2-3 sentences, followed by score. 
-    DONT add blank lines between explanation and score.
-
     >Format example
 
     Output:-
     Explanation: Lorem ipsum
     Score: 6
-    """
+    """  # noqa E501
 
     try:
         response = client.chat.completions.create(
@@ -25,7 +24,7 @@ def analyze_metric(transcript: str, metric_name: str, metric_definition: str):
             messages=[
                 {
                     "role": "system",
-                    "content": f"You're an expert at analyzing {metric_name} in transcripts",
+                    "content": "You're an expert at analyzing transcripts",  # noqa E501,
                 },
                 {"role": "user", "content": prompt},
                 {"role": "assistant", "content": "Output:-"},
@@ -45,8 +44,7 @@ def analyze_empathy(transcript: str):
       Empathy includes answering a question by acknowledging what user said,
       empathising by relating to their pain, repeating some of the user's words
       back to make them feel heard before answering a question.
-
-      Scoring: 0 to 10
+      Scoring: 0 to 10. 10 being the best.
     """
 
     return analyze_metric(transcript, metric_name, metric_definition)
@@ -58,7 +56,7 @@ def analyze_verbatim_repetition(transcript: str):
     Did the bot repeat itself verbatim when asked the same/similar question?
     Similar answers are not repetition.
     Scoring: FAIL if it repeated VERBATIM for any question, PASS if never repeated, N/A if didn't encounter similar questions.
-    """
+    """  # noqa E501
 
     return analyze_metric(transcript, metric_name, metric_definition)
 
@@ -66,20 +64,20 @@ def analyze_verbatim_repetition(transcript: str):
 def analyze_conciseness(transcript: str):
     metric_name = "Conciseness"
     metric_definition = """Did the bot concisely answe the questions/objections? Concise answers should be less than 50 words.
-    Scoring: 0 to 10
-    """
+    Scoring: 0 to 10. 10 being the best.
+    """  # noqa E501
 
     return analyze_metric(transcript, metric_name, metric_definition)
 
 
 def analyze_hallucination(transcript: str, prompt: str):
     metric_name = "Hallucination"
-    metric_definition = """Does the bot answer any question with information that isn't present in the prompt?
+    metric_definition = f"""Does the bot answer any question with information that isn't present in the prompt?
     Scoring: FAIL if it hallucinated, PASS if it didn't hallucinate.
 
     Prompt:
     {prompt}
-    """
+    """  # noqa E501
 
     return analyze_metric(transcript, metric_name, metric_definition)
 
@@ -89,7 +87,7 @@ def analyze_context_awareness(transcript: str):
     metric_definition = """Does the bot maintain awareness of the context/information provided by user?
     The bot should make its answers contextual by acknowledging what the user said and customizing its responses.
     Scoring: FAIL if it loses context, PASS if it maintains context.
-    """
+    """  # noqa E501
 
     return analyze_metric(transcript, metric_name, metric_definition)
 
@@ -98,8 +96,8 @@ def analyze_scheduling(transcript: str):
     metric_name = "Scheduling"
     metric_definition = """Does the bot properly schedule appointments? 
     This includes asking for relevant information, figuring out date and time, and confirming with the user.
-    Scoring: 0 to 10. N/A if no scheduling is involved
-    """
+    Scoring: 0 to 10. 10 being the best. N/A if no scheduling is involved
+    """  # noqa E501
 
     return analyze_metric(transcript, metric_name, metric_definition)
 
@@ -108,7 +106,7 @@ def analyze_adaptive_qa(transcript: str):
     metric_name = "Adaptive QA"
     metric_definition = """Does the bot only ask questions related to the current topic?
     Also, it shouldn't ask a question that has already been answered by the user.
-    Scoring: 0 to 10
+    Scoring: 0 to 10. 10 being the best.
     """
 
     return analyze_metric(transcript, metric_name, metric_definition)
@@ -118,7 +116,7 @@ def analyze_objection_handling(transcript: str):
     metric_name = "Objection Handling"
     metric_definition = """
     Does the bot acknowledge objections, relate to the user's concern in a way that sympathizes with their pain, and offer relevant solutions?
-    Bad examples: The bot skips acknowledging the concern, uses generic sales language without empathizing, or offers an irrelevant or off-topic response.
+    Bad examples i.e. low scores: The bot skips acknowledging the concern, uses generic sales language without empathizing, or offers an irrelevant or off-topic response.
     Scoring: 0 to 10
     """  # noqa E501
 

@@ -3,6 +3,7 @@ from streamlit_plotly_events import plotly_events
 
 from mixedvoices.dashboard.api.client import APIClient
 from mixedvoices.dashboard.api.endpoints import get_version_flow_endpoint
+from mixedvoices.dashboard.utils import disable_evaluation_details_page
 from mixedvoices.dashboard.visualizations.flow_chart import FlowChart
 
 
@@ -28,6 +29,8 @@ def flow_page():
     ):
         st.switch_page("Home.py")
         return
+
+    disable_evaluation_details_page()
 
     st.title(f"{st.session_state.current_project} | {st.session_state.current_version}")
 

@@ -56,11 +56,10 @@ project = mv.create_project("receptionist")
 # or load existing project
 project = mv.load_project("receptionist")
 
-# Create a version with metadata
-version = project.create_version("v1", metadata={
-    "prompt": "You are a friendly receptionist.",
-    "silence_threshold": 0.1
-})
+# Create a version with prompt and metadata (optional)
+version = project.create_version(
+    "v1", prompt="You are a friendly receptionist", metadata={"silence_threshold": 0.1}
+)
 
 # or load an existing version
 version = project.load_version("v1")

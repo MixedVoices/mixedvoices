@@ -5,6 +5,7 @@ import streamlit as st
 from api.client import APIClient
 from api.endpoints import get_recording_flow_endpoint
 
+from mixedvoices.dashboard.utils import display_llm_metrics, display_llm_metrics_preview
 from mixedvoices.dashboard.visualizations.flow_chart import FlowChart
 
 
@@ -26,25 +27,28 @@ class RecordingViewer:
 
         # Create DataFrame and format dates
         display_df = pd.DataFrame(recordings)
+        local_tz = datetime.now().astimezone().tzinfo
         display_df["created_at"] = pd.to_datetime(
             display_df["created_at"], unit="s", utc=True
-        )
+        ).dt.tz_convert(local_tz)
         display_df["created_at"] = display_df["created_at"].dt.strftime(
-            "%-I:%M%p %-d %B %Y"
+            "%-I:%M%p %-d %b %y"
         )
 
         # Table header
-        header_cols = st.columns([3, 2, 1, 4, 1])
+        header_cols = st.columns([0.7, 0.7, 0.7, 0.5, 1.5, 2])
         with header_cols[0]:
             st.markdown("**Recording ID**")
         with header_cols[1]:
-            st.markdown("**Created At**")
-        with header_cols[2]:
-            st.markdown("**Success**")
-        with header_cols[3]:
-            st.markdown("**Summary**")
-        with header_cols[4]:
             st.markdown("**Task Status**")
+        with header_cols[2]:
+            st.markdown("**Created At**")
+        with header_cols[3]:
+            st.markdown("**Success**")
+        with header_cols[4]:
+            st.markdown("**Summary**")
+        with header_cols[5]:
+            st.markdown("**LLM Metrics**")
         st.markdown(
             "<hr style='margin: 0; padding: 0; background-color: #333; height: 1px;'>",
             unsafe_allow_html=True,
@@ -52,23 +56,32 @@ class RecordingViewer:
 
         # Table rows
         for idx, row in display_df.iterrows():
-            cols = st.columns([3, 2, 1, 4, 1])
+            cols = st.columns([0.7, 0.7, 0.7, 0.5, 1.5, 2])
             with cols[0]:
+                recording_id = row["id"][:7] + "..."
                 if st.button(
-                    row["id"], key=f"id_btn_{row['id']}", help="Click to view details"
+                    recording_id,
+                    key=f"id_btn_{row['id']}",
+                    help="Click to view details",
                 ):
                     self.show_recording_dialog(recordings[idx])
             with cols[1]:
-                st.write(row["created_at"])
+                st.write(row["task_status"])
             with cols[2]:
+                st.write(row["created_at"])
+            with cols[3]:
                 if row["is_successful"] is None:
                     st.write("N/A")
                 else:
                     st.write("✅" if row["is_successful"] else "❌")
-            with cols[3]:
-                st.write(row["summary"] or "None")
             with cols[4]:
-                st.write(row["task_status"])
+                st.write(row["summary"] or "None")
+            with cols[5]:
+                if recordings[idx].get("llm_metrics"):
+                    llm_metrics_dict = recordings[idx]["llm_metrics"]
+                    display_llm_metrics_preview(llm_metrics_dict)
+                else:
+                    st.write("No metrics")
             st.markdown(
                 "<hr style='margin: 0; padding: 0; background-color: #333;"
                 " height: 1px;'>",
@@ -129,10 +142,7 @@ class RecordingViewer:
 
         if recording.get("llm_metrics"):
             with st.expander("LLM Metrics", expanded=False):
-                for metric, value in recording["llm_metrics"].items():
-                    score = value["score"]
-                    explanation = value["explanation"]  # TODO: show explanation
-                    st.write(f"{metric}: {score}")
+                display_llm_metrics(recording["llm_metrics"])
 
         if recording.get("call_metrics"):
             with st.expander("Call Metrics", expanded=False):

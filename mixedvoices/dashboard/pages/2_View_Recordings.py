@@ -6,6 +6,7 @@ from mixedvoices.dashboard.api.endpoints import (
     get_version_recordings_endpoint,
 )
 from mixedvoices.dashboard.components.recording_viewer import RecordingViewer
+from mixedvoices.dashboard.utils import disable_evaluation_details_page
 from mixedvoices.dashboard.visualizations.metrics import display_metrics
 
 
@@ -16,6 +17,7 @@ def recordings_page():
     ):
         st.switch_page("Home.py")
         return
+    disable_evaluation_details_page()
 
     st.title(f"{st.session_state.current_project} | {st.session_state.current_version}")
 

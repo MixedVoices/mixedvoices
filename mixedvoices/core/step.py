@@ -1,9 +1,9 @@
-import json
 import os
 from typing import TYPE_CHECKING, Optional
 from uuid import uuid4
 
 import mixedvoices.constants as constants
+from mixedvoices.utils import load_json, save_json
 
 if TYPE_CHECKING:
     from mixedvoices.core.recording import Recording
@@ -22,7 +22,7 @@ class Step:
         next_step_ids: Optional[list] = None,
         step_id: Optional[str] = None,
     ):
-        self.step_id = step_id or str(uuid4())
+        self.step_id = step_id or uuid4().hex
         self.name = name
         self.version_id = version_id
         self.project_id = project_id
@@ -56,16 +56,15 @@ class Step:
     def save(self):
         os.makedirs(self.path, exist_ok=True)
         save_path = os.path.join(self.path, "info.json")
-        with open(save_path, "w") as f:
-            d = {
-                "name": self.name,
-                "recording_ids": self.recording_ids,
-                "number_of_terminated_calls": self.number_of_terminated_calls,
-                "number_of_failed_calls": self.number_of_failed_calls,
-                "previous_step_id": self.previous_step_id,
-                "next_step_ids": self.next_step_ids,
-            }
-            f.write(json.dumps(d))
+        d = {
+            "name": self.name,
+            "recording_ids": self.recording_ids,
+            "number_of_terminated_calls": self.number_of_terminated_calls,
+            "number_of_failed_calls": self.number_of_failed_calls,
+            "previous_step_id": self.previous_step_id,
+            "next_step_ids": self.next_step_ids,
+        }
+        save_json(d, save_path)
 
     @classmethod
     def load(cls, project_id, version_id, step_id):
@@ -77,9 +76,7 @@ class Step:
             step_id,
             "info.json",
         )
-        with open(path, "r") as f:
-            d = json.loads(f.read())
-
+        d = load_json(path)
         d.update(
             {"project_id": project_id, "version_id": version_id, "step_id": step_id}
         )

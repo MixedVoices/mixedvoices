@@ -1,16 +1,6 @@
 import re
 from typing import List, Optional
 
-from openai import OpenAI
-
-import mixedvoices
-
-
-def get_openai_client():
-    if mixedvoices.OPEN_AI_CLIENT is None:
-        mixedvoices.OPEN_AI_CLIENT = OpenAI()
-    return mixedvoices.OPEN_AI_CLIENT
-
 
 def stringify_subpoints_and_variants(standard_steps: List[dict]):
     for step in standard_steps:
@@ -136,9 +126,7 @@ def parse_explanation_response(
     )
 
     success_match = re.search(r"Success:\s*(True|False|N/A)", response, re.IGNORECASE)
-    score_match = re.search(
-        r"Score:\s*((?:\d|10|N/A|PASS|FAIL))", response, re.IGNORECASE
-    )
+    score_match = re.search(r"Score:\s*(10|\d|N/A|PASS|FAIL)", response, re.IGNORECASE)
 
     if not explanation_match:
         raise ValueError("Could not parse explanation")

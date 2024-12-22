@@ -1,6 +1,7 @@
 from typing import List, Optional
 
-from mixedvoices.processors.utils import get_openai_client, get_standard_steps_string
+from mixedvoices.processors.utils import get_standard_steps_string
+from mixedvoices.utils import get_openai_client
 
 
 def script_to_step_names(
