@@ -38,6 +38,7 @@ app.add_middleware(
 class VersionCreate(BaseModel):
     name: str
     prompt: str
+    success_criteria: Optional[str]
     metadata: Dict[str, Any]
 
 
@@ -91,6 +92,7 @@ async def list_versions(project_name: str):
                     "name": version_id,
                     "prompt": version.prompt,
                     "metadata": version.metadata,
+                    "success_criteria": version.success_criteria,
                     "recording_count": len(version.recordings),
                 }
             )
@@ -114,6 +116,7 @@ async def create_version(project_name: str, version_data: VersionCreate):
         project.create_version(
             version_data.name,
             prompt=version_data.prompt,
+            success_criteria=version_data.success_criteria,
             metadata=version_data.metadata,
         )
         logger.info(
@@ -217,8 +220,11 @@ async def list_recordings(project_name: str, version_name: str):
                 "summary": recording.summary,
                 "duration": recording.duration,
                 "is_successful": recording.is_successful,
+                "success_explanation": recording.success_explanation,
                 "metadata": recording.metadata,
                 "task_status": recording.task_status,
+                "llm_metrics": recording.llm_metrics,
+                "call_metrics": recording.call_metrics,
             }
             for recording_id, recording in version.recordings.items()
         ]
@@ -319,8 +325,11 @@ async def list_step_recordings(project_name: str, version_name: str, step_id: st
                     "summary": recording.summary,
                     "duration": recording.duration,
                     "is_successful": recording.is_successful,
+                    "success_explanation": recording.success_explanation,
                     "metadata": recording.metadata,
                     "task_status": recording.task_status,
+                    "llm_metrics": recording.llm_metrics,
+                    "call_metrics": recording.call_metrics,
                 }
             )
 
@@ -405,6 +414,53 @@ async def handle_webhook(
         raise HTTPException(status_code=404, detail=str(e)) from e
     except Exception as e:
         logger.error(f"Error processing webhook: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+@app.get("/api/projects/{project_name}/versions/{version_name}/eval_runs")
+async def list_eval_runs(project_name: str, version_name: str):
+    try:
+        project = mixedvoices.load_project(project_name)
+        version = project.load_version(version_name)
+        eval_runs = version.evaluation_runs
+        eval_data = []
+        for run_id in eval_runs:
+            eval_run = eval_runs[run_id]
+            eval_data.append(
+                {
+                    "run_id": run_id,
+                    "created_at": eval_run.created_at,
+                }
+            )
+        return {"eval_runs": eval_data}
+    except Exception as e:
+        logger.error(f"Error listing eval runs: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+@app.get("/api/projects/{project_name}/versions/{version_name}/eval_runs/{run_id}")
+async def get_eval_run(project_name: str, version_name: str, run_id: str):
+    try:
+        project = mixedvoices.load_project(project_name)
+        version = project.load_version(version_name)
+        eval_run = version.evaluation_runs[run_id]
+        agents = eval_run.eval_agents
+        agent_data = []
+        for agent in agents:
+            agent_data.append(
+                {
+                    "prompt": agent.eval_prompt,
+                    "started": agent.started,
+                    "ended": agent.ended,
+                    "transcript": agent.transcript,
+                    "scores": agent.scores,
+                    "error": agent.error,
+                }
+            )
+
+        return {"agents": agent_data}
+    except Exception as e:
+        logger.error(f"Error getting eval run: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e)) from e
 
 

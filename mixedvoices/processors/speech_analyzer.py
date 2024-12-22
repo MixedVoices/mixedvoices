@@ -1,9 +1,7 @@
 from typing import List, Optional
 
-from openai import OpenAI
-
-import mixedvoices
 from mixedvoices.processors.utils import get_standard_steps_string
+from mixedvoices.utils import get_openai_client
 
 
 def script_to_step_names(
@@ -18,9 +16,7 @@ def script_to_step_names(
         List[str]: Ordered list of steps for the flow chart
     """
     standard_steps_list_str = get_standard_steps_string(existing_step_names)
-    if mixedvoices.OPEN_AI_CLIENT is None:
-        mixedvoices.OPEN_AI_CLIENT = OpenAI()
-    client = mixedvoices.OPEN_AI_CLIENT
+    client = get_openai_client()
     try:
         completion = client.chat.completions.create(
             model="gpt-4o",
