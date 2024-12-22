@@ -1,6 +1,6 @@
 # MixedVoices 🎙️
 
-MixedVoices is an analytics platform for voice agents - think Mixpanel for conversational AI. It helps you track, visualize, and optimize your voice agent's performance by analyzing conversation flows, identifying bottlenecks, and measuring success rates across different versions.
+MixedVoices is a comprehensive analytics and evaluation tool for voice agents - think Mixpanel for conversational AI. It helps you track, visualize, and optimize your voice agent's performance through detailed conversation analysis, ML metrics, and call quality measurements. Use MixedVoices to analyze conversation flows, identify bottlenecks, measure success rates across versions, and evaluate agent performance through simulated scenarios.
 
 ## Features
 
@@ -11,21 +11,25 @@ MixedVoices is an analytics platform for voice agents - think Mixpanel for conve
 - 🔍 **Conversation Analysis**: Deep dive into individual interactions
 - 📝 **Metadata Tracking**: Store and analyze version-specific configurations
 - 🖥️ **Interactive Dashboard**: User-friendly interface for all operations
+- 🎯 **ML Performance Metrics**: Track hallucinations, call scheduling, conciseness, and empathy scores
+- 📱 **Call Quality Analysis**: Monitor interruptions, latency, signal-to-noise ratio, and words per minute
+- 🧪 **Agent Evaluation**: Test and validate agent performance through simulation and stress testing
 
 ### Dashboard Features
 - **Project Management**
-  - Create and manage multiple projects
-  - Version control with metadata tracking
-  - Easy navigation between versions
-- **Flow Visualization**
-  - Interactive flowcharts of conversation paths
-  - Success rate indicators for each step
-  - Click-through analysis of specific paths
+  - Create and manage multiple projects and versions along with metadata
 - **Recording Analysis**
-  - Detailed view of individual recordings
-  - Transcripts and audio playback
+  - View ML metrics like hallucinations, call scheduling, conciseness, empathy
+  - Track call metrics like Interruptions, Latency, Signal to Noise Ratio, Words Per Minute
+  - Transcripts, summary and audio playback
   - Success/failure tracking
-  - Path visualization for each conversation
+- **Flow Visualization**
+  - Interactive flowcharts of all conversation paths
+  - Success rate indicators for each step
+  - Path visualization for individual recording
+- **Agent Evaluation**
+  - Evaluate agent performance by simulating real world scenarios based on recordings uploaded in the past
+  - Stress test agent against edge case scenarios
 - **Upload Interface**
   - Easy upload of new recordings
   - Automatic processing and analysis
@@ -93,7 +97,7 @@ class ReceptionistAgent(mv.BaseAgent):
 project = mv.load_project("receptionist")
 version = project.load_version("v1")
 evaluator = version.create_evaluation_run()
-evaluator.evaluate(DentalAgent) # can specify which metrics to measure
+evaluator.evaluate(ReceptionistAgent) # can specify which metrics to measure
 ```
 
 ### Using Dashboard
@@ -134,12 +138,6 @@ This will start:
    - Check file size limits
    - Verify storage permissions
 
-<!-- ## API Documentation
-
-Detailed API documentation is available at:
-- Python API: `https://docs.mixedvoices.ai/api`
-- REST API: `https://docs.mixedvoices.ai/rest` -->
-
 ## Contributing
 
 We welcome contributions! Please follow these steps:
@@ -160,23 +158,14 @@ pip install -e ".[dev]"
 
 This project is licensed under the Apache 2.0 License - see the [LICENSE](LICENSE) file for details.
 
-<!-- ## Support
-
-- Documentation: `https://docs.mixedvoices.ai`
-- Issues: `https://github.com/mixedvoices/issues`
-- Email: support@mixedvoices.ai
-- Discord: [Join our community](https://discord.gg/mixedvoices)
-
-## Security
-
-Please report security vulnerabilities to security@mixedvoices.ai -->
-
 ## Roadmap
 - [ ] Unit Tests
 - [ ] Support other APIs and Open Source LLMs
 - [ ] Team collaboration features
 - [ ] Custom analytics plugins
 - [ ] Enhanced visualization options
+- [ ] Advanced evaluation scenarios
+- [ ] Custom metric definitions for evaluation
 
 ---
 Made with ❤️ by the MixedVoices Team
