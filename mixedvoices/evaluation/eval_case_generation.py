@@ -1,15 +1,12 @@
 from typing import List
 
-from openai import OpenAI
-
-client = OpenAI()
-
+from mixedvoices.utils import get_openai_client
 
 SYSTEM_PROMPT = """You're an expert at creating PROMPTS for TESTING agents to evaluate REAL agent.
     Prompt Structure (Each field should be inline, no bullets/numbers):-
     Info i.e name and age for eg. John Doe, 30
     Personality i.e. Talking style, quirks, 1-2 lines, don't use terms like Type A/B etc. Don't include speed, pauses, modulation, this is text only.
-    Call Objective 1-2 lines
+    Call Objective 1-3 lines, include who you are calling here as well
     Call Path, represent like A->B->C..->Farewell where A, B, C are steps, ALWAYS end with Farewell
     """  # noqa E501
 
@@ -42,6 +39,7 @@ def generate_eval_prompts(agent_prompt: str, generation_instruction: str):
     model = "gpt-4o"
     start_prompt = START_PROMPT.format(agent_prompt=agent_prompt)
     user_prompt = f"{start_prompt}\n{generation_instruction}\n{STRUCTURE_PROMPT}"
+    client = get_openai_client()
     completion = client.chat.completions.create(
         model=model,
         messages=[

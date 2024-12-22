@@ -268,7 +268,7 @@ class TaskManager:
                     self._save_task(task)
 
                     if task.task_type == "process_recording":
-                        from mixedvoices.utils import process_recording
+                        from mixedvoices.core.utils import process_recording
 
                         deserialized_params = self._deserialize_task_params(
                             task.task_type, task.params

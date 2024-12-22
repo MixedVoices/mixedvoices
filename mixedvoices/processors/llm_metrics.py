@@ -1,4 +1,5 @@
-from mixedvoices.processors.utils import get_openai_client, parse_explanation_response
+from mixedvoices.processors.utils import parse_explanation_response
+from mixedvoices.utils import get_openai_client
 
 
 # TODO: add more metrics, define better
@@ -9,7 +10,7 @@ def analyze_metric(transcript: str, metric_name: str, metric_definition: str):
 
     Metric:
     {metric_definition}
-    Respond with short explanation of how the bot performed in MAXIMUM 2-3 sentences, followed by score. 
+    Respond with short 1 line explanation of how the bot performed, followed by score. 
 
     >Format example
 

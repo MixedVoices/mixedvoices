@@ -1,4 +1,5 @@
-from mixedvoices.processors.utils import get_openai_client, parse_explanation_response
+from mixedvoices.processors.utils import parse_explanation_response
+from mixedvoices.utils import get_openai_client
 
 
 # TODO check for prompt injection

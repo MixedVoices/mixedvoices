@@ -6,9 +6,10 @@ import mixedvoices
 import mixedvoices.constants as constants
 from mixedvoices.core.recording import Recording
 from mixedvoices.core.step import Step
+from mixedvoices.core.utils import process_recording
 from mixedvoices.evaluation.eval_case_generation import get_eval_prompts
 from mixedvoices.evaluation.evaluation_run import EvaluationRun
-from mixedvoices.utils import load_json, process_recording, save_json
+from mixedvoices.utils import load_json, save_json
 
 
 def dfs(

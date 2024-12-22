@@ -1,4 +1,4 @@
-from mixedvoices.processors.utils import get_openai_client
+from mixedvoices.utils import get_openai_client
 
 
 def summarize_transcript(transcript: str):

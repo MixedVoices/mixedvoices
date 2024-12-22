@@ -7,7 +7,7 @@ import requests
 from httpx import RequestError
 from openai.types.audio import TranscriptionVerbose, TranscriptionWord
 
-from mixedvoices.processors.utils import get_openai_client
+from mixedvoices.utils import get_openai_client
 
 TRANSCRIPTION_POOL = ThreadPoolExecutor(max_workers=2, thread_name_prefix="Transcriber")
 atexit.register(lambda: TRANSCRIPTION_POOL.shutdown(wait=True))

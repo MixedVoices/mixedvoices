@@ -3,17 +3,13 @@ import random
 from datetime import datetime
 from typing import TYPE_CHECKING, Type
 
-from openai import OpenAI
-
 import mixedvoices.constants as constants
 from mixedvoices.evaluation.utils import history_to_transcript
 from mixedvoices.processors.llm_metrics import get_llm_metrics
-from mixedvoices.utils import load_json, save_json
+from mixedvoices.utils import get_openai_client, load_json, save_json
 
 if TYPE_CHECKING:
     from mixedvoices import BaseAgent
-
-client = OpenAI()
 
 model = "gpt-4o"
 
@@ -53,6 +49,7 @@ class EvalAgent:
         self.transcript = transcript or None
         self.scores = scores or None
         self.error = error or None
+        self.save()
 
     def respond(self, input):
         if not self.started:
@@ -62,6 +59,7 @@ class EvalAgent:
             self.add_user_message(input)
         messages = [self.get_system_prompt()] + self.history
         try:
+            client = get_openai_client()
             response = client.chat.completions.create(model=model, messages=messages)
             assistant_response = response.choices[0].message.content
             self.add_assistant_message(assistant_response)
@@ -71,7 +69,7 @@ class EvalAgent:
 
     def add_user_message(self, message):
         self.history.append({"role": "user", "content": message})
-        print(f"Assistant: {message}\n")  # Here user is REAL agent
+        print(f"Assistant: {message}")  # Here user is REAL agent
 
     def add_assistant_message(self, message):
         self.history.append({"role": "assistant", "content": message})
@@ -98,7 +96,8 @@ class EvalAgent:
     def get_system_prompt(self):
         return {
             "role": "system",
-            "content": f"{self.eval_prompt}"
+            "content": f"You are a testing agent. Have a conversation, don't make sounds."
+            f"\n{self.eval_prompt}"
             "\nWhen conversation is complete, along with final response, return HANGUP to end."
             "\nEg: Have a good day. HANGUP"
             f"\nDate/time: {datetime.now().strftime('%I%p, %a, %d %b').lower().lstrip('0')}."
