@@ -1,9 +1,9 @@
-import json
 import os
 import time
 from typing import Any, Dict, List, Optional
 
 import mixedvoices.constants as constants
+from mixedvoices.utils import load_json, save_json
 
 
 class Recording:
@@ -56,9 +56,8 @@ class Recording:
     def save(self):
         os.makedirs(self.path, exist_ok=True)
         save_path = os.path.join(self.path, "info.json")
-        with open(save_path, "w") as f:
-            d = self.to_dict()
-            f.write(json.dumps(d))
+        d = self.to_dict()
+        save_json(d, save_path)
 
     def get_summary_from_metadata(self):
         analysis_info = self.metadata.get("analysis_info", {})
@@ -82,9 +81,7 @@ class Recording:
             recording_id,
             "info.json",
         )
-        with open(path, "r") as f:
-            d = json.loads(f.read())
-
+        d = load_json(path)
         d.update(
             {
                 "project_id": project_id,

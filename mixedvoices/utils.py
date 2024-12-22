@@ -1,3 +1,4 @@
+import json
 import os
 from concurrent import futures  # Preload this to avoid shutdown issues  # noqa: F401
 from typing import TYPE_CHECKING, List
@@ -136,3 +137,13 @@ def validate_name(name: str, identifier: str):
     allowed_special_chars = {"-", "_"}
     if not all(c.isalnum() or c in allowed_special_chars for c in name):
         raise ValueError(f"{identifier} can only contain a-z, A-Z, 0-9, -, _")
+
+
+def save_json(d, filename):
+    with open(filename, "w") as f:
+        f.write(json.dumps(d))
+
+
+def load_json(filename):
+    with open(filename, "r") as f:
+        return json.loads(f.read())

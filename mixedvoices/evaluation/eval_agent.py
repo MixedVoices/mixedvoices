@@ -1,4 +1,3 @@
-import json
 import os
 import random
 from datetime import datetime
@@ -9,6 +8,7 @@ from openai import OpenAI
 import mixedvoices.constants as constants
 from mixedvoices.evaluation.utils import history_to_transcript
 from mixedvoices.processors.llm_metrics import get_llm_metrics
+from mixedvoices.utils import load_json, save_json
 
 if TYPE_CHECKING:
     from mixedvoices import BaseAgent
@@ -116,19 +116,18 @@ class EvalAgent:
     def save(self):
         os.makedirs(self.path, exist_ok=True)
         save_path = os.path.join(self.path, "info.json")
-        with open(save_path, "w") as f:
-            d = {
-                "prompt": self.prompt,
-                "eval_prompt": self.eval_prompt,
-                "enabled_llm_metrics": self.enabled_llm_metrics,
-                "history": self.history,
-                "started": self.started,
-                "ended": self.ended,
-                "transcript": self.transcript,
-                "scores": self.scores,
-                "error": self.error,
-            }
-            f.write(json.dumps(d))
+        d = {
+            "prompt": self.prompt,
+            "eval_prompt": self.eval_prompt,
+            "enabled_llm_metrics": self.enabled_llm_metrics,
+            "history": self.history,
+            "started": self.started,
+            "ended": self.ended,
+            "transcript": self.transcript,
+            "scores": self.scores,
+            "error": self.error,
+        }
+        save_json(d, save_path)
 
     @classmethod
     def load(cls, project_id, version_id, run_id, agent_id):
@@ -143,8 +142,7 @@ class EvalAgent:
             "info.json",
         )
         try:
-            with open(load_path, "r") as f:
-                d = json.loads(f.read())
+            d = load_json(load_path)
         except FileNotFoundError:
             return
 

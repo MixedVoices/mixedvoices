@@ -1,4 +1,3 @@
-import json
 import os
 import time
 from typing import TYPE_CHECKING, List, Optional, Type
@@ -6,6 +5,7 @@ from uuid import uuid4
 
 import mixedvoices.constants as constants
 from mixedvoices.evaluation.eval_agent import EvalAgent
+from mixedvoices.utils import load_json, save_json
 
 if TYPE_CHECKING:
     from mixedvoices import BaseAgent
@@ -57,15 +57,14 @@ class EvaluationRun:
     def save(self):
         os.makedirs(self.path, exist_ok=True)
         save_path = os.path.join(self.path, "info.json")
-        with open(save_path, "w") as f:
-            d = {
-                "prompt": self.prompt,
-                "enabled_llm_metrics": self.enabled_llm_metrics,
-                "eval_prompts": self.eval_prompts,
-                "created_at": self.created_at,
-                "eval_agent_ids": [a.agent_id for a in self.eval_agents],
-            }
-            f.write(json.dumps(d))
+        d = {
+            "prompt": self.prompt,
+            "enabled_llm_metrics": self.enabled_llm_metrics,
+            "eval_prompts": self.eval_prompts,
+            "created_at": self.created_at,
+            "eval_agent_ids": [a.agent_id for a in self.eval_agents],
+        }
+        save_json(d, save_path)
 
     @classmethod
     def load(cls, project_id, version_id, run_id):
@@ -78,8 +77,7 @@ class EvaluationRun:
             "info.json",
         )
         try:
-            with open(load_path, "r") as f:
-                d = json.loads(f.read())
+            d = load_json(load_path)
         except FileNotFoundError:
             return
 

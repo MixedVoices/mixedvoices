@@ -1,4 +1,3 @@
-import json
 import logging
 import os
 import threading
@@ -10,6 +9,7 @@ from typing import Any, Dict, Optional
 from uuid import uuid4
 
 import mixedvoices.constants as constants
+from mixedvoices.utils import load_json, save_json
 
 
 class TaskStatus(Enum):
@@ -176,8 +176,8 @@ class TaskManager:
                 os.remove(old_path)
 
         new_path = os.path.join(self.folder_paths[task.status], file_name)
-        with open(new_path, "w") as f:
-            json.dump(task.to_dict(), f)
+        d = task.to_dict()
+        save_json(d, new_path)
 
     def _load_pending_tasks(self):
         """Load pending and in-progress tasks, ordered by creation time."""
@@ -214,18 +214,17 @@ class TaskManager:
         """Load a single task from a file."""
         task_path = os.path.join(folder_path, filename)
         try:
-            with open(task_path, "r") as f:
-                task_data = json.load(f)
-                return Task(
-                    task_id=task_data["task_id"],
-                    task_type=task_data["task_type"],
-                    params=task_data["params"],
-                    status=TaskStatus(task_data["status"]),
-                    created_at=task_data["created_at"],
-                    started_at=task_data.get("started_at"),
-                    completed_at=task_data.get("completed_at"),
-                    error=task_data.get("error"),
-                )
+            task_data = load_json(task_path)
+            return Task(
+                task_id=task_data["task_id"],
+                task_type=task_data["task_type"],
+                params=task_data["params"],
+                status=TaskStatus(task_data["status"]),
+                created_at=task_data["created_at"],
+                started_at=task_data.get("started_at"),
+                completed_at=task_data.get("completed_at"),
+                error=task_data.get("error"),
+            )
         except Exception as e:
             logging.error(f"Error loading task {filename}: {str(e)}")
             return None

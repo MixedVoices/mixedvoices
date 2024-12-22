@@ -1,4 +1,3 @@
-import json
 import os
 from typing import Any, Dict, List, Optional
 from uuid import uuid4
@@ -9,7 +8,7 @@ from mixedvoices.core.recording import Recording
 from mixedvoices.core.step import Step
 from mixedvoices.evaluation.eval_case_generation import get_eval_prompts
 from mixedvoices.evaluation.evaluation_run import EvaluationRun
-from mixedvoices.utils import process_recording
+from mixedvoices.utils import load_json, process_recording, save_json
 
 
 def dfs(
@@ -153,22 +152,20 @@ class Version:
 
     def save(self):
         save_path = os.path.join(self.path, "info.json")
-        with open(save_path, "w") as f:
-            d = {
-                "prompt": self.prompt,
-                "success_criteria": self.success_criteria,
-                "metadata": self.metadata,
-                "evaluation_run_ids": self.get_evaluation_run_ids(),
-            }
-            f.write(json.dumps(d))
+        d = {
+            "prompt": self.prompt,
+            "success_criteria": self.success_criteria,
+            "metadata": self.metadata,
+            "evaluation_run_ids": self.get_evaluation_run_ids(),
+        }
+        save_json(d, save_path)
 
     @classmethod
     def load(cls, project_id, version_id):
         load_path = os.path.join(
             constants.ALL_PROJECTS_FOLDER, project_id, version_id, "info.json"
         )
-        with open(load_path, "r") as f:
-            d = json.loads(f.read())
+        d = load_json(load_path)
         prompt = d["prompt"]
         success_criteria = d.get("success_criteria", None)
         metadata = d.get("metadata", None)
