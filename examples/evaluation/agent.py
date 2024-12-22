@@ -11,19 +11,7 @@ from deepgram import DeepgramClient, LiveOptions, LiveTranscriptionEvents, Micro
 
 import mixedvoices as mv
 
-
-def conversation_ended(response: str) -> bool:
-    return (
-        "bye" in response.lower()
-        or "see you" in response.lower()
-        or "see ya" in response.lower()
-        or "catch you" in response.lower()
-        or "talk to you" in response.lower()
-    )
-
-
-class DentalAssistant:
-    SYSTEM_PROMPT = """You are a voice assistant for Locoto's Dental, a dental office located at 123 North Face Place, Anaheim, California. The hours are 8 AM to 5PM daily, but they are closed on Sundays.
+AGENT_PROMPT = """You are a voice assistant for Locoto's Dental, a dental office located at 123 North Face Place, Anaheim, California. The hours are 8 AM to 5PM daily, but they are closed on Sundays.
 
     Locoto's dental provides dental services to the local Anaheim community. The practicing dentist is Dr. Mary Smith.
 
@@ -41,6 +29,8 @@ class DentalAssistant:
     - NEVER use emojis.
     """
 
+
+class DentalAssistant:
     def __init__(self, mode: Literal["text", "cli", "voice"]):
         self.mode = mode
         self.conversation_memory = []
