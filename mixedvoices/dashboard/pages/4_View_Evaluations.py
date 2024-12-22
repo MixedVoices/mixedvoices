@@ -2,7 +2,7 @@ import streamlit as st
 
 from mixedvoices.dashboard.api.client import APIClient
 from mixedvoices.dashboard.api.endpoints import (
-    get_eval_runs_endpoint,
+    list_eval_runs_endpoint,
 )
 from mixedvoices.dashboard.components.evaluation_viewer import EvaluationViewer
 from mixedvoices.dashboard.utils import disable_evaluation_details_page
@@ -27,7 +27,7 @@ def evaluations_page():
 
     # Display all evaluation runs
     eval_runs_data = api_client.fetch_data(
-        get_eval_runs_endpoint(
+        list_eval_runs_endpoint(
             st.session_state.current_project, st.session_state.current_version
         )
     )
