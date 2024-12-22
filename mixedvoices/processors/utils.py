@@ -126,9 +126,7 @@ def parse_explanation_response(
     )
 
     success_match = re.search(r"Success:\s*(True|False|N/A)", response, re.IGNORECASE)
-    score_match = re.search(
-        r"Score:\s*((?:\d|10|N/A|PASS|FAIL))", response, re.IGNORECASE
-    )
+    score_match = re.search(r"Score:\s*(10|\d|N/A|PASS|FAIL)", response, re.IGNORECASE)
 
     if not explanation_match:
         raise ValueError("Could not parse explanation")

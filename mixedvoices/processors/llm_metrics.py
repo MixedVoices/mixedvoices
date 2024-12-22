@@ -116,8 +116,8 @@ def analyze_objection_handling(transcript: str):
     metric_name = "Objection Handling"
     metric_definition = """
     Does the bot acknowledge objections, relate to the user's concern in a way that sympathizes with their pain, and offer relevant solutions?
-    Bad examples: The bot skips acknowledging the concern, uses generic sales language without empathizing, or offers an irrelevant or off-topic response.
-    Scoring: 0 to 10. 10 being the best.
+    Bad examples i.e. low scores: The bot skips acknowledging the concern, uses generic sales language without empathizing, or offers an irrelevant or off-topic response.
+    Scoring: 0 to 10
     """  # noqa E501
 
     return analyze_metric(transcript, metric_name, metric_definition)
