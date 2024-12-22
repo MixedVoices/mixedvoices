@@ -8,10 +8,9 @@ def analyze_metric(transcript: str, metric_name: str, metric_definition: str):
     prompt = f"""Transcript:
     {transcript}
 
+    Respond with short 1 line explanation of how the bot performed on {metric_name}, followed by score. 
     Metric:
     {metric_definition}
-    Respond with short 1 line explanation of how the bot performed, followed by score. 
-
     >Format example
 
     Output:-
@@ -25,7 +24,7 @@ def analyze_metric(transcript: str, metric_name: str, metric_definition: str):
             messages=[
                 {
                     "role": "system",
-                    "content": f"You're an expert at analyzing {metric_name} in transcripts",  # noqa E501,
+                    "content": "You're an expert at analyzing transcripts",  # noqa E501,
                 },
                 {"role": "user", "content": prompt},
                 {"role": "assistant", "content": "Output:-"},
