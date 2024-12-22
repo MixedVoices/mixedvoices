@@ -18,6 +18,10 @@ client = OpenAI()
 model = "gpt-4o"
 
 
+def has_ended_conversation(message):
+    return "HANGUP" in message
+
+
 # TODO: Better logging and better model management throughout
 class EvalAgent:
     def __init__(
@@ -61,7 +65,7 @@ class EvalAgent:
             response = client.chat.completions.create(model=model, messages=messages)
             assistant_response = response.choices[0].message.content
             self.add_assistant_message(assistant_response)
-            return assistant_response
+            return assistant_response, has_ended_conversation(assistant_response)
         except Exception as e:
             self.handle_exception(e, "Conversation")
 
@@ -156,23 +160,22 @@ class EvalAgent:
         )
         return cls(**d)
 
-    @property
-    def conversation_ended(self):
-        return "HANGUP" in self.history[-1]["content"]
-
     def evaluate(self, agent_class: Type["BaseAgent"]):
         assistant = agent_class()
         assistant_starts = assistant.starts_conversation
         if assistant_starts is None:
             assistant_starts = random.choice([True, False])
 
-        assistant_message = assistant.respond("") if assistant_starts else ""
+        if assistant_starts:
+            assistant_message, ended = assistant.respond("")
+        else:
+            assistant_message, ended = "", False
         while 1:
-            evaluator_message = self.respond(assistant_message)
-            if self.conversation_ended:
+            evaluator_message, ended = self.respond(assistant_message)
+            if ended:
                 break
-            assistant_message = assistant.respond(evaluator_message)
-            if assistant.conversation_ended:
+            assistant_message, ended = assistant.respond(evaluator_message)
+            if ended:
                 self.add_user_message(assistant_message)
                 break
 

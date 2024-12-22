@@ -1,18 +1,14 @@
 from abc import ABC, abstractmethod
-from typing import Optional
+from typing import Optional, Tuple
 
 
 class BaseAgent(ABC):
     @abstractmethod
-    def respond(self, input_text: str) -> str:
+    def respond(self, input_text: str) -> Tuple[str, bool]:
         """Generate a response to the input text.
-        Input text might be an empty string in case the assistant starts the conversation
+        First input_text will be an empty string if agent starts conversation.
+        Returns (response, has_conversation_ended)
         """
-        pass
-
-    @property
-    @abstractmethod
-    def conversation_ended(self) -> bool:
         pass
 
     @property

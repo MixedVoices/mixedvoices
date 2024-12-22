@@ -1,3 +1,5 @@
+from typing import Tuple
+
 from agent import DentalAssistant
 
 import mixedvoices as mv
@@ -17,16 +19,11 @@ def check_conversation_ended(assistant_message):
 class DentalAgent(BaseAgent):
     def __init__(self):
         self.assistant = DentalAssistant(mode="text")
-        self.has_conversation_ended = False
 
-    def respond(self, input_text: str) -> str:
+    def respond(self, input_text: str) -> Tuple[str, bool]:
         response = self.assistant.get_assistant_response(input_text)
-        self.has_conversation_ended = check_conversation_ended(response)
-        return response
-
-    @property
-    def conversation_ended(self):
-        return self.has_conversation_ended
+        has_conversation_ended = check_conversation_ended(response)
+        return response, has_conversation_ended
 
     @property
     def starts_conversation(self):
