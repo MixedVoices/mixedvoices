@@ -32,5 +32,5 @@ class DentalAgent(BaseAgent):
 
 project = mv.load_project("dental_clinic")
 version = project.load_version("v1")
-evaluator = version.create_evaluation_run()
+evaluator = version.create_evaluation_run(1, 1, 1)
 evaluator.evaluate(DentalAgent)
