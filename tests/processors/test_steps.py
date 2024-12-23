@@ -11,12 +11,7 @@ def test_steps():
     with open("tests/assets/transcript.txt", "r") as f:
         transcript = f.read()
 
-    existing_step_names = [
-        "Greeting",
-        "Request Doctor Callback",
-        "Check Medicine Availability",
-        "Ask to speak to manager",
-    ]
+    existing_step_names = ["Greeting"]
 
     steps = script_to_step_names(transcript, existing_step_names)
     for step in steps:
