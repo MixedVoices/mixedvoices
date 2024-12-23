@@ -1,3 +1,4 @@
+from mixedvoices import models
 from mixedvoices.processors.utils import parse_explanation_response
 from mixedvoices.utils import get_openai_client
 
@@ -7,7 +8,7 @@ def get_success(transcript: str, success_criteria: str):
     client = get_openai_client()
     try:
         response = client.chat.completions.create(
-            model="gpt-4o",
+            model=models.SUCCESS_MODEL,
             messages=[
                 {
                     "role": "system",

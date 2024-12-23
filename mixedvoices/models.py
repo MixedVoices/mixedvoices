@@ -1,1 +1,2 @@
 METRICS_MODEL = "gpt-4o"
+SUCCESS_MODEL = "gpt-4o"
