@@ -1,6 +1,6 @@
 # MixedVoices 🎙️
 
-MixedVoices is a comprehensive analytics and evaluation tool for voice agents - think Mixpanel for conversational AI. It helps you track, visualize, and optimize your voice agent's performance through detailed conversation analysis, ML metrics, and call quality measurements. Use MixedVoices to analyze conversation flows, identify bottlenecks, measure success rates across versions, and evaluate agent performance through simulated scenarios.
+[MixedVoices](https://www.mixedvoices.xyz) is a comprehensive analytics and evaluation tool for voice agents - think Mixpanel for conversational AI. It helps you track, visualize, and optimize your voice agent's performance through detailed conversation analysis, ML metrics, and call quality measurements. Use MixedVoices to analyze conversation flows, identify bottlenecks, measure success rates across versions, and evaluate agent performance through simulated scenarios.
 
 ## Features
 
