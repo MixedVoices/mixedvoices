@@ -39,6 +39,7 @@ def calculate_stereo_snr(audio_file_path, user_channel="left"):
         else:
             return results[1], results[0]
     except Exception:
+        print("Error calculating SNR")
         return "N/A", "N/A"
 
 
@@ -52,31 +53,35 @@ def calculate_wpm(assistant_words: List[TranscriptionWord]) -> float:
     Returns:
         float: Average WPM
     """
-    segments = []
-    current_segment = None
+    try:
+        segments = []
+        current_segment = None
 
-    for word in assistant_words:
-        if current_segment is None:
-            current_segment = {"start": word.start, "end": word.end, "words": 1}
-        else:
-            # If words are close (<1 second gap), consider them same segment
-            if word.start - current_segment["end"] < 1.0:
-                current_segment["end"] = word.end
-                current_segment["words"] += 1
-            else:
-                segments.append(current_segment)
+        for word in assistant_words:
+            if current_segment is None:
                 current_segment = {"start": word.start, "end": word.end, "words": 1}
+            else:
+                # If words are close (<1 second gap), consider them same segment
+                if word.start - current_segment["end"] < 1.0:
+                    current_segment["end"] = word.end
+                    current_segment["words"] += 1
+                else:
+                    segments.append(current_segment)
+                    current_segment = {"start": word.start, "end": word.end, "words": 1}
 
-    if current_segment is not None:
-        segments.append(current_segment)
+        if current_segment is not None:
+            segments.append(current_segment)
 
-    if not segments:
-        return 0.0
+        if not segments:
+            return 0.0
 
-    total_words = sum(segment["words"] for segment in segments)
-    total_duration = sum(segment["end"] - segment["start"] for segment in segments)
+        total_words = sum(segment["words"] for segment in segments)
+        total_duration = sum(segment["end"] - segment["start"] for segment in segments)
 
-    return total_words / (total_duration / 60)
+        return total_words / (total_duration / 60)
+    except Exception:
+        print("Error calculating WPM")
+        return "N/A"
 
 
 def group_utterances(words: List[TranscriptionWord]) -> List[List[TranscriptionWord]]:
@@ -115,43 +120,53 @@ def calculate_latency_and_interruptions(
     Returns:
         Dictionary containing latency statistics and interruption data
     """
-    user_utterances = group_utterances(user_words)
-    assistant_utterances = group_utterances(assistant_words)
+    try:
+        user_utterances = group_utterances(user_words)
+        assistant_utterances = group_utterances(assistant_words)
 
-    latencies = []
-    user_interruptions = 0
-    assistant_interruptions = 0
+        latencies = []
+        user_interruptions = 0
+        assistant_interruptions = 0
 
-    i, j = 0, 0  # Pointers for user and assistant utterances
+        i, j = 0, 0  # Pointers for user and assistant utterances
 
-    while i < len(user_utterances) and j < len(assistant_utterances):
-        user_utt = user_utterances[i]
-        assistant_utt = assistant_utterances[j]
+        while i < len(user_utterances) and j < len(assistant_utterances):
+            user_utt = user_utterances[i]
+            assistant_utt = assistant_utterances[j]
 
-        user_start, user_end = user_utt[0].start, user_utt[-1].end
-        asst_start, asst_end = assistant_utt[0].start, assistant_utt[-1].end
+            user_start, user_end = user_utt[0].start, user_utt[-1].end
+            asst_start, asst_end = assistant_utt[0].start, assistant_utt[-1].end
 
-        # Check for overlaps and calculate latencies
-        if asst_start < user_start < asst_end:
-            user_interruptions += 1
-            i += 1
-        elif user_start < asst_start < user_end:
-            assistant_interruptions += 1
-            j += 1
-        else:
-            # No overlap - check if it's a normal response
-            if asst_start > user_end:
-                if asst_start - user_end >= interruption_threshold:
-                    latencies.append(asst_start - user_end)
+            # Check for overlaps and calculate latencies
+            if asst_start < user_start < asst_end:
+                user_interruptions += 1
                 i += 1
-            else:
+            elif user_start < asst_start < user_end:
+                assistant_interruptions += 1
                 j += 1
+            else:
+                # No overlap - check if it's a normal response
+                if asst_start > user_end:
+                    if asst_start - user_end >= interruption_threshold:
+                        latencies.append(asst_start - user_end)
+                    i += 1
+                else:
+                    j += 1
 
-    return {
-        "average_latency": mean(latencies) if latencies else 0,
-        "user_interruptions_per_minute": user_interruptions / (duration / 60),
-        "assistant_interruptions_per_minute": assistant_interruptions / (duration / 60),
-    }
+        return {
+            "average_latency": mean(latencies) if latencies else 0,
+            "user_interruptions_per_minute": user_interruptions / (duration / 60),
+            "assistant_interruptions_per_minute": assistant_interruptions
+            / (duration / 60),
+        }
+
+    except Exception:
+        print("Error calculating latency and interruptions")
+        return {
+            "average_latency": "N/A",
+            "user_interruptions_per_minute": "N/A",
+            "assistant_interruptions_per_minute": "N/A",
+        }
 
 
 def get_call_metrics(
