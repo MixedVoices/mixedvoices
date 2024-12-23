@@ -417,34 +417,33 @@ async def handle_webhook(
         raise HTTPException(status_code=500, detail=str(e)) from e
 
 
-@app.get("/api/projects/{project_name}/versions/{version_name}/eval_runs")
-async def list_eval_runs(project_name: str, version_name: str):
+@app.get("/api/projects/{project_name}/versions/{version_name}/evals")
+async def list_evals(project_name: str, version_name: str):
     try:
         project = mixedvoices.load_project(project_name)
         version = project.load_version(version_name)
-        eval_runs = version.evaluation_runs
+        evals = version.evals
         eval_data = []
-        for run_id in eval_runs:
-            eval_run = eval_runs[run_id]
+        for eval_id, cur_eval in evals.items():
             eval_data.append(
                 {
-                    "run_id": run_id,
-                    "created_at": eval_run.created_at,
+                    "eval_id": eval_id,
+                    "created_at": cur_eval.created_at,
                 }
             )
-        return {"eval_runs": eval_data}
+        return {"evals": eval_data}
     except Exception as e:
-        logger.error(f"Error listing eval runs: {str(e)}", exc_info=True)
+        logger.error(f"Error listing evals: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e)) from e
 
 
-@app.get("/api/projects/{project_name}/versions/{version_name}/eval_runs/{run_id}")
-async def get_eval_run(project_name: str, version_name: str, run_id: str):
+@app.get("/api/projects/{project_name}/versions/{version_name}/evals/{eval_id}")
+async def get_eval_details(project_name: str, version_name: str, eval_id: str):
     try:
         project = mixedvoices.load_project(project_name)
         version = project.load_version(version_name)
-        eval_run = version.evaluation_runs[run_id]
-        agents = eval_run.eval_agents
+        current_eval = version.evals[eval_id]
+        agents = current_eval.eval_agents
         agent_data = []
         for agent in agents:
             agent_data.append(
@@ -460,7 +459,7 @@ async def get_eval_run(project_name: str, version_name: str, run_id: str):
 
         return {"agents": agent_data}
     except Exception as e:
-        logger.error(f"Error getting eval run: {str(e)}", exc_info=True)
+        logger.error(f"Error getting eval details: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e)) from e
 
 

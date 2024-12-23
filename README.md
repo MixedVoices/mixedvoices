@@ -92,8 +92,8 @@ class ReceptionistAgent(mv.BaseAgent):
 
 project = mv.load_project("receptionist")
 version = project.load_version("v1")
-evaluator = version.create_evaluation_run()
-evaluator.evaluate(DentalAgent) # can specify which metrics to measure
+evaluator = version.create_evaluator()
+evaluator.run(DentalAgent) # can specify which metrics to measure
 ```
 
 ### Using Dashboard

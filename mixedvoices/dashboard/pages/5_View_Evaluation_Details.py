@@ -1,7 +1,7 @@
 import streamlit as st
 
 from mixedvoices.dashboard.api.client import APIClient
-from mixedvoices.dashboard.api.endpoints import get_eval_run_endpoint
+from mixedvoices.dashboard.api.endpoints import get_eval_details_endpoint
 from mixedvoices.dashboard.utils import display_llm_metrics, display_llm_metrics_preview
 
 
@@ -45,7 +45,7 @@ def evaluation_details_page():
 
     # Fetch evaluation details
     eval_details = api_client.fetch_data(
-        get_eval_run_endpoint(
+        get_eval_details_endpoint(
             st.session_state.current_project,
             st.session_state.current_version,
             st.session_state.selected_eval_id,
@@ -57,7 +57,7 @@ def evaluation_details_page():
         st.session_state.selected_eval_id = None
         st.switch_page("pages/4_View_Evaluations.py")
 
-    st.subheader(f"Run id: {st.session_state.selected_eval_id}")
+    st.subheader(f"Eval id: {st.session_state.selected_eval_id}")
 
     if not eval_details or not eval_details.get("agents"):
         st.error("Failed to load evaluation details")

@@ -25,7 +25,7 @@ class EvalAgent:
         agent_id,
         project_id,
         version_id,
-        run_id,
+        eval_id,
         prompt,
         eval_prompt,
         enabled_llm_metrics,
@@ -39,7 +39,7 @@ class EvalAgent:
         self.agent_id = agent_id
         self.project_id = project_id
         self.version_id = version_id
-        self.run_id = run_id
+        self.eval_id = eval_id
         self.prompt = prompt
         self.eval_prompt = eval_prompt
         self.enabled_llm_metrics = enabled_llm_metrics
@@ -110,8 +110,8 @@ class EvalAgent:
             constants.ALL_PROJECTS_FOLDER,
             self.project_id,
             self.version_id,
-            "eval_runs",
-            self.run_id,
+            "evals",
+            self.eval_id,
             "agents",
             self.agent_id,
         )
@@ -133,13 +133,13 @@ class EvalAgent:
         save_json(d, save_path)
 
     @classmethod
-    def load(cls, project_id, version_id, run_id, agent_id):
+    def load(cls, project_id, version_id, eval_id, agent_id):
         load_path = os.path.join(
             constants.ALL_PROJECTS_FOLDER,
             project_id,
             version_id,
-            "eval_runs",
-            run_id,
+            "evals",
+            eval_id,
             "agents",
             agent_id,
             "info.json",
@@ -153,7 +153,7 @@ class EvalAgent:
             {
                 "project_id": project_id,
                 "version_id": version_id,
-                "run_id": run_id,
+                "eval_id": eval_id,
                 "agent_id": agent_id,
             }
         )

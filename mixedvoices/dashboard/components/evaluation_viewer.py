@@ -9,18 +9,18 @@ class EvaluationViewer:
         self.project_id = project_id
         self.version = version
 
-    def display_evaluations_list(self, eval_runs: list) -> None:
-        """Display list of evaluation runs with details"""
+    def display_evaluations_list(self, evals: list) -> None:
+        """Display list of evaluations with details"""
         # Header row with refresh button
         header_row = st.columns([8, 1])
         with header_row[0]:
-            st.write("## Evaluation Runs")
+            st.write("## Evaluations")
         with header_row[1]:
-            if st.button("Refresh", help="Refresh evaluation runs"):
+            if st.button("Refresh", help="Refresh evaluations"):
                 st.rerun()
 
         # Create DataFrame and format dates
-        display_df = pd.DataFrame(eval_runs)
+        display_df = pd.DataFrame(evals)
         display_df["created_at"] = pd.to_datetime(
             display_df["created_at"], unit="s", utc=True
         )
@@ -44,12 +44,12 @@ class EvaluationViewer:
             cols = st.columns([3, 2])
             with cols[0]:
                 if st.button(
-                    row["run_id"],
-                    key=f"id_btn_{row['run_id']}",
+                    row["eval_id"],
+                    key=f"id_btn_{row['eval_id']}",
                     help="Click to view details",
                 ):
                     # Store the selected evaluation ID in session state
-                    st.session_state.selected_eval_id = row["run_id"]
+                    st.session_state.selected_eval_id = row["eval_id"]
                     # Navigate to the evaluation details page
                     st.switch_page("pages/5_View_Evaluation_Details.py")
             with cols[1]:

@@ -8,7 +8,7 @@ from mixedvoices.core.recording import Recording
 from mixedvoices.core.step import Step
 from mixedvoices.core.utils import process_recording
 from mixedvoices.evaluation.eval_case_generation import get_eval_prompts
-from mixedvoices.evaluation.evaluation_run import EvaluationRun
+from mixedvoices.evaluation.evaluator import Evaluator
 from mixedvoices.utils import load_json, save_json
 
 
@@ -38,14 +38,14 @@ class Version:
         prompt: str,
         success_criteria: Optional[str] = None,
         metadata: Optional[Dict[str, Any]] = None,
-        evaluation_runs: Optional[Dict[str, EvaluationRun]] = None,
+        evals: Optional[Dict[str, Evaluator]] = None,
     ):
         self.version_id = version_id
         self.project_id = project_id
         self.prompt = prompt
         self.success_criteria = success_criteria
         self.metadata = metadata
-        self.evaluation_runs = evaluation_runs or {}
+        self.evals = evals or {}
         self.load_recordings()
         self.load_steps()
         self.create_flowchart()
@@ -109,7 +109,7 @@ class Version:
     ):
         if self.success_criteria and is_successful is not None:
             raise ValueError(
-                f"Version {self.version_id} already has success criteria set for automatic evaluation, cannot set is_successful"
+                f"Version {self.version_id} already has success criteria set, cannot set is_successful manually"
             )
         recording_id = uuid4().hex
         if not os.path.exists(audio_path):
@@ -148,8 +148,8 @@ class Version:
 
         return recording
 
-    def get_evaluation_run_ids(self):
-        return list(self.evaluation_runs.keys())
+    def get_eval_ids(self):
+        return list(self.evals.keys())
 
     def save(self):
         save_path = os.path.join(self.path, "info.json")
@@ -157,7 +157,7 @@ class Version:
             "prompt": self.prompt,
             "success_criteria": self.success_criteria,
             "metadata": self.metadata,
-            "evaluation_run_ids": self.get_evaluation_run_ids(),
+            "eval_ids": self.get_eval_ids(),
         }
         save_json(d, save_path)
 
@@ -170,19 +170,19 @@ class Version:
         prompt = d["prompt"]
         success_criteria = d.get("success_criteria", None)
         metadata = d.get("metadata", None)
-        evaluation_run_ids = d.get("evaluation_run_ids", [])
-        evaluation_runs = {
-            run_id: EvaluationRun.load(project_id, version_id, run_id)
-            for run_id in evaluation_run_ids
+        eval_ids = d.get("eval_ids", [])
+        evals = {
+            eval_id: Evaluator.load(project_id, version_id, eval_id)
+            for eval_id in eval_ids
         }
-        evaluation_runs = {k: v for k, v in evaluation_runs.items() if v}
+        evals = {k: v for k, v in evals.items() if v}
         return cls(
             version_id,
             project_id,
             prompt,
             success_criteria,
             metadata,
-            evaluation_runs,
+            evals,
         )
 
     def get_paths(self):
@@ -204,7 +204,7 @@ class Version:
         # TODO implement
         return []
 
-    def create_evaluation_run(
+    def create_evaluator(
         self,
         test_cases_per_path: int = 2,
         test_cases_per_failure_reason: int = 2,
@@ -217,7 +217,7 @@ class Version:
         scheduling: bool = True,
         adaptive_qa: bool = True,
         objection_handling: bool = True,
-    ) -> EvaluationRun:
+    ) -> Evaluator:
         metrics_dict = {
             "empathy": empathy,
             "verbatim_repetition": verbatim_repetition,
@@ -239,9 +239,9 @@ class Version:
             test_cases_per_failure_reason,
             total_test_cases_for_edge_scenarios,
         )
-        run_id = uuid4().hex
-        eval_run = EvaluationRun(
-            run_id,
+        eval_id = uuid4().hex
+        cur_eval = Evaluator(
+            eval_id,
             self.project_id,
             self.version_id,
             self.prompt,
@@ -249,6 +249,6 @@ class Version:
             prompts,
         )
 
-        self.evaluation_runs[run_id] = eval_run
+        self.evals[eval_id] = cur_eval
         self.save()
-        return eval_run
+        return cur_eval

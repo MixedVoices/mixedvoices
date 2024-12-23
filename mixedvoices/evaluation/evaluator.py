@@ -11,10 +11,10 @@ if TYPE_CHECKING:
     from mixedvoices import BaseAgent
 
 
-class EvaluationRun:
+class Evaluator:
     def __init__(
         self,
-        run_id: str,
+        eval_id: str,
         project_id: str,
         version_id: str,
         prompt: str,
@@ -23,7 +23,7 @@ class EvaluationRun:
         created_at: Optional[int] = None,
         eval_agents: Optional[List[EvalAgent]] = None,
     ):
-        self.run_id = run_id
+        self.eval_id = eval_id
         self.project_id = project_id
         self.version_id = version_id
         self.prompt = prompt
@@ -35,7 +35,7 @@ class EvaluationRun:
                 uuid4().hex,
                 project_id,
                 version_id,
-                run_id,
+                eval_id,
                 prompt,
                 eval_prompt,
                 enabled_llm_metrics,
@@ -50,8 +50,8 @@ class EvaluationRun:
             constants.ALL_PROJECTS_FOLDER,
             self.project_id,
             self.version_id,
-            "eval_runs",
-            self.run_id,
+            "evals",
+            self.eval_id,
         )
 
     def save(self):
@@ -67,13 +67,13 @@ class EvaluationRun:
         save_json(d, save_path)
 
     @classmethod
-    def load(cls, project_id, version_id, run_id):
+    def load(cls, project_id, version_id, eval_id):
         load_path = os.path.join(
             constants.ALL_PROJECTS_FOLDER,
             project_id,
             version_id,
-            "eval_runs",
-            run_id,
+            "evals",
+            eval_id,
             "info.json",
         )
         try:
@@ -83,7 +83,7 @@ class EvaluationRun:
 
         eval_agent_ids = d.pop("eval_agent_ids")
         eval_agents = [
-            EvalAgent.load(project_id, version_id, run_id, agent_id)
+            EvalAgent.load(project_id, version_id, eval_id, agent_id)
             for agent_id in eval_agent_ids
         ]
         eval_agents = [a for a in eval_agents if a]
@@ -91,7 +91,7 @@ class EvaluationRun:
             {
                 "project_id": project_id,
                 "version_id": version_id,
-                "run_id": run_id,
+                "eval_id": eval_id,
                 "eval_agents": eval_agents,
             }
         )
@@ -101,7 +101,7 @@ class EvaluationRun:
     def __iter__(self):
         yield from self.eval_agents
 
-    def evaluate(self, agent_class: Type["BaseAgent"]):
+    def run(self, agent_class: Type["BaseAgent"]):
         for eval_agent in self.eval_agents:
             eval_agent.evaluate(agent_class)
             self.save()
