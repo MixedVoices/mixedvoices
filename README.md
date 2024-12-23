@@ -89,34 +89,6 @@ This will start:
 - API server at http://localhost:7760
 - Dashboard at http://localhost:7761
 
-## Technical Requirements
-
-### Core Dependencies
-- Python ≥ 3.8
-- FastAPI
-- Streamlit
-- OpenAI API access
-- Plotly
-- NetworkX
-
-## Troubleshooting
-
-### Common Issues
-1. **API Connection Errors**
-   - Verify your OpenAI API key is correctly set
-   - Check your internet connection
-   - Ensure you're not exceeding API rate limits
-
-2. **Dashboard Not Loading**
-   - Confirm both API server and dashboard ports are available
-   - Check if required dependencies are installed
-   - Verify Python version compatibility
-
-3. **Recording Upload Issues**
-   - Ensure audio files are in supported formats (.wav, .mp3)
-   - Check file size limits
-   - Verify storage permissions
-
 ## Contributing
 
 We welcome contributions! Please follow these steps:
@@ -129,7 +101,7 @@ We welcome contributions! Please follow these steps:
 
 ### Development Setup
 ```bash
-git clone https://github.com/yourusername/mixedvoices.git
+git clone https://github.com/MixedVoices/MixedVoices.git
 pip install -e ".[dev]"
 ```
 
