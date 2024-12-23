@@ -5,15 +5,13 @@ MixedVoices is a comprehensive analytics and evaluation tool for voice agents - 
 ## Features
 
 ### Core Capabilities
-- 📊 **Flow Visualization**: Interactive flowcharts showing conversation paths and patterns
-- 🔄 **Version Control**: Track and compare agent behavior across different iterations
-- 📈 **Success Rate Analytics**: Measure and optimize performance metrics
-- 🔍 **Conversation Analysis**: Deep dive into individual interactions
-- 📝 **Metadata Tracking**: Store and analyze version-specific configurations
+- 🌐 **Effortless Integration**: Python API designed for quick and seamless integration, ensuring developers can get started in minutes
 - 🖥️ **Interactive Dashboard**: User-friendly interface for all operations
+- 📊 **Call Flow Analysis**: Interactive flowcharts showing conversation paths, patterns and success rates
+- 🔄 **Version Control**: Track and compare agent behavior across different iterations
 - 🎯 **ML Performance Metrics**: Track hallucinations, call scheduling, conciseness, and empathy scores
 - 📱 **Call Quality Analysis**: Monitor interruptions, latency, signal-to-noise ratio, and words per minute
-- 🧪 **Agent Evaluation**: Test and validate agent performance through simulation and stress testing
+- 🧪 **Agent Evaluation**: Test and validate agent performance through simulations and stress testing
 
 ### Dashboard Features
 - **Project Management**
