@@ -80,7 +80,7 @@ version.add_recording("path/to/recording2.wav", blocking=False, is_successful=Fa
 import mixedvoices as mv
 
 # create a new class that inherits from `BaseAgent`. Must implement respond and starts_conversation
-class ReceptionistAgent(mv.BaseAgent):
+class ReceptionAgent(mv.BaseAgent):
     def __init__(self):
         self.assistant = ReceptionistAssistant(model="gpt-4o")
 
@@ -97,7 +97,7 @@ class ReceptionistAgent(mv.BaseAgent):
 project = mv.load_project("receptionist")
 version = project.load_version("v1")
 evaluator = version.create_evaluator()
-evaluator.run(DentalAgent) # can specify which metrics to measure
+evaluator.run(ReceptionAgent) # can specify which metrics to measure
 ```
 
 ### Using Dashboard
