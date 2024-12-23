@@ -11,13 +11,14 @@ import mixedvoices
 from mixedvoices.core.step import Step
 from mixedvoices.processors.call_metrics import get_call_metrics
 from mixedvoices.processors.llm_metrics import get_llm_metrics
-from mixedvoices.processors.speech_analyzer import script_to_step_names
+from mixedvoices.processors.steps import script_to_step_names
 from mixedvoices.processors.success import get_success
 from mixedvoices.processors.summary import summarize_transcript
 from mixedvoices.processors.transcriber import (
     transcribe_and_combine_deepgram,
     transcribe_and_combine_openai,
 )
+from mixedvoices import constants
 
 if TYPE_CHECKING:
     from mixedvoices.core.recording import Recording
@@ -60,14 +61,14 @@ def get_transcript_and_duration(audio_path, output_folder, user_channel="left"):
     if len(y.shape) != 2 or y.shape[0] != 2:
         raise ValueError("Input must be a stereo audio file")
 
-    if mixedvoices.constants.TRANSCRIPTION_PROVIDER == "openai":
+    if constants.TRANSCRIPTION_PROVIDER == "openai":
         user_audio_path, assistant_audio_path = separate_channels(
             y, sr, output_folder, user_channel
         )
         combined_transcript, user_words, assistant_words = (
             transcribe_and_combine_openai(user_audio_path, assistant_audio_path)
         )
-    elif mixedvoices.constants.TRANSCRIPTION_PROVIDER == "deepgram":
+    elif constants.TRANSCRIPTION_PROVIDER == "deepgram":
         combined_transcript, user_words, assistant_words = (
             transcribe_and_combine_deepgram(audio_path, user_channel)
         )

@@ -1,0 +1,9 @@
+1. bot: Hello. This is Locoto Dental. How can I assist you today?
+2. user: Hey. I wanted to just book an appointment.
+3. bot: Awesome. I can help with that. Can I get your full name, please?
+4. user: Are you guys open today, though?
+5. bot: Sorry. We're closed today. Our hours are 8 AM to 5 PM daily except for Sundays. Can I get your full name to schedule an appointment for you?
+6. user: But today is Wednesday, 2:30 PM. How are you guys closed?
+7. bot: Oh, I see. My bad I totally missed the part, I'm not able to see the current time as I'm an AI. I apologize for the confusion. Can I still get your full name to schedule an appointment for you?
+8. user: No. Never mind. I wanted to come in right now, but doesn't seem like you will be able to help. So that's okay.
+9. bot: I'm really sorry about that. If you change your mind, feel free to reach out again. Take care.
