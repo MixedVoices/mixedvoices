@@ -1,3 +1,4 @@
+from mixedvoices import models
 from mixedvoices.processors.utils import parse_explanation_response
 from mixedvoices.utils import get_openai_client
 
@@ -18,24 +19,27 @@ def analyze_metric(transcript: str, metric_name: str, metric_definition: str):
     Score: 6
     """  # noqa E501
 
-    try:
-        response = client.chat.completions.create(
-            model="gpt-4o",
-            messages=[
-                {
-                    "role": "system",
-                    "content": "You're an expert at analyzing transcripts",  # noqa E501,
-                },
-                {"role": "user", "content": prompt},
-                {"role": "assistant", "content": "Output:-"},
-            ],
-        )
+    num_tries = 3
+    for _ in range(num_tries):
+        try:
+            response = client.chat.completions.create(
+                model=models.METRICS_MODEL,
+                messages=[
+                    {
+                        "role": "system",
+                        "content": "You're an expert at analyzing transcripts",  # noqa E501,
+                    },
+                    {"role": "user", "content": prompt},
+                    {"role": "assistant", "content": "Output:-"},
+                ],
+            )
 
-        return parse_explanation_response(response.choices[0].message.content)
-
-    except Exception as e:
-        print(f"Error analyzing metric: {e}")
-        return {"explanation": "Analysis failed", "score": "N/A"}
+            return parse_explanation_response(response.choices[0].message.content)
+        except ValueError as e:
+            print(f"Error parsing metric: {e}")
+        except Exception as e:
+            print(f"Error analyzing metric: {e}")
+            return {"explanation": "Analysis failed", "score": "N/A"}
 
 
 def analyze_empathy(transcript: str):
@@ -117,7 +121,7 @@ def analyze_objection_handling(transcript: str):
     metric_definition = """
     Does the bot acknowledge objections, relate to the user's concern in a way that sympathizes with their pain, and offer relevant solutions?
     Bad examples i.e. low scores: The bot skips acknowledging the concern, uses generic sales language without empathizing, or offers an irrelevant or off-topic response.
-    Scoring: 0 to 10
+    Scoring: 0 to 10. N/A if no objections are involved
     """  # noqa E501
 
     return analyze_metric(transcript, metric_name, metric_definition)
