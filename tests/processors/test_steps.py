@@ -11,6 +11,13 @@ def test_steps():
     with open("tests/assets/transcript.txt", "r") as f:
         transcript = f.read()
 
-    steps = script_to_step_names(transcript)
+    existing_step_names = [
+        "Greeting",
+        "Request Doctor Callback",
+        "Check Medicine Availability",
+        "Ask to speak to manager",
+    ]
+
+    steps = script_to_step_names(transcript, existing_step_names)
     for step in steps:
         assert len(step.split()) < 7
