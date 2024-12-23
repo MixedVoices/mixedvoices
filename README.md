@@ -13,25 +13,6 @@ MixedVoices is a comprehensive analytics and evaluation tool for voice agents - 
 - 📱 **Call Quality Analysis**: Monitor interruptions, latency, signal-to-noise ratio, and words per minute
 - 🧪 **Agent Evaluation**: Test and validate agent performance through simulations and stress testing
 
-### Dashboard Features
-- **Project Management**
-  - Create and manage multiple projects and versions along with metadata
-- **Recording Analysis**
-  - View ML metrics like hallucinations, call scheduling, conciseness, empathy
-  - Track call metrics like Interruptions, Latency, Signal to Noise Ratio, Words Per Minute
-  - Transcripts, summary and audio playback
-  - Success/failure tracking
-- **Flow Visualization**
-  - Interactive flowcharts of all conversation paths
-  - Success rate indicators for each step
-  - Path visualization for individual recording
-- **Agent Evaluation**
-  - Evaluate agent performance by simulating real world scenarios based on recordings uploaded in the past
-  - Stress test agent against edge case scenarios
-- **Upload Interface**
-  - Easy upload of new recordings
-  - Automatic processing and analysis
-
 ## Installation
 
 ```bash
