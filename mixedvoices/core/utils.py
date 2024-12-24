@@ -7,7 +7,7 @@ import librosa
 import numpy as np
 import soundfile as sf
 
-import mixedvoices
+from mixedvoices import constants
 from mixedvoices.core.step import Step
 from mixedvoices.processors.call_metrics import get_call_metrics
 from mixedvoices.processors.llm_metrics import get_llm_metrics
@@ -18,11 +18,10 @@ from mixedvoices.processors.transcriber import (
     transcribe_and_combine_deepgram,
     transcribe_and_combine_openai,
 )
-from mixedvoices import constants
 
 if TYPE_CHECKING:
-    from mixedvoices.core.recording import Recording
-    from mixedvoices.core.version import Version
+    from mixedvoices.core.recording import Recording  # pragma: no_cover
+    from mixedvoices.core.version import Version  # pragma: no_cover
 
 
 def separate_channels(y: np.ndarray, sr: int, output_folder: str, user_channel="left"):
@@ -75,6 +74,35 @@ def get_transcript_and_duration(audio_path, output_folder, user_channel="left"):
     return combined_transcript, user_words, assistant_words, duration
 
 
+def create_steps_from_names(
+    step_names: List[str], version: "Version", recording: "Recording"
+) -> List[Step]:
+    all_steps: List[Step] = []
+    step_options = version.starting_steps
+    previous_step = None
+    for i, step_name in enumerate(step_names):
+        is_final_step = i == len(step_names) - 1
+        step_option_names = [step.name for step in step_options]
+        if step_name in step_option_names:
+            step_index = step_option_names.index(step_name)
+            step = step_options[step_index]
+        else:
+            step = Step(step_name, version.version_id, version.project_id)
+            if previous_step is not None:
+                step.previous_step_id = previous_step.step_id
+                step.previous_step = previous_step
+                previous_step.next_step_ids.append(step.step_id)
+                previous_step.next_steps.append(step)
+            version.steps[step.step_id] = step
+        all_steps.append(step)
+        step.record_usage(recording, is_final_step, recording.is_successful)
+        step_options = step.next_steps
+        previous_step = step
+    for step in all_steps:
+        step.save()
+    return all_steps
+
+
 def process_recording(recording: "Recording", version: "Version", user_channel="left"):
     try:
         audio_path = recording.audio_path
@@ -82,43 +110,18 @@ def process_recording(recording: "Recording", version: "Version", user_channel="
         combined_transcript, user_words, assistant_words, duration = (
             get_transcript_and_duration(audio_path, output_folder, user_channel)
         )
-        recording.combined_transcript = combined_transcript
+        recording.combined_transcript = recording.combined_transcript or combined_transcript
         if version.success_criteria:
             response = get_success(combined_transcript, version.success_criteria)
             recording.is_successful = response["success"]
             recording.success_explanation = response["explanation"]
         existing_step_names = [step.name for step in version.steps.values()]
         step_names = script_to_step_names(combined_transcript, existing_step_names)
-
-        all_steps: List[Step] = []
-        step_options = version.starting_steps
-        previous_step = None
-        for i, step_name in enumerate(step_names):
-            is_final_step = i == len(step_names) - 1
-            step_option_names = [step.name for step in step_options]
-            if step_name in step_option_names:
-                step_index = step_option_names.index(step_name)
-                step = step_options[step_index]
-            else:
-                step = Step(step_name, version.version_id, version.project_id)
-                if previous_step is not None:
-                    step.previous_step_id = previous_step.step_id
-                    step.previous_step = previous_step
-                    previous_step.next_step_ids.append(step.step_id)
-                    previous_step.next_steps.append(step)
-                version.steps[step.step_id] = step
-            all_steps.append(step)
-            step.record_usage(recording, is_final_step, recording.is_successful)
-            step_options = step.next_steps
-            previous_step = step
-
-        for step in all_steps:
-            step.save()
+        all_steps = create_steps_from_names(step_names, version, recording)
         recording.step_ids = [step.step_id for step in all_steps]
         recording.duration = duration
-        recording.summary = (
-            recording.get_summary_from_metadata()
-            or summarize_transcript(combined_transcript)
+        recording.summary = recording.summary or summarize_transcript(
+            combined_transcript
         )
         recording.llm_metrics = get_llm_metrics(combined_transcript, version.prompt)
         recording.call_metrics = get_call_metrics(

@@ -125,6 +125,8 @@ class TaskManager:
                     "project_id": recording.project_id,
                     "is_successful": recording.is_successful,
                     "metadata": recording.metadata,
+                    "summary": recording.summary,
+                    "combined_transcript": recording.combined_transcript,
                 },
                 "version_data": {
                     "version_id": version.version_id,
@@ -153,6 +155,8 @@ class TaskManager:
                 project_id=recording_data["project_id"],
                 is_successful=recording_data["is_successful"],
                 metadata=recording_data["metadata"],
+                summary=recording_data["summary"],
+                combined_transcript=recording_data["combined_transcript"],
             )
 
             version = Version.load(
@@ -268,12 +272,12 @@ class TaskManager:
                     self._save_task(task)
 
                     if task.task_type == "process_recording":
-                        from mixedvoices.core.utils import process_recording
+                        from mixedvoices.core import utils
 
                         deserialized_params = self._deserialize_task_params(
                             task.task_type, task.params
                         )
-                        process_recording(**deserialized_params)
+                        utils.process_recording(**deserialized_params)
                         task.status = TaskStatus.COMPLETED
                         task.completed_at = time.time()
                 except Exception as e:

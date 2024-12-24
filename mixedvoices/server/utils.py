@@ -3,6 +3,8 @@ def process_vapi_webhook(webhook_data):
     return {
         "source": "vapi",
         "transcript": message_data["transcript"],
+        "summary": message_data["analysis"]["summary"],
+        "is_successful": message_data["analysis"]["successEvaluation"],
         "call_info": {
             "messages": message_data["messages"],
             "stereo_recording_url": message_data["stereoRecordingUrl"],
@@ -12,7 +14,6 @@ def process_vapi_webhook(webhook_data):
             "call_duration_seconds": message_data["durationSeconds"],
         },
         "analysis_info": {
-            "summary": message_data["analysis"]["summary"],
             "success_evaluation": message_data["analysis"]["successEvaluation"],
             "ended_reason": message_data["endedReason"],
         },

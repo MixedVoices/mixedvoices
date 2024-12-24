@@ -11,7 +11,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 import mixedvoices
-import mixedvoices.constants
+from mixedvoices import constants
 from mixedvoices.server.utils import process_vapi_webhook
 
 # Configure logging
@@ -53,9 +53,9 @@ class RecordingUpload(BaseModel):
 async def list_projects():
     """List all available projects"""
     try:
-        if not os.path.exists(mixedvoices.constants.ALL_PROJECTS_FOLDER):
+        if not os.path.exists(constants.ALL_PROJECTS_FOLDER):
             return {"projects": []}
-        projects = os.listdir(mixedvoices.constants.ALL_PROJECTS_FOLDER)
+        projects = os.listdir(constants.ALL_PROJECTS_FOLDER)
         if "_tasks" in projects:
             projects.remove("_tasks")
         return {"projects": projects}
@@ -363,7 +363,9 @@ async def handle_webhook(
         if provider_name == "vapi":
             data = process_vapi_webhook(webhook_data)
             stereo_url = data["call_info"]["stereo_recording_url"]
-            is_successful = data["analysis_info"]["success_evaluation"]
+            is_successful = data.pop("is_successful", None)
+            summary = data.pop("summary", None)
+            transcript = data.pop("transcript", None)
             call_id = data["id_info"]["call_id"]
         else:
             logger.error(f"Invalid provider name: {provider_name}")
@@ -396,6 +398,8 @@ async def handle_webhook(
                 blocking=True,
                 is_successful=is_successful,
                 metadata=data,
+                summary=summary,
+                transcript=transcript
             )
             logger.info(f"Recording processed successfully: {recording.recording_id}")
 
