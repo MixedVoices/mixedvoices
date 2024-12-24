@@ -89,7 +89,3 @@ def test_get_standard_steps_string():
   b. Use relevant variation, eg. Check Medicine Availability, Check Inventory Availability, Check Cream Availability
 11. Ask to speak to manager"""
     )
-
-
-if __name__ == "__main__":
-    test_get_standard_steps_string()

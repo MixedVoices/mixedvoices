@@ -7,17 +7,21 @@ from scipy.io import wavfile
 
 
 def needs_api_key(env_var):
-   def decorator(func):
-       @wraps(func)
-       def wrapper(*args, **kwargs):
-           if not os.getenv(env_var):
-               pytest.skip(f"{env_var} not found in environment")
-           return func(*args, **kwargs)
-       return wrapper
-   return decorator
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            if not os.getenv(env_var):
+                pytest.skip(f"{env_var} not found in environment")
+            return func(*args, **kwargs)
+
+        return wrapper
+
+    return decorator
+
 
 needs_openai_key = needs_api_key("OPENAI_API_KEY")
 needs_deepgram_key = needs_api_key("DEEPGRAM_API_KEY")
+
 
 def add_noise_to_audio(audio_file_path, output_path=None, noise_level=0.01):
     """

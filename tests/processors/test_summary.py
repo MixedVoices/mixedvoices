@@ -1,7 +1,6 @@
 from unittest.mock import patch
 
-from utils import needs_openai_key
-
+from conftest import needs_openai_key
 from mixedvoices.processors.summary import summarize_transcript
 
 

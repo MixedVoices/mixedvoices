@@ -1,5 +1,4 @@
-from utils import needs_deepgram_key, needs_openai_key
-
+from conftest import needs_deepgram_key, needs_openai_key
 from mixedvoices.processors.transcriber import (
     transcribe_and_combine_deepgram,
     transcribe_and_combine_openai,
