@@ -9,7 +9,7 @@ from mixedvoices.processors.llm_metrics import get_llm_metrics
 from mixedvoices.utils import get_openai_client, load_json, save_json
 
 if TYPE_CHECKING:
-    from mixedvoices import BaseAgent  # pragma: no_cover
+    from mixedvoices import BaseAgent  # pragma: no cover
 
 model = "gpt-4o"
 

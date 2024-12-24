@@ -6,7 +6,7 @@ import mixedvoices.constants as constants
 from mixedvoices.utils import load_json, save_json
 
 if TYPE_CHECKING:
-    from mixedvoices.core.recording import Recording  # pragma: no_cover
+    from mixedvoices.core.recording import Recording  # pragma: no cover
 
 
 class Step:

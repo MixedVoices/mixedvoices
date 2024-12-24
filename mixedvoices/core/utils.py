@@ -20,8 +20,8 @@ from mixedvoices.processors.transcriber import (
 )
 
 if TYPE_CHECKING:
-    from mixedvoices.core.recording import Recording  # pragma: no_cover
-    from mixedvoices.core.version import Version  # pragma: no_cover
+    from mixedvoices.core.recording import Recording  # pragma: no cover
+    from mixedvoices.core.version import Version  # pragma: no cover
 
 
 def separate_channels(y: np.ndarray, sr: int, output_folder: str, user_channel="left"):
@@ -110,7 +110,9 @@ def process_recording(recording: "Recording", version: "Version", user_channel="
         combined_transcript, user_words, assistant_words, duration = (
             get_transcript_and_duration(audio_path, output_folder, user_channel)
         )
-        recording.combined_transcript = recording.combined_transcript or combined_transcript
+        recording.combined_transcript = (
+            recording.combined_transcript or combined_transcript
+        )
         if version.success_criteria:
             response = get_success(combined_transcript, version.success_criteria)
             recording.is_successful = response["success"]
