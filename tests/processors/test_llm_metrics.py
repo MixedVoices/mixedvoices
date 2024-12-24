@@ -20,8 +20,8 @@ def test_get_llm_metrics():
         "hallucination": ["PASS", "FAIL"],
         "context": ["PASS", "FAIL"],
         "scheduling": list(range(11)) + ["N/A"],
-        "adaptive_qa": list(range(11)) + ["N/A"],
-        "objection_handling": list(range(11)),
+        "adaptive_qa": list(range(11)),
+        "objection_handling": list(range(11)) + ["N/A"],
     }
 
     for metric, scores in metric_scoring.items():

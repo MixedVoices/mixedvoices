@@ -4,7 +4,9 @@ from mixedvoices.utils import get_openai_client
 
 
 # TODO: add more metrics, define better
-def analyze_metric(transcript: str, metric_name: str, metric_definition: str):
+def analyze_metric(
+    transcript: str, metric_name: str, metric_definition: str, expected_values: list
+):
     client = get_openai_client()
     prompt = f"""Transcript:
     {transcript}
@@ -16,7 +18,7 @@ def analyze_metric(transcript: str, metric_name: str, metric_definition: str):
 
     Output:-
     Explanation: Lorem ipsum
-    Score: 6
+    Score:
     """  # noqa E501
 
     num_tries = 3
@@ -34,7 +36,10 @@ def analyze_metric(transcript: str, metric_name: str, metric_definition: str):
                 ],
             )
 
-            return parse_explanation_response(response.choices[0].message.content)
+            result = parse_explanation_response(response.choices[0].message.content)
+            if result["score"] in expected_values:
+                return result
+            raise ValueError(f"Unexpected score: {result['score']}")
         except ValueError as e:
             print(f"Error parsing metric: {e}")
         except Exception as e:
@@ -51,7 +56,7 @@ def analyze_empathy(transcript: str):
       Scoring: 0 to 10. 10 being the best.
     """
 
-    return analyze_metric(transcript, metric_name, metric_definition)
+    return analyze_metric(transcript, metric_name, metric_definition, list(range(11)))
 
 
 def analyze_verbatim_repetition(transcript: str):
@@ -62,7 +67,9 @@ def analyze_verbatim_repetition(transcript: str):
     Scoring: FAIL if it repeated VERBATIM for any question, PASS if never repeated, N/A if didn't encounter similar questions.
     """  # noqa E501
 
-    return analyze_metric(transcript, metric_name, metric_definition)
+    return analyze_metric(
+        transcript, metric_name, metric_definition, ["PASS", "FAIL", "N/A"]
+    )
 
 
 def analyze_conciseness(transcript: str):
@@ -71,7 +78,7 @@ def analyze_conciseness(transcript: str):
     Scoring: 0 to 10. 10 being the best.
     """  # noqa E501
 
-    return analyze_metric(transcript, metric_name, metric_definition)
+    return analyze_metric(transcript, metric_name, metric_definition, list(range(11)))
 
 
 def analyze_hallucination(transcript: str, prompt: str):
@@ -83,7 +90,7 @@ def analyze_hallucination(transcript: str, prompt: str):
     {prompt}
     """  # noqa E501
 
-    return analyze_metric(transcript, metric_name, metric_definition)
+    return analyze_metric(transcript, metric_name, metric_definition, ["PASS", "FAIL"])
 
 
 def analyze_context_awareness(transcript: str):
@@ -93,7 +100,7 @@ def analyze_context_awareness(transcript: str):
     Scoring: FAIL if it loses context, PASS if it maintains context.
     """  # noqa E501
 
-    return analyze_metric(transcript, metric_name, metric_definition)
+    return analyze_metric(transcript, metric_name, metric_definition, ["PASS", "FAIL"])
 
 
 def analyze_scheduling(transcript: str):
@@ -103,7 +110,9 @@ def analyze_scheduling(transcript: str):
     Scoring: 0 to 10. 10 being the best. N/A if no scheduling is involved
     """  # noqa E501
 
-    return analyze_metric(transcript, metric_name, metric_definition)
+    return analyze_metric(
+        transcript, metric_name, metric_definition, list(range(11)) + ["N/A"]
+    )
 
 
 def analyze_adaptive_qa(transcript: str):
@@ -113,7 +122,7 @@ def analyze_adaptive_qa(transcript: str):
     Scoring: 0 to 10. 10 being the best.
     """
 
-    return analyze_metric(transcript, metric_name, metric_definition)
+    return analyze_metric(transcript, metric_name, metric_definition, list(range(11)))
 
 
 def analyze_objection_handling(transcript: str):
@@ -124,7 +133,9 @@ def analyze_objection_handling(transcript: str):
     Scoring: 0 to 10. N/A if no objections are involved
     """  # noqa E501
 
-    return analyze_metric(transcript, metric_name, metric_definition)
+    return analyze_metric(
+        transcript, metric_name, metric_definition, list(range(11)) + ["N/A"]
+    )
 
 
 def get_llm_metrics(

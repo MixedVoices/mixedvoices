@@ -38,8 +38,8 @@ app.add_middleware(
 class VersionCreate(BaseModel):
     name: str
     prompt: str
-    success_criteria: Optional[str]
-    metadata: Dict[str, Any]
+    success_criteria: Optional[str] = None
+    metadata: Optional[Dict[str, Any]] = None
 
 
 class RecordingUpload(BaseModel):
@@ -179,7 +179,9 @@ async def get_recording_flow(project_name: str, version_name: str, recording_id:
     try:
         project = mixedvoices.load_project(project_name)
         version = project.load_version(version_name)
-        recording = version.recordings[recording_id]
+        recording = version.recordings.get(recording_id, None)
+        if recording is None:
+            raise ValueError(f"Recording {recording_id} not found in version {version_name}")
 
         steps_data = []
         for step_id in recording.step_ids:
@@ -231,7 +233,7 @@ async def list_recordings(project_name: str, version_name: str):
         return {"recordings": recordings_data}
     except ValueError as e:
         logger.error(
-            f"Version '{version_name}' not found in project '{project_name}': {str(e)}"
+            f"Version '{version_name}' or project '{project_name}' does not exist: {str(e)}"
         )
         raise HTTPException(status_code=404, detail=str(e)) from e
     except Exception as e:
@@ -310,7 +312,9 @@ async def list_step_recordings(project_name: str, version_name: str, step_id: st
     try:
         project = mixedvoices.load_project(project_name)
         version = project.load_version(version_name)
-        step = version.steps[step_id]
+        step = version.steps.get(step_id, None)
+        if step is None:
+            raise ValueError(f"Step {step_id} not found in version {version_name}")
 
         recordings_data = []
         for recording_id in step.recording_ids:
@@ -336,7 +340,7 @@ async def list_step_recordings(project_name: str, version_name: str, step_id: st
         return {"recordings": recordings_data}
     except ValueError as e:
         logger.error(
-            f"Step '{step_id}' not found in version '{version_name}' of project '{project_name}': {str(e)}"
+            f"Step '{step_id}' or version '{version_name}' or project '{project_name}' not found: {str(e)}"
         )
         raise HTTPException(status_code=404, detail=str(e)) from e
     except Exception as e:
@@ -436,6 +440,11 @@ async def list_evals(project_name: str, version_name: str):
                 }
             )
         return {"evals": eval_data}
+    except ValueError as e:
+        logger.error(
+            f"Version '{version_name}' or project '{project_name}' not found: {str(e)}"
+        )
+        raise HTTPException(status_code=404, detail=str(e)) from e
     except Exception as e:
         logger.error(f"Error listing evals: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e)) from e
@@ -446,7 +455,9 @@ async def get_eval_details(project_name: str, version_name: str, eval_id: str):
     try:
         project = mixedvoices.load_project(project_name)
         version = project.load_version(version_name)
-        current_eval = version.evals[eval_id]
+        current_eval = version.evals.get(eval_id, None)
+        if current_eval is None:
+            raise ValueError(f"Eval {eval_id} not found in version {version_name}")
         agents = current_eval.eval_agents
         agent_data = []
         for agent in agents:
@@ -462,6 +473,11 @@ async def get_eval_details(project_name: str, version_name: str, eval_id: str):
             )
 
         return {"agents": agent_data}
+    except ValueError as e:
+        logger.error(
+            f"Eval '{eval_id}' or version '{version_name}' or project '{project_name}' not found: {str(e)}"
+        )
+        raise HTTPException(status_code=404, detail=str(e)) from e
     except Exception as e:
         logger.error(f"Error getting eval details: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e)) from e

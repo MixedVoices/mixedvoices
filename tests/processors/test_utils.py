@@ -88,4 +88,4 @@ def test_get_standard_steps_string():
   a. Only used to check availability of product/service
   b. Use relevant variation, eg. Check Medicine Availability, Check Inventory Availability, Check Cream Availability
 11. Ask to speak to manager"""
-    )
+    )  # noqa E501
