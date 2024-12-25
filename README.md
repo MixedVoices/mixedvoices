@@ -23,10 +23,6 @@ pip install mixedvoices
 1. Python 3.8 or higher
 2. OpenAI API key (set in your environment variables)
 
-```bash
-export OPENAI_API_KEY='your-api-key'
-```
-
 # Quick Start
 
 ## Analytics
