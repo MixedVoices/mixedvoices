@@ -159,8 +159,8 @@ class EvalAgent:
         )
         return cls(**d)
 
-    def evaluate(self, agent_class: Type["BaseAgent"]):
-        assistant = agent_class()
+    def evaluate(self, agent_class: Type["BaseAgent"], **kwargs):
+        assistant = agent_class(**kwargs)
         assistant_starts = assistant.starts_conversation
         if assistant_starts is None:
             assistant_starts = random.choice([True, False])
