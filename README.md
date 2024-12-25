@@ -99,11 +99,9 @@ pip install -e ".[dev]"
 This project is licensed under the Apache 2.0 License - see the [LICENSE](LICENSE) file for details.
 
 ## Roadmap
-- [ ] Unit Tests
 - [ ] Support other APIs and Open Source LLMs
 - [ ] Team collaboration features
 - [ ] Custom analytics plugins
-- [ ] Enhanced visualization options
 - [ ] Advanced evaluation scenarios
 - [ ] Custom metric definitions for evaluation
 
