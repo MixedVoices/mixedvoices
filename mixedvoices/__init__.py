@@ -3,7 +3,7 @@ import os
 import mixedvoices.constants as constants
 from mixedvoices.core.project import Project
 from mixedvoices.core.task_manager import TaskManager
-from mixedvoices.evaluation.base_agent import BaseAgent
+from mixedvoices.evaluation.agents.base_agent import BaseAgent
 from mixedvoices.utils import validate_name
 
 os.makedirs(constants.ALL_PROJECTS_FOLDER, exist_ok=True)

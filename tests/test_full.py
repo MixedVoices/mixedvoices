@@ -4,7 +4,7 @@ from unittest.mock import patch
 import mixedvoices as mv
 from conftest import needs_deepgram_key, needs_openai_key
 from examples.evaluation.agent import DentalAssistant, check_conversation_ended
-from mixedvoices.evaluation.base_agent import BaseAgent
+from mixedvoices.evaluation.agents.base_agent import BaseAgent
 
 
 class DentalAgent(BaseAgent):

@@ -27,8 +27,9 @@ pip install mixedvoices
 export OPENAI_API_KEY='your-api-key'
 ```
 
-## Quick Start
+# Quick Start
 
+## Analytics
 ### Using Python API to analyze recordings
 ```python
 import mixedvoices as mv
@@ -54,11 +55,12 @@ version.add_recording("path/to/recording.wav", is_successful=True)
 version.add_recording("path/to/recording2.wav", blocking=False, is_successful=False)
 ```
 
-### Using Python API to run simulations to evaluate agent
+## Evaluation
+### Evaluate custom agent
 ```python
 import mixedvoices as mv
 
-# create a new class that inherits from `BaseAgent`. Must implement respond and starts_conversation
+# inherits from `BaseAgent`. Must implement respond and starts_conversation
 class ReceptionAgent(mv.BaseAgent):
     def __init__(self):
         self.assistant = ReceptionistAssistant(model="gpt-4o")
@@ -77,6 +79,15 @@ project = mv.load_project("receptionist")
 version = project.load_version("v1")
 evaluator = version.create_evaluator()
 evaluator.run(ReceptionAgent) # can specify which metrics to measure
+```
+
+### Evaluate Bland Agent
+```python
+import mixedvoices as mv
+project = mv.load_project("receptionist")
+version = project.load_version("v1")
+evaluator = version.create_evaluator()
+evaluator.run(mv.BlandAgent, auth_token="", pathway_id="", start_node_id="") 
 ```
 
 ### Using Dashboard
