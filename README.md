@@ -39,8 +39,11 @@ project = mv.load_project("receptionist") # or load existing project
 version = project.create_version("v1", prompt="You are a ...") # Create a version
 version = project.load_version("v1") # or load existing version
 
-version.add_recording("path/to/call.wav") # Analyze call, this is blocking, takes a few seconds
-version.add_recording("path/to/call.wav", blocking=False) # non blocking mode in a separate thread, instantaneous
+# Analyze call, this is blocking, takes a few seconds
+version.add_recording("path/to/call.wav") 
+
+# non blocking mode in a separate thread, instantaneous
+version.add_recording("path/to/call.wav", blocking=False) 
 
 ```
 
