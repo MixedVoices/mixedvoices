@@ -2,9 +2,9 @@ from datetime import datetime, timezone
 
 import pandas as pd
 import streamlit as st
-from api.client import APIClient
-from api.endpoints import get_recording_flow_endpoint
 
+from mixedvoices.dashboard.api.client import APIClient
+from mixedvoices.dashboard.api.endpoints import get_recording_flow_endpoint
 from mixedvoices.dashboard.utils import display_llm_metrics, display_llm_metrics_preview
 from mixedvoices.dashboard.visualizations.flow_chart import FlowChart
 

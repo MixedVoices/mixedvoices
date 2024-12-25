@@ -1,6 +1,7 @@
 import pandas as pd
 import streamlit as st
-from api.client import APIClient
+
+from mixedvoices.dashboard.api.client import APIClient
 
 
 class EvaluationViewer:
