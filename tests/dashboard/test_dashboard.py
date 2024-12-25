@@ -319,6 +319,38 @@ class TestCLI:
         mock_main.assert_called_once()
 
 
+class TestMetrics:
+    def test_display_metrics_empty(self):
+        """Test metrics display with empty recordings list"""
+        with patch("streamlit.columns") as mock_cols:
+            col1, col2, col3 = MagicMock(), MagicMock(), MagicMock()
+            mock_cols.return_value = [col1, col2, col3]
+
+            display_metrics([])
+
+            col1.metric.assert_called_with("Total Recordings", 0)
+            col2.metric.assert_called_with("Successful", 0)
+            col3.metric.assert_called_with("Success Rate", "0.0%")
+
+    def test_display_metrics_with_data(self):
+        """Test metrics display with sample recordings"""
+        recordings = [
+            {"is_successful": True},
+            {"is_successful": False},
+            {"is_successful": True},
+        ]
+
+        with patch("streamlit.columns") as mock_cols:
+            col1, col2, col3 = MagicMock(), MagicMock(), MagicMock()
+            mock_cols.return_value = [col1, col2, col3]
+
+            display_metrics(recordings)
+
+            col1.metric.assert_called_with("Total Recordings", 3)
+            col2.metric.assert_called_with("Successful", 2)
+            col3.metric.assert_called_with("Success Rate", "66.7%")
+
+
 # Test Home Page
 def test_home_page_initial_state(app_home):
     """Test initial state of home page"""
@@ -331,26 +363,6 @@ def test_home_page_initial_state(app_home):
     # Verify welcome message is displayed
     titles = [element.value for element in app_home.title]
     assert "Welcome to MixedVoices" in titles
-
-
-def test_display_metrics():
-    # Test with empty list
-    with patch("streamlit.columns") as mock_cols:
-        # Test with sample recordings
-        recordings = [
-            {"is_successful": True},
-            {"is_successful": False},
-            {"is_successful": True},
-        ]
-
-        col1, col2, col3 = MagicMock(), MagicMock(), MagicMock()
-        mock_cols.return_value = col1, col2, col3
-        display_metrics(recordings)
-
-        # Verify metrics
-        col1.metric.assert_called_with("Total Recordings", 3)
-        col2.metric.assert_called_with("Successful", 2)
-        col3.metric.assert_called_with("Success Rate", "66.7%")
 
 
 if __name__ == "__main__":
