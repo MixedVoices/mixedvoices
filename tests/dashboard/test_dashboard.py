@@ -14,6 +14,7 @@ from mixedvoices.dashboard.components.recording_viewer import RecordingViewer
 from mixedvoices.dashboard.components.sidebar import Sidebar
 from mixedvoices.dashboard.components.upload_form import UploadForm
 from mixedvoices.dashboard.visualizations.flow_chart import FlowChart
+from mixedvoices.dashboard.visualizations.metrics import display_metrics
 
 # Get the root directory of the project
 ROOT_DIR = Path(__file__).parent.parent.parent
@@ -330,6 +331,26 @@ def test_home_page_initial_state(app_home):
     # Verify welcome message is displayed
     titles = [element.value for element in app_home.title]
     assert "Welcome to MixedVoices" in titles
+
+
+def test_display_metrics():
+    # Test with empty list
+    with patch("streamlit.columns") as mock_cols:
+        # Test with sample recordings
+        recordings = [
+            {"is_successful": True},
+            {"is_successful": False},
+            {"is_successful": True},
+        ]
+
+        col1, col2, col3 = MagicMock(), MagicMock(), MagicMock()
+        mock_cols.return_value = col1, col2, col3
+        display_metrics(recordings)
+
+        # Verify metrics
+        col1.metric.assert_called_with("Total Recordings", 3)
+        col2.metric.assert_called_with("Successful", 2)
+        col3.metric.assert_called_with("Success Rate", "66.7%")
 
 
 if __name__ == "__main__":
