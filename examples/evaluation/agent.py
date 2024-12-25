@@ -23,6 +23,16 @@ AGENT_PROMPT = """You're voice assistant for Locoto's Dental.
     """
 
 
+def check_conversation_ended(assistant_message):
+    return (
+        "bye" in assistant_message.lower()
+        or "see you" in assistant_message.lower()
+        or "see ya" in assistant_message.lower()
+        or "catch you" in assistant_message.lower()
+        or "talk to you" in assistant_message.lower()
+    )
+
+
 class DentalAssistant:
     def __init__(self, model="gpt-4o-mini"):
         self.conversation_memory = []

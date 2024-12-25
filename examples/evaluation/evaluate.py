@@ -1,19 +1,9 @@
 from typing import Tuple
 
-from agent import DentalAssistant
+from agent import DentalAssistant, check_conversation_ended
 
 import mixedvoices as mv
 from mixedvoices import BaseAgent
-
-
-def check_conversation_ended(assistant_message):
-    return (
-        "bye" in assistant_message.lower()
-        or "see you" in assistant_message.lower()
-        or "see ya" in assistant_message.lower()
-        or "catch you" in assistant_message.lower()
-        or "talk to you" in assistant_message.lower()
-    )
 
 
 class DentalAgent(BaseAgent):
