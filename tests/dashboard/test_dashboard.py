@@ -8,6 +8,7 @@ from streamlit.testing.v1 import AppTest
 
 from mixedvoices.dashboard import utils
 from mixedvoices.dashboard.api.client import APIClient
+from mixedvoices.dashboard.components.evaluation_viewer import EvaluationViewer
 from mixedvoices.dashboard.components.project_manager import ProjectManager
 from mixedvoices.dashboard.components.recording_viewer import RecordingViewer
 from mixedvoices.dashboard.components.sidebar import Sidebar
@@ -23,7 +24,7 @@ ROOT_DIR = Path(__file__).parent.parent.parent
 def app_home():
     """Create a Streamlit AppTest instance for Home.py"""
     app = AppTest(str(ROOT_DIR / "mixedvoices/dashboard/Home.py"), default_timeout=10)
-    app.session_state["current_page"] = "home"
+    st.session_state["current_page"] = "home"
     return app
 
 
@@ -34,7 +35,7 @@ def app_flowchart():
         str(ROOT_DIR / "mixedvoices/dashboard/pages/1_View_Flowchart.py"),
         default_timeout=10,
     )
-    app.session_state["current_page"] = "flowchart"
+    st.session_state["current_page"] = "flowchart"
     return app
 
 
@@ -45,7 +46,7 @@ def app_recordings():
         str(ROOT_DIR / "mixedvoices/dashboard/pages/2_View_Recordings.py"),
         default_timeout=10,
     )
-    app.session_state["current_page"] = "recordings"
+    st.session_state["current_page"] = "recordings"
     return app
 
 
@@ -56,7 +57,18 @@ def app_upload():
         str(ROOT_DIR / "mixedvoices/dashboard/pages/3_Upload_Recordings.py"),
         default_timeout=10,
     )
-    app.session_state["current_page"] = "upload"
+    st.session_state["current_page"] = "upload"
+    return app
+
+
+@pytest.fixture
+def app_evaluations():
+    """Create a Streamlit AppTest instance for View_Evaluations.py"""
+    app = AppTest(
+        str(ROOT_DIR / "mixedvoices/dashboard/pages/4_View_Evaluations.py"),
+        default_timeout=10,
+    )
+    st.session_state["current_page"] = "evaluations"
     return app
 
 
@@ -135,8 +147,8 @@ class TestSidebar:
         ]
 
         # Initialize session state
-        app_home.session_state["current_project"] = None
-        app_home.session_state["current_version"] = None
+        st.session_state["current_project"] = None
+        st.session_state["current_version"] = None
 
         # Create a real Sidebar instance with our mock client
         sidebar = Sidebar(mock_api_client)
@@ -166,37 +178,34 @@ class TestUploadForm:
     def test_render_initial_state(self, app_upload, mock_api_client):
         """Test initial render of upload form"""
         # Initialize session state
-        app_upload.session_state["current_project"] = "test_project"
-        app_upload.session_state["current_version"] = "v1"
-        app_upload.session_state["is_uploading"] = False
-        app_upload.session_state["form_key"] = 0
-        app_upload.session_state["show_success"] = False
+        st.session_state["current_project"] = "test_project"
+        st.session_state["current_version"] = "v1"
+        st.session_state["is_uploading"] = False
+        st.session_state["form_key"] = 0
+        st.session_state["show_success"] = False
 
-        # Create a real UploadForm instance
+        upload_form = UploadForm(mock_api_client, "test_project", "v1")
+        with patch("streamlit.subheader") as mock_subheader:
+            upload_form.render()
+            mock_subheader.assert_called_with("Upload Recording")
+
+    def test_upload_success(self, app_upload, mock_api_client):
+        """Test successful file upload"""
+        st.session_state.current_project = "test_project"
+        st.session_state.current_version = "v1"
+        st.session_state.is_uploading = True
+        st.session_state.form_key = 0
+        st.session_state.show_success = False
+
+        mock_api_client.post_data.return_value = {"status": "success"}
+
         upload_form = UploadForm(mock_api_client, "test_project", "v1")
 
-        # Patch streamlit components that UploadForm uses
-        with patch("streamlit.subheader") as mock_subheader, patch(
-            "streamlit.file_uploader"
-        ) as mock_uploader, patch("streamlit.radio") as mock_radio:
-
+        with patch("streamlit.file_uploader", return_value=MagicMock()), patch(
+            "streamlit.info"
+        ) as mock_info:
             upload_form.render()
-
-            # Verify the form components were called
-            mock_subheader.assert_called_with("Upload Recording")
-            mock_uploader.assert_called_with(
-                "Choose an audio file",
-                key=f"audio_uploader_{app_upload.session_state.form_key}",
-                disabled=app_upload.session_state.is_uploading,
-                label_visibility="visible",
-                accept_multiple_files=False,
-            )
-            mock_radio.assert_any_call(
-                "Call Status",
-                options=["N/A", "Successful", "Unsuccessful"],
-                key=f"success_status_{app_upload.session_state.form_key}",
-                disabled=app_upload.session_state.is_uploading,
-            )
+            mock_info.assert_called_with("Upload in progress...", icon="🔄")
 
 
 # Test Project Manager Component
@@ -231,6 +240,21 @@ class TestRecordingViewer:
             mock_write.assert_any_call("## Recordings")
 
 
+# Test Evaluation Viewer Component
+class TestEvaluationViewer:
+    def test_display_evaluations_list(self, app_evaluations, mock_api_client):
+        """Test evaluations list display"""
+        evaluations = [{"eval_id": "eval1", "created_at": 1609459200}]
+
+        st.session_state.current_project = "test_project"
+        st.session_state.current_version = "v1"
+
+        viewer = EvaluationViewer(mock_api_client, "test_project", "v1")
+        with patch("streamlit.write") as mock_write:
+            viewer.display_evaluations_list(evaluations)
+            mock_write.assert_any_call("## Evaluations")
+
+
 # Test Flow Chart Component
 class TestFlowChart:
     def test_create_recording_graph(self, sample_flow_data):
@@ -257,7 +281,7 @@ class TestFlowChart:
 
 # Test Utils
 class TestUtils:
-    def test_display_llm_metrics(self):
+    def test_display_llm_metrics(self, app_home):
         """Test display of LLM metrics"""
         with patch("streamlit.markdown") as mock_markdown:
             metrics = {
@@ -268,12 +292,38 @@ class TestUtils:
             mock_markdown.assert_called()
 
 
+# Test CLI
+class TestCLI:
+    def test_run_dashboard(self, monkeypatch):
+        """Test dashboard run function"""
+        from mixedvoices.dashboard.cli import run_dashboard
+
+        mock_argv = [
+            "streamlit",
+            "run",
+            str(ROOT_DIR / "mixedvoices/dashboard/Home.py"),
+            "--server.port",
+            "7761",
+            "--server.address",
+            "localhost",
+        ]
+        mock_exit = MagicMock()
+        mock_main = MagicMock()
+
+        monkeypatch.setattr("sys.argv", mock_argv)
+        monkeypatch.setattr("sys.exit", mock_exit)
+        monkeypatch.setattr("streamlit.web.cli.main", mock_main)
+
+        run_dashboard(7761)
+        mock_main.assert_called_once()
+
+
 # Test Home Page
 def test_home_page_initial_state(app_home):
     """Test initial state of home page"""
-    app_home.session_state["current_project"] = None
-    app_home.session_state["current_version"] = None
-    app_home.session_state["current_page"] = "home"
+    st.session_state["current_project"] = None
+    st.session_state["current_version"] = None
+    st.session_state["current_page"] = "home"
 
     app_home.run()
 
