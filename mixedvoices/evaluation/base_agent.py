@@ -9,7 +9,6 @@ class BaseAgent(ABC):
         First input_text will be an empty string if agent starts conversation.
         Returns (response, has_conversation_ended)
         """
-        pass
 
     @property
     @abstractmethod
@@ -19,4 +18,3 @@ class BaseAgent(ABC):
         If False, the user starts the conversation
         If None, 50% chance of each
         """
-        pass
