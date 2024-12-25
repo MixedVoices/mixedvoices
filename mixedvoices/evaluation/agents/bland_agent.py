@@ -21,7 +21,8 @@ class BlandAgent(BaseAgent):
             return response["data"]["assistant_response"], False
         except Exception as e:
             raise Exception(f"Error in Bland agent's response: {str(e)}") from e
-
+        
+    @property
     def starts_conversation(self):
         return None
 
