@@ -363,7 +363,3 @@ def test_home_page_initial_state(app_home):
     # Verify welcome message is displayed
     titles = [element.value for element in app_home.title]
     assert "Welcome to MixedVoices" in titles
-
-
-if __name__ == "__main__":
-    pytest.main(["-v"])
