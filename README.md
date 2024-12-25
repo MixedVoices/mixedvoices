@@ -5,7 +5,7 @@
 ## Features
 
 ### Core Capabilities
-- 🌐 **Effortless Integration**: Python API designed for quick and seamless integration, ensuring developers can get started in minutes
+- 🌐 **Effortless Integration**: Python API designed for quick integration, get started in minutes
 - 🖥️ **Interactive Dashboard**: User-friendly interface for all operations
 - 📊 **Call Flow Analysis**: Interactive flowcharts showing conversation paths, patterns and success rates
 - 🔄 **Version Control**: Track and compare agent behavior across different iterations
