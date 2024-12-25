@@ -1,0 +1,62 @@
+{
+    "created_at": 1734595849,
+    "audio_path": "/Users/abhinavtuli/.mixedvoices/projects/dental_clinic_19_12_24/v1/recordings/3d9fdc5da3dc4421b19eaf669334b149/call1.wav",
+    "combined_transcript": "1. bot: Hello. This is Mary from Locoto Dental. How can I assist you today?\n2. user: Oh, this is up enough. I want to know the timings.\n3. bot: Hey, Abhinav. We're open from 8 AM to 5 PM, Monday through Saturday, closed on Sundays. What can I do for you?\n4. user: So I want to make an appointment.\n5. bot: Great. I'd be happy to help you with that. Can I have your full name, please?\n6. user: I do not want to share my full name. Will my first name suffice?\n7. bot: Sure thing, up enough. What's the purpose of your appointment?\n8. user: I want to have a root canal surgery.\n9. bot: Oh, sounds like fun. When would you like to come in? Got it. When would you like to schedule your root canal surgery?\n10. user: Can we do it on Tuesday?\n11. bot: Sure. We can schedule you for Tuesday. What time works best for you?\n12. user: Anytime after 12 PM works.\n13. bot: Got it? How about 2 PM on Tuesday for your root canal surgery?\n14. user: Yeah. That should be good.\n15. bot: Alright, Abhinav. You're all set for your root canal surgery at 2 PM on Tuesday. Awesome. Your appointment for a root canal surgery is booked for Tuesday at 2 PM. See you then.\n16. user: Alright. Bye bye.\n17. bot: Bye bye. See you soon.\n18. user: Can you drop the call? I do not have my phone in my hand and price.\n19. bot: Sure. I'll disconnect the call now. If you have any other questions, feel free to call back. See you on Tuesday.\n20. user: You still haven't disconnected.\n21. bot: Oh, my bad. Let me try that again. Goodbye.",
+    "step_ids": [
+        "48ceecbe4db24210b9b608ad7875d321",
+        "b23049c70c304ce59bf11a58fa9feb0e",
+        "4179f646594b48eea2bf070761199e55",
+        "a36c32b6d316435589dc7ccb50a12a95",
+        "78dc471722864a729ae041d7f4321afd",
+        "14553cd0b594473f8f2e2292afc0c5b3"
+    ],
+    "summary": "Abhinav contacted Locoto Dental for information on their opening hours and to schedule an appointment. The dental office operates from 8 AM to 5 PM, Monday through Saturday, and is closed on Sundays.",
+    "is_successful": null,
+    "success_explanation": null,
+    "duration": 129.06,
+    "processing_task_id": null,
+    "metadata": {},
+    "task_status": "COMPLETED",
+    "llm_metrics": {
+        "empathy": {
+            "explanation": "The bot lacks empathy in its responses as it misses several opportunities to acknowledge and resonate with the user's concerns. For instance, when the user mentions not wanting to share their full name, the bot could have shown understanding before proceeding. Also, when the user mentions a root canal surgery, the bot responds inappropriately by commentating \"sounds like fun,\" which shows a lack of sensitivity. The bot does not repeat or acknowledge the user\u2019s words, which would make them feel heard.",
+            "score": 3
+        },
+        "repetition": {
+            "explanation": "The bot did not repeat itself verbatim when asked the same or similar question. While there were some instances of similar information being conveyed, such as the scheduling confirmation, the responses were not identical in wording but instead paraphrased. This indicates the bot did not fail by the metric's standards regarding verbatim repetition.",
+            "score": "PASS"
+        },
+        "conciseness": {
+            "explanation": "The bot provided concise answers throughout the conversation, consistently keeping responses under 50 words. It effectively addressed the user's queries about clinic timings, the appointment schedule, and even a request to disconnect the call, without unnecessary elaboration. Although there was a minor issue with acknowledging a miscommunication in a concise manner, overall, the bot remained succinct.",
+            "score": 9
+        },
+        "hallucination": {
+            "explanation": "The bot provided correct information regarding the clinic's timings based on the user's request in line 3 and correctly handled scheduling the root canal surgery without any additional, unverified information. However, the bot twice incorrectly identified the user's name as \"Abhinav\" in lines 3 and 15 despite the user not providing it, indicating a hallucination.",
+            "score": "FAIL"
+        },
+        "context": {
+            "explanation": "The bot generally maintains context by responding appropriately to the user's inquiries and requests, such as providing business hours and scheduling an appointment. However, there are noticeable errors, such as addressing the user by a potentially incorrect name \"Abhinav,\" and repeating confirmation unnecessarily in turns 9 and 15. These inconsistencies suggest it loses some context, especially concerning user details. Despite these issues, the bot mostly functions within the interaction's context.",
+            "score": "FAIL"
+        },
+        "scheduling": {
+            "explanation": "The bot effectively facilitated scheduling by providing the clinic's timings and asking the user for their desired appointment day and time. After confirming the availability for Tuesday at 2 PM, it successfully booked the appointment and confirmed the details with the user. However, there was a minor error in addressing the user with an incorrect name at one point, which could lead to confusion.",
+            "score": 8
+        },
+        "adaptive_qa": {
+            "explanation": "The bot generally stays focused on the topic of scheduling a dental appointment, asking relevant questions to gather necessary information like the patient's name, purpose of visit, and preferred appointment time. However, there are moments where the bot uses conversational fillers like \"Oh, sounds like fun,\" which are out of context for a root canal surgery. Additionally, it redundantly asks about the scheduling time in turn 9. The bot could be more concise and appropriate in its responses.",
+            "score": 7
+        },
+        "objection_handling": {
+            "explanation": "The bot effectively addresses objections by allowing the user to schedule an appointment without providing a full name, demonstrating flexibility and understanding. However, it misses acknowledging the user's concern when it jokingly responds to a root canal as \"fun.\" Additionally, the bot initially fails to disconnect the call despite agreeing to do so, which shows a lack of immediate problem-solving. Overall, the bot addresses objections but could improve on empathy and responsiveness.",
+            "score": 6
+        }
+    },
+    "call_metrics": {
+        "average_latency": 1.5389984000000017,
+        "user_interruptions_per_minute": 0.0,
+        "assistant_interruptions_per_minute": 0.0,
+        "user_snr": "N/A",
+        "assistant_snr": "N/A",
+        "wpm": 176.70418111874127
+    }
+}

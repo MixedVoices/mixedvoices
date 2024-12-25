@@ -59,18 +59,6 @@ class Recording:
         d = self.to_dict()
         save_json(d, save_path)
 
-    def get_summary_from_metadata(self):
-        analysis_info = self.metadata.get("analysis_info", {})
-        summary = analysis_info.get("summary", None)
-        if summary:
-            return summary
-
-    def get_combined_transcript_from_metadata(self):
-        # TODO: expose transcript in api instead
-        combined_transcript = self.metadata.get("transcript", {})
-        if combined_transcript:
-            return combined_transcript
-
     @classmethod
     def load(cls, project_id, version_id, recording_id):
         path = os.path.join(

@@ -31,14 +31,14 @@ def combine_existing_steps(
                 (s for s in standard_steps if s["name"] == "Request Expert Callback"),
                 None,
             )
-            if request_callback_step:
+            if request_callback_step and step not in request_callback_step["variants"]:
                 request_callback_step["variants"].append(step)
-        elif "Check" in step:
+        elif "Check" in step and "Availability" in step:
             check_step = next(
                 (s for s in standard_steps if s["name"] == "Check Availability"),
                 None,
             )
-            if check_step:
+            if check_step and step not in check_step["variants"]:
                 check_step["variants"].append(step)
         else:
             standard_steps.append({"name": step, "subpoints": None, "variants": None})
@@ -91,8 +91,8 @@ def get_standard_steps_string(existing_step_names: Optional[List[str]] = None):
         {"name": "Farewell", "subpoints": None, "variants": None},
         {
             "name": "Check Availability",
-            "subpoints": None,
-            "variants": ["Check Calender", "Check Inventory"],
+            "subpoints": ["Only used to check availability of product/service"],
+            "variants": ["Check Medicine Availability", "Check Inventory Availability"],
         },
     ]
 

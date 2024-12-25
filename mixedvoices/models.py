@@ -1,0 +1,4 @@
+METRICS_MODEL = "gpt-4o"
+SUCCESS_MODEL = "gpt-4o"
+SUMMARY_MODEL = "gpt-4o"
+STEPS_MODEL = "gpt-4o"

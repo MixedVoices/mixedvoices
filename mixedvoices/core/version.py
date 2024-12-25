@@ -4,9 +4,9 @@ from uuid import uuid4
 
 import mixedvoices
 import mixedvoices.constants as constants
+from mixedvoices.core import utils
 from mixedvoices.core.recording import Recording
 from mixedvoices.core.step import Step
-from mixedvoices.core.utils import process_recording
 from mixedvoices.evaluation.eval_case_generation import get_eval_prompts
 from mixedvoices.evaluation.evaluator import Evaluator
 from mixedvoices.utils import load_json, save_json
@@ -104,6 +104,8 @@ class Version:
         audio_path: str,
         is_successful: Optional[bool] = None,
         blocking: bool = True,
+        transcript: Optional[str] = None,
+        summary: Optional[str] = None,
         metadata: Optional[Dict[str, Any]] = None,
         user_channel: str = "left",
     ):
@@ -131,13 +133,15 @@ class Version:
             self.version_id,
             self.project_id,
             is_successful=is_successful,
+            combined_transcript=transcript,
+            summary=summary,
             metadata=metadata,
         )
         self.recordings[recording.recording_id] = recording
         recording.save()
 
         if blocking:
-            process_recording(recording, self, user_channel)
+            utils.process_recording(recording, self, user_channel)
         else:
             recording.processing_task_id = mixedvoices.TASK_MANAGER.add_task(
                 "process_recording",

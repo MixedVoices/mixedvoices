@@ -8,7 +8,7 @@ from mixedvoices.evaluation.eval_agent import EvalAgent
 from mixedvoices.utils import load_json, save_json
 
 if TYPE_CHECKING:
-    from mixedvoices import BaseAgent
+    from mixedvoices import BaseAgent  # pragma: no cover
 
 
 class Evaluator:

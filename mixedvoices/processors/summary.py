@@ -1,10 +1,11 @@
+from mixedvoices import models
 from mixedvoices.utils import get_openai_client
 
 
 def summarize_transcript(transcript: str):
     client = get_openai_client()
     response = client.chat.completions.create(
-        model="gpt-4o",
+        model=models.SUMMARY_MODEL,
         messages=[
             {
                 "role": "system",

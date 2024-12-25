@@ -34,7 +34,3 @@ def dashboard(
 
     # Run the Streamlit dashboard (this will block)
     run_dashboard(dash_port)
-
-
-if __name__ == "__main__":
-    cli()

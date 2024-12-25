@@ -125,6 +125,8 @@ class TaskManager:
                     "project_id": recording.project_id,
                     "is_successful": recording.is_successful,
                     "metadata": recording.metadata,
+                    "summary": recording.summary,
+                    "combined_transcript": recording.combined_transcript,
                 },
                 "version_data": {
                     "version_id": version.version_id,
@@ -153,6 +155,8 @@ class TaskManager:
                 project_id=recording_data["project_id"],
                 is_successful=recording_data["is_successful"],
                 metadata=recording_data["metadata"],
+                summary=recording_data["summary"],
+                combined_transcript=recording_data["combined_transcript"],
             )
 
             version = Version.load(
@@ -268,12 +272,12 @@ class TaskManager:
                     self._save_task(task)
 
                     if task.task_type == "process_recording":
-                        from mixedvoices.core.utils import process_recording
+                        from mixedvoices.core import utils
 
                         deserialized_params = self._deserialize_task_params(
                             task.task_type, task.params
                         )
-                        process_recording(**deserialized_params)
+                        utils.process_recording(**deserialized_params)
                         task.status = TaskStatus.COMPLETED
                         task.completed_at = time.time()
                 except Exception as e:
@@ -314,43 +318,3 @@ class TaskManager:
     def get_pending_task_count(self) -> int:
         """Get the number of pending and in-progress tasks."""
         return self.task_queue.unfinished_tasks
-
-    def wait_for_task(
-        self, task_id: str, timeout: Optional[float] = None
-    ) -> Optional[Task]:
-        start_time = time.time()
-        while True:
-            task = self.get_task(task_id)
-            if task is None:
-                return None
-
-            if task.status in [TaskStatus.COMPLETED, TaskStatus.FAILED]:
-                return task
-
-            if timeout is not None and time.time() - start_time > timeout:
-                return task
-
-            time.sleep(0.1)
-
-    def wait_for_all_tasks(self, timeout: Optional[float] = None) -> bool:
-        """
-        Wait for all current tasks to complete.
-
-        Args:
-            timeout: Maximum time to wait (in seconds). If None, wait indefinitely.
-
-        Returns:
-            bool: True if all tasks completed, False if timed out
-        """
-        try:
-            if timeout is not None:
-                start = time.time()
-                while self.task_queue.unfinished_tasks > 0:
-                    if time.time() - start > timeout:
-                        return False
-                    time.sleep(0.1)
-            else:
-                self.task_queue.join()
-            return True
-        except Exception:
-            return False

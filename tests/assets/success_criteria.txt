@@ -1,0 +1,1 @@
+Call is successful if a meeting is booked and confirmed.
