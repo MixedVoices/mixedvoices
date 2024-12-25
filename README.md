@@ -1,6 +1,6 @@
 # MixedVoices 🎙️
 
-[MixedVoices](https://www.mixedvoices.xyz) is a comprehensive analytics and evaluation tool for voice agents - think Mixpanel for conversational AI. It helps you track, visualize, and optimize your voice agent's performance through detailed conversation analysis, ML metrics, and call quality measurements. Use MixedVoices to analyze conversation flows, identify bottlenecks, measure success rates across versions, and evaluate agent performance through simulated scenarios.
+[MixedVoices](https://www.mixedvoices.xyz) is a analytics and evaluation tool for voice agents. Track, visualize, and optimize agent performance through conversation analysis, call quality metrics and call flow charts. Run simulations to test the agent before pushing to production.
 
 ## Features
 
@@ -33,26 +33,15 @@ export OPENAI_API_KEY='your-api-key'
 ### Using Python API to analyze recordings
 ```python
 import mixedvoices as mv
+project = mv.create_project("receptionist") # Create a new project
+project = mv.load_project("receptionist") # or load existing project
 
-# Create a new project
-project = mv.create_project("receptionist")
+version = project.create_version("v1", prompt="You are a ...") # Create a version
+version = project.load_version("v1") # or load existing version
 
-# or load existing project
-project = mv.load_project("receptionist")
+version.add_recording("path/to/call.wav") # Analyze call, this is blocking, takes a few seconds
+version.add_recording("path/to/call.wav", blocking=False) # non blocking mode in a separate thread, instantaneous
 
-# Create a version with prompt and metadata (optional)
-version = project.create_version(
-    "v1", prompt="You are a friendly receptionist", metadata={"silence_threshold": 0.1}
-)
-
-# or load an existing version
-version = project.load_version("v1")
-
-# Add recording to analyze, by default this is blocking and may take a few seconds
-version.add_recording("path/to/recording.wav", is_successful=True)
-
-# run in non blocking mode in a separate thread
-version.add_recording("path/to/recording2.wav", blocking=False, is_successful=False)
 ```
 
 ## Evaluation
@@ -81,7 +70,7 @@ evaluator = version.create_evaluator()
 evaluator.run(ReceptionAgent) # can specify which metrics to measure
 ```
 
-### Evaluate Bland Agent
+### Evaluate Bland AI Agent
 ```python
 import mixedvoices as mv
 project = mv.load_project("receptionist")
@@ -90,27 +79,13 @@ evaluator = version.create_evaluator()
 evaluator.run(mv.BlandAgent, auth_token="", pathway_id="", start_node_id="") 
 ```
 
-### Using Dashboard
-Launch the interactive dashboard:
+## Using Dashboard
+Launch the interactive dashboard from the Command Line:
 ```bash
 mixedvoices
 ```
 
-This will start:
-- API server at http://localhost:7760
-- Dashboard at http://localhost:7761
-
-## Contributing
-
-We welcome contributions! Please follow these steps:
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
-
-### Development Setup
+## Development Setup
 ```bash
 git clone https://github.com/MixedVoices/MixedVoices.git
 pip install -e ".[dev]"
