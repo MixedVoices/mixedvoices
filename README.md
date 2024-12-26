@@ -1,11 +1,11 @@
 # MixedVoices 🎙️
 
-[MixedVoices](https://www.mixedvoices.xyz) is a analytics and evaluation tool for voice agents. Track, visualize, and optimize agent performance through conversation analysis, call quality metrics and call flow charts. Run simulations to test the agent before pushing to production.
+[MixedVoices](https://www.mixedvoices.xyz) is an analytics and evaluation tool for voice agents. Track, visualize, and optimize agent performance through conversation analysis, call quality metrics and call flow charts. Run simulations to test the agent before pushing to production.
 
 ## Features
 
 ### Core Capabilities
-- 🌐 **Effortless Integration**: Python API designed for quick and seamless integration, ensuring developers can get started in minutes
+- 🌐 **Effortless Integration**: Python API designed for quick integration, get started in minutes
 - 🖥️ **Interactive Dashboard**: User-friendly interface for all operations
 - 📊 **Call Flow Analysis**: Interactive flowcharts showing conversation paths, patterns and success rates
 - 🔄 **Version Control**: Track and compare agent behavior across different iterations
@@ -17,14 +17,6 @@
 
 ```bash
 pip install mixedvoices
-```
-
-### Prerequisites
-1. Python 3.8 or higher
-2. OpenAI API key (set in your environment variables)
-
-```bash
-export OPENAI_API_KEY='your-api-key'
 ```
 
 # Quick Start
