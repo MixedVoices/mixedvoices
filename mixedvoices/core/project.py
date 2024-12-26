@@ -25,6 +25,15 @@ class Project:
         success_criteria: Optional[str] = None,
         metadata: Optional[Dict[str, Any]] = None,
     ):
+        """
+        Create a new version in the project
+
+        Args:
+            version_id (str): Name of the version
+            prompt (str): Prompt used by the voice agent
+            success_criteria (Optional[str]): Success criteria for the version. Used to automatically determine if a recording is successful or not. Defaults to None.
+            metadata (Optional[Dict[str, Any]]): Metadata to be associated with the version. Defaults to None.
+        """  # noqa E501
         validate_name(version_id, "version_id")
         if version_id in self.versions:
             raise ValueError(f"Version {version_id} already exists")
