@@ -1,6 +1,6 @@
 # MixedVoices 🎙️
 
-[MixedVoices](https://www.mixedvoices.xyz) is a analytics and evaluation tool for voice agents. Track, visualize, and optimize agent performance through conversation analysis, call quality metrics and call flow charts. Run simulations to test the agent before pushing to production.
+[MixedVoices](https://www.mixedvoices.xyz) is an analytics and evaluation tool for voice agents. Track, visualize, and optimize agent performance through conversation analysis, call quality metrics and call flow charts. Run simulations to test the agent before pushing to production.
 
 ## Features
 
