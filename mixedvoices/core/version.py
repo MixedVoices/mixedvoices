@@ -248,14 +248,26 @@ class Version:
             test_cases_per_path (int, optional): Number of test cases to generate per path. Defaults to 2.
             test_cases_per_failure_reason (int, optional): Number of test cases to generate per failure reason. Defaults to 2.
             total_test_cases_for_edge_scenarios (int, optional): Total number of test cases to generate for edge scenarios. Defaults to 4.
-            empathy (bool, optional): Whether to include empathy metric. Defaults to True.
-            verbatim_repetition (bool, optional): Whether to include verbatim repetition metric. Defaults to True.
-            conciseness (bool, optional): Whether to include conciseness metric. Defaults to True.
-            hallucination (bool, optional): Whether to include hallucination metric. Defaults to True.
-            context_awareness (bool, optional): Whether to include context awareness metric. Defaults to True.
-            scheduling (bool, optional): Whether to include scheduling metric. Defaults to True.
-            adaptive_qa (bool, optional): Whether to include adaptive qa metric. Defaults to True.
-            objection_handling (bool, optional): Whether to include objection handling metric. Defaults to True.
+            empathy (bool, optional): Whether to include empathy metric. 
+                Returns score from 0 to 10. Defaults to True.
+            verbatim_repetition (bool, optional): Whether to include verbatim repetition metric. 
+                This metric fails if the repeat itself verbatim when asked the same/similar question. 
+                Returns PASS/FAIL/N/A. Defaults to True.
+            conciseness (bool, optional): Whether to include conciseness metric. 
+                Returns score from 0 to 10. Defaults to True.
+            hallucination (bool, optional): Whether to include hallucination metric. 
+                Returns PASS/FAIL. Defaults to True.
+            context_awareness (bool, optional): Whether to include context awareness metric.
+                Returns PASS/FAIL. Defaults to True.
+            scheduling (bool, optional): Whether to include scheduling metric.
+                Returns score from 0 to 10 or N/A. Defaults to True.
+            adaptive_qa (bool, optional): Whether to include adaptive qa metric. 
+                This metric measures whether the bot only asks questions that are relevant to the topic of the conversation.
+                The bot should also not ask questions that have already been answered by the user.
+                Returns score from 0 to 10. Defaults to True.
+            objection_handling (bool, optional): Whether to include objection handling metric.
+                This metric measures whether the bot acknowledges the objections, relates to the user's concern in a way that sympathizes with their pain, and offers relevant solutions.
+                Returns score from 0 to 10 or N/A. Defaults to True.
 
         Returns:
             Evaluator: The newly created evaluator
