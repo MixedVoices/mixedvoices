@@ -3,18 +3,19 @@ from unittest.mock import patch
 
 import mixedvoices as mv
 from conftest import needs_deepgram_key, needs_openai_key
-from examples.evaluation.agent import DentalAssistant, check_conversation_ended
+from examples.evaluation.agent import DentalAgent, check_conversation_ended
 from mixedvoices.evaluation.agents.base_agent import BaseAgent
 
 
-class DentalAgent(BaseAgent):
-    def __init__(self):
-        self.assistant = DentalAssistant()
+class MyDentalAgent(BaseAgent):
+    def __init__(self, model):
+        self.agent = DentalAgent(model=model)
 
     def respond(self, input_text: str) -> Tuple[str, bool]:
-        response = self.assistant.get_assistant_response(input_text)
+        response = self.agent.get_response(input_text)
         has_conversation_ended = check_conversation_ended(response)
         return response, has_conversation_ended
+
 
 @needs_openai_key
 @needs_deepgram_key
@@ -39,7 +40,7 @@ def test_full(temp_project_folder):
             assert not recording.is_successful
 
     evaluator = version.create_evaluator(1, 1, 1)
-    evaluator.run(DentalAgent, assistant_starts=None)
+    evaluator.run(MyDentalAgent, agent_starts=None, model="gpt-4o-mini")
 
     project = mv.load_project("test_project")
     version = project.load_version("v1")

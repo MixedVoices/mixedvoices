@@ -15,7 +15,7 @@ def calculate_stereo_snr(audio_file_path, user_channel="left"):
         audio_file_path (str): Path to the stereo audio file
 
     Returns:
-        tuple: (user_channel_snr, assistant_channel_snr)
+        tuple: (user_channel_snr, agent_channel_snr)
     """
     try:
         _, audio_data = wavfile.read(audio_file_path)
@@ -43,7 +43,7 @@ def calculate_stereo_snr(audio_file_path, user_channel="left"):
         return "N/A", "N/A"
 
 
-def calculate_wpm(assistant_words: List[TranscriptionWord]) -> float:
+def calculate_wpm(agent_words: List[TranscriptionWord]) -> float:
     """
     Calculate the average Words Per Minute (WPM).
 
@@ -57,7 +57,7 @@ def calculate_wpm(assistant_words: List[TranscriptionWord]) -> float:
         segments = []
         current_segment = None
 
-        for word in assistant_words:
+        for word in agent_words:
             if current_segment is None:
                 current_segment = {"start": word.start, "end": word.end, "words": 1}
             else:
@@ -104,16 +104,16 @@ def group_utterances(words: List[TranscriptionWord]) -> List[List[TranscriptionW
 
 def calculate_latency_and_interruptions(
     user_words: List[TranscriptionWord],
-    assistant_words: List[TranscriptionWord],
+    agent_words: List[TranscriptionWord],
     duration: float,
     interruption_threshold: float = 0.2,
 ) -> dict:
     """
-    Calculate assistant response latency and identify interruptions using a single pass.
+    Calculate agent response latency and identify interruptions using a single pass.
 
     Args:
         user_words: List of user TranscriptionWord objects
-        assistant_words: List of assistant TranscriptionWord objects
+        agent_words: List of agent TranscriptionWord objects
         duration: Total duration of the call in seconds
         interruption_threshold: Threshold in seconds below which a response is considered an interruption
 
@@ -122,27 +122,27 @@ def calculate_latency_and_interruptions(
     """
     try:
         user_utterances = group_utterances(user_words)
-        assistant_utterances = group_utterances(assistant_words)
+        agent_utterances = group_utterances(agent_words)
 
         latencies = []
         user_interruptions = 0
-        assistant_interruptions = 0
+        agent_interruptions = 0
 
-        i, j = 0, 0  # Pointers for user and assistant utterances
+        i, j = 0, 0  # Pointers for user and agent utterances
 
-        while i < len(user_utterances) and j < len(assistant_utterances):
+        while i < len(user_utterances) and j < len(agent_utterances):
             user_utt = user_utterances[i]
-            assistant_utt = assistant_utterances[j]
+            agent_utt = agent_utterances[j]
 
             user_start, user_end = user_utt[0].start, user_utt[-1].end
-            asst_start, asst_end = assistant_utt[0].start, assistant_utt[-1].end
+            asst_start, asst_end = agent_utt[0].start, agent_utt[-1].end
 
             # Check for overlaps and calculate latencies
             if asst_start < user_start < asst_end:
                 user_interruptions += 1
                 i += 1
             elif user_start < asst_start < user_end:
-                assistant_interruptions += 1
+                agent_interruptions += 1
                 j += 1
             else:
                 # No overlap - check if it's a normal response
@@ -156,7 +156,7 @@ def calculate_latency_and_interruptions(
         return {
             "average_latency": mean(latencies) if latencies else 0,
             "user_interruptions_per_minute": user_interruptions / (duration / 60),
-            "assistant_interruptions_per_minute": assistant_interruptions
+            "agent_interruptions_per_minute": agent_interruptions
             / (duration / 60),
         }
 
@@ -165,17 +165,17 @@ def calculate_latency_and_interruptions(
         return {
             "average_latency": "N/A",
             "user_interruptions_per_minute": "N/A",
-            "assistant_interruptions_per_minute": "N/A",
+            "agent_interruptions_per_minute": "N/A",
         }
 
 
 def get_call_metrics(
-    audio_file_path, user_words, assistant_words, duration, user_channel="left"
+    audio_file_path, user_words, agent_words, duration, user_channel="left"
 ):
     stereo_snr = calculate_stereo_snr(audio_file_path, user_channel)
-    wpm = calculate_wpm(assistant_words)
-    res = calculate_latency_and_interruptions(user_words, assistant_words, duration)
+    wpm = calculate_wpm(agent_words)
+    res = calculate_latency_and_interruptions(user_words, agent_words, duration)
     res["user_snr"] = stereo_snr[0]
-    res["assistant_snr"] = stereo_snr[1]
+    res["agent_snr"] = stereo_snr[1]
     res["wpm"] = wpm
     return res

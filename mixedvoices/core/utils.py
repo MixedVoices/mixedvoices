@@ -40,16 +40,16 @@ def separate_channels(y: np.ndarray, sr: int, output_folder: str, user_channel="
     left_channel, right_channel = y[0], y[1]
 
     user_filename = "user.wav"
-    assistant_filename = "assistant.wav"
+    agent_filename = "agent.wav"
     user_path = os.path.join(output_folder, user_filename)
-    assistant_path = os.path.join(output_folder, assistant_filename)
+    agent_path = os.path.join(output_folder, agent_filename)
     if user_channel == "left":
         sf.write(user_path, left_channel, sr)
-        sf.write(assistant_path, right_channel, sr)
+        sf.write(agent_path, right_channel, sr)
     else:
         sf.write(user_path, right_channel, sr)
-        sf.write(assistant_path, left_channel, sr)
-    return user_path, assistant_path
+        sf.write(agent_path, left_channel, sr)
+    return user_path, agent_path
 
 
 def get_transcript_and_duration(audio_path, output_folder, user_channel="left"):
@@ -61,17 +61,17 @@ def get_transcript_and_duration(audio_path, output_folder, user_channel="left"):
         raise ValueError("Input must be a stereo audio file")
 
     if constants.TRANSCRIPTION_PROVIDER == "openai":
-        user_audio_path, assistant_audio_path = separate_channels(
+        user_audio_path, agent_audio_path = separate_channels(
             y, sr, output_folder, user_channel
         )
-        combined_transcript, user_words, assistant_words = (
-            transcribe_and_combine_openai(user_audio_path, assistant_audio_path)
+        combined_transcript, user_words, agent_words = (
+            transcribe_and_combine_openai(user_audio_path, agent_audio_path)
         )
     elif constants.TRANSCRIPTION_PROVIDER == "deepgram":
-        combined_transcript, user_words, assistant_words = (
+        combined_transcript, user_words, agent_words = (
             transcribe_and_combine_deepgram(audio_path, user_channel)
         )
-    return combined_transcript, user_words, assistant_words, duration
+    return combined_transcript, user_words, agent_words, duration
 
 
 def create_steps_from_names(
@@ -107,7 +107,7 @@ def process_recording(recording: "Recording", version: "Version", user_channel="
     try:
         audio_path = recording.audio_path
         output_folder = os.path.join(version.path, "recordings", recording.recording_id)
-        combined_transcript, user_words, assistant_words, duration = (
+        combined_transcript, user_words, agent_words, duration = (
             get_transcript_and_duration(audio_path, output_folder, user_channel)
         )
         recording.combined_transcript = (
@@ -127,7 +127,7 @@ def process_recording(recording: "Recording", version: "Version", user_channel="
         )
         recording.llm_metrics = get_llm_metrics(combined_transcript, version.prompt)
         recording.call_metrics = get_call_metrics(
-            audio_path, user_words, assistant_words, duration, user_channel
+            audio_path, user_words, agent_words, duration, user_channel
         )
         recording.task_status = "COMPLETED"
         recording.save()

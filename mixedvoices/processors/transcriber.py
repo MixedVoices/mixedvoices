@@ -72,43 +72,43 @@ def transcribe_with_deepgram(audio_path, user_channel="left"):
     response = make_deepgram_request(audio_path)
 
     user_idx = 0 if user_channel == "left" else 1
-    assistant_idx = 1 - user_idx
+    agent_idx = 1 - user_idx
 
     user_response = response["results"]["channels"][user_idx]["alternatives"][0]
-    assistant_response = response["results"]["channels"][assistant_idx]["alternatives"][
+    agent_response = response["results"]["channels"][agent_idx]["alternatives"][
         0
     ]
     user_words = format_deepgram_words(user_response["words"])
     user_transcript = user_response["transcript"]
-    assistant_words = format_deepgram_words(assistant_response["words"])
-    assistant_transcript = assistant_response["transcript"]
+    agent_words = format_deepgram_words(agent_response["words"])
+    agent_transcript = agent_response["transcript"]
 
-    return user_transcript, user_words, assistant_transcript, assistant_words
+    return user_transcript, user_words, agent_transcript, agent_words
 
 
 def create_combined_transcript(
-    user_words: List[TranscriptionWord], assistant_words: List[TranscriptionWord]
+    user_words: List[TranscriptionWord], agent_words: List[TranscriptionWord]
 ):
     last_speaker = None
-    user_index, assistant_index = 0, 0
+    user_index, agent_index = 0, 0
     all_segments = []
     current_segment = []
-    while user_index < len(user_words) or assistant_index < len(assistant_words):
+    while user_index < len(user_words) or agent_index < len(agent_words):
         user_word = user_words[user_index] if user_index < len(user_words) else None
-        assistant_word = (
-            assistant_words[assistant_index]
-            if assistant_index < len(assistant_words)
+        agent_word = (
+            agent_words[agent_index]
+            if agent_index < len(agent_words)
             else None
         )
 
-        if not assistant_word or (user_word and user_word.start < assistant_word.start):
+        if not agent_word or (user_word and user_word.start < agent_word.start):
             speaker = "user"
             current_word = user_word
             user_index += 1
         else:
             speaker = "bot"
-            current_word = assistant_word
-            assistant_index += 1
+            current_word = agent_word
+            agent_index += 1
 
         if last_speaker != speaker:
             if current_segment:
@@ -126,27 +126,27 @@ def create_combined_transcript(
     return "\n".join(all_sentences)
 
 
-def transcribe_and_combine_openai(user_audio_path, assistant_audio_path):
+def transcribe_and_combine_openai(user_audio_path, agent_audio_path):
     with TRANSCRIPTION_POOL as executor:
         user_future = executor.submit(transcribe_with_openai, user_audio_path)
-        assistant_future = executor.submit(transcribe_with_openai, assistant_audio_path)
+        agent_future = executor.submit(transcribe_with_openai, agent_audio_path)
 
         _, user_words = user_future.result()
-        _, assistant_words = assistant_future.result()
+        _, agent_words = agent_future.result()
 
     return (
-        create_combined_transcript(user_words, assistant_words),
+        create_combined_transcript(user_words, agent_words),
         user_words,
-        assistant_words,
+        agent_words,
     )
 
 
 def transcribe_and_combine_deepgram(audio_path, user_channel="left"):
-    _, user_words, _, assistant_words = transcribe_with_deepgram(
+    _, user_words, _, agent_words = transcribe_with_deepgram(
         audio_path, user_channel
     )
     return (
-        create_combined_transcript(user_words, assistant_words),
+        create_combined_transcript(user_words, agent_words),
         user_words,
-        assistant_words,
+        agent_words,
     )

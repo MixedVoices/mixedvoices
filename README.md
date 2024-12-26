@@ -47,13 +47,13 @@ import mixedvoices as mv
 # inherits from `BaseAgent`. Must implement respond
 class ReceptionAgent(mv.BaseAgent):
    def __init__(self, model="gpt-4", temperature=0.7):
-        self.assistant = ReceptionistAssistant(
+        self.agent = YourAgentImplementation(
             model=model,
             temperature=temperature
         )
 
     def respond(self, input_text: str) -> Tuple[str, bool]:
-        response = self.assistant.get_assistant_response(input_text)
+        response = self.agent.get_response(input_text)
         has_conversation_ended = check_conversation_ended(response)
         return response, has_conversation_ended
 
@@ -61,7 +61,7 @@ class ReceptionAgent(mv.BaseAgent):
 project = mv.load_project("receptionist")
 version = project.load_version("v1")
 evaluator = version.create_evaluator()  # can specify which metrics to measure
-evaluator.run(ReceptionAgent, assistant_starts=False, model="gpt-4-turbo", temperature=0.9)
+evaluator.run(ReceptionAgent, agent_starts=False, model="gpt-4-turbo", temperature=0.9)
 ```
 
 ### Evaluate Bland AI Agent
@@ -70,7 +70,7 @@ import mixedvoices as mv
 project = mv.load_project("receptionist")
 version = project.load_version("v1")
 evaluator = version.create_evaluator()
-evaluator.run(mv.BlandAgent, assistant_starts=True, auth_token="", pathway_id="", start_node_id="") 
+evaluator.run(mv.BlandAgent, agent_starts=True, auth_token="", pathway_id="", start_node_id="") 
 ```
 
 ## Using Dashboard

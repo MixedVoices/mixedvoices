@@ -56,24 +56,24 @@ class EvalAgent:
             self.started = True
             self.save()
         if input:
-            self.add_user_message(input)
+            self.add_agent_message(input)
         messages = [self.get_system_prompt()] + self.history
         try:
             client = get_openai_client()
             response = client.chat.completions.create(model=model, messages=messages)
-            assistant_response = response.choices[0].message.content
-            self.add_assistant_message(assistant_response)
-            return assistant_response, has_ended_conversation(assistant_response)
+            evaluator_response = response.choices[0].message.content
+            self.add_eval_agent_message(evaluator_response)
+            return evaluator_response, has_ended_conversation(evaluator_response)
         except Exception as e:
             self.handle_exception(e, "Conversation")
 
-    def add_user_message(self, message):
+    def add_agent_message(self, message):
         self.history.append({"role": "user", "content": message})
-        print(f"Assistant: {message}")  # Here user is REAL agent
+        print(f"Agent: {message}")
 
-    def add_assistant_message(self, message):
+    def add_eval_agent_message(self, message):
         self.history.append({"role": "assistant", "content": message})
-        print(f"Evaluator: {message}")  # Here assistant is EVAL agent
+        print(f"Evaluator: {message}")
 
     def handle_conversation_end(self):
         self.ended = True
@@ -159,22 +159,22 @@ class EvalAgent:
         )
         return cls(**d)
 
-    def evaluate(self, agent_class: Type["BaseAgent"], assistant_starts: bool, **kwargs):
-        assistant = agent_class(**kwargs)
-        if assistant_starts is None:
-            assistant_starts = random.choice([True, False])
+    def evaluate(self, agent_class: Type["BaseAgent"], agent_starts: bool, **kwargs):
+        agent = agent_class(**kwargs)
+        if agent_starts is None:
+            agent_starts = random.choice([True, False])
 
-        if assistant_starts:
-            assistant_message, ended = assistant.respond("")
+        if agent_starts:
+            agent_message, ended = agent.respond("")
         else:
-            assistant_message, ended = "", False
+            agent_message, ended = "", False
         while 1:
-            evaluator_message, ended = self.respond(assistant_message)
+            eval_agent_message, ended = self.respond(agent_message)
             if ended:
                 break
-            assistant_message, ended = assistant.respond(evaluator_message)
+            agent_message, ended = agent.respond(eval_agent_message)
             if ended:
-                self.add_user_message(assistant_message)
+                self.add_agent_message(agent_message)
                 break
 
         self.handle_conversation_end()

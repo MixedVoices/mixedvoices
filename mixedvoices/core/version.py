@@ -113,7 +113,7 @@ class Version:
         Add a recording to the version
 
         Args:
-            audio_path (str): Path to the audio file, should be a stereo recording with user and assistant on separate channels
+            audio_path (str): Path to the audio file, should be a stereo recording with user and agent on separate channels
             user_channel (str): Audio channel of the user, either "left" or "right". Defaults to "left".
             is_successful (Optional[bool]): If the recording is successful or not Defaults to None.
               If version already has success criteria, cannot set is_successful manually

@@ -35,18 +35,18 @@ def load_words(file_path):
 
 def test_latency_and_interruptions():
     user_words = load_words("tests/assets/user_words.json")
-    assistant_words = load_words("tests/assets/assistant_words.json")
+    agent_words = load_words("tests/assets/agent_words.json")
 
-    res = calculate_latency_and_interruptions(user_words, assistant_words, 76)
+    res = calculate_latency_and_interruptions(user_words, agent_words, 76)
     assert res["average_latency"] == approx(1.587)
     assert res["user_interruptions_per_minute"] == 0
-    assert res["assistant_interruptions_per_minute"] == 0
+    assert res["agent_interruptions_per_minute"] == 0
 
 
 def test_wpm():
-    assistant_words = load_words("tests/assets/assistant_words.json")
-    assistant_wpm = calculate_wpm(assistant_words)
-    assert assistant_wpm == approx(184.307, rel=1e-3)
+    agent_words = load_words("tests/assets/agent_words.json")
+    agent_wpm = calculate_wpm(agent_words)
+    assert agent_wpm == approx(184.307, rel=1e-3)
 
     user_words = load_words("tests/assets/user_words.json")
     user_wpm = calculate_wpm(user_words)

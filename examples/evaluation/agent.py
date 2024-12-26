@@ -23,23 +23,23 @@ AGENT_PROMPT = """You're voice assistant for Locoto's Dental.
     """
 
 
-def check_conversation_ended(assistant_message):
+def check_conversation_ended(agent_message):
     return (
-        "bye" in assistant_message.lower()
-        or "see you" in assistant_message.lower()
-        or "see ya" in assistant_message.lower()
-        or "catch you" in assistant_message.lower()
-        or "talk to you" in assistant_message.lower()
+        "bye" in agent_message.lower()
+        or "see you" in agent_message.lower()
+        or "see ya" in agent_message.lower()
+        or "catch you" in agent_message.lower()
+        or "talk to you" in agent_message.lower()
     )
 
 
-class DentalAssistant:
+class DentalAgent:
     def __init__(self, model):
         self.conversation_memory = []
         self.model = model
         self.openai_client = OpenAI()
 
-    def get_assistant_response(self, user_input: str) -> str:
+    def get_response(self, user_input: str) -> str:
         self.conversation_memory.append({"role": "user", "content": user_input.strip()})
         messages = [{"role": "system", "content": AGENT_PROMPT}]
         messages.extend(self.conversation_memory)
