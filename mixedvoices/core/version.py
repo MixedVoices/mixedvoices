@@ -102,16 +102,35 @@ class Version:
     def add_recording(
         self,
         audio_path: str,
+        user_channel: str = "left",
         is_successful: Optional[bool] = None,
         blocking: bool = True,
         transcript: Optional[str] = None,
         summary: Optional[str] = None,
         metadata: Optional[Dict[str, Any]] = None,
-        user_channel: str = "left",
     ):
+        """
+        Add a recording to the version
+
+        Args:
+            audio_path (str): Path to the audio file, should be a stereo recording with user and assistant on separate channels
+            user_channel (str): Audio channel of the user, either "left" or "right". Defaults to "left".
+            is_successful (Optional[bool]): If the recording is successful or not Defaults to None.
+              If version already has success criteria, cannot set is_successful manually
+            blocking (bool): If True, block until recording is processed, otherwise adds to queue and processes in the background. Defaults to True.
+            transcript (Optional[str]): Transcript of the recording, this overrides the transcript generated during analysis. Defaults to None.
+              This doesn't stop the transcription, as that generates more granular transcript with timestamps.
+            summary (Optional[str]): Summary of the recording, this overrides the summary generated during analysis. Defaults to None.
+              This prevents summary from being generated during analysis.
+            metadata (Optional[Dict[str, Any]]): Metadata to be associated with the recording. Defaults to None.
+        """  # noqa E501
         if self.success_criteria and is_successful is not None:
             raise ValueError(
                 f"Version {self.version_id} already has success criteria set, cannot set is_successful manually"
+            )
+        if user_channel not in ["left", "right"]:
+            raise ValueError(
+                f"User channel must be either 'left' or 'right', got {user_channel}"
             )
         recording_id = uuid4().hex
         if not os.path.exists(audio_path):
@@ -222,6 +241,25 @@ class Version:
         adaptive_qa: bool = True,
         objection_handling: bool = True,
     ) -> Evaluator:
+        """
+        Create a new evaluator for this version.
+
+        Args:
+            test_cases_per_path (int, optional): Number of test cases to generate per path. Defaults to 2.
+            test_cases_per_failure_reason (int, optional): Number of test cases to generate per failure reason. Defaults to 2.
+            total_test_cases_for_edge_scenarios (int, optional): Total number of test cases to generate for edge scenarios. Defaults to 4.
+            empathy (bool, optional): Whether to include empathy metric. Defaults to True.
+            verbatim_repetition (bool, optional): Whether to include verbatim repetition metric. Defaults to True.
+            conciseness (bool, optional): Whether to include conciseness metric. Defaults to True.
+            hallucination (bool, optional): Whether to include hallucination metric. Defaults to True.
+            context_awareness (bool, optional): Whether to include context awareness metric. Defaults to True.
+            scheduling (bool, optional): Whether to include scheduling metric. Defaults to True.
+            adaptive_qa (bool, optional): Whether to include adaptive qa metric. Defaults to True.
+            objection_handling (bool, optional): Whether to include objection handling metric. Defaults to True.
+
+        Returns:
+            Evaluator: The newly created evaluator
+        """  # noqa E501
         metrics_dict = {
             "empathy": empathy,
             "verbatim_repetition": verbatim_repetition,

@@ -11,7 +11,8 @@ OPEN_AI_CLIENT = None
 TASK_MANAGER = TaskManager()
 
 
-def create_project(project_name):
+def create_project(project_name: str):
+    """Create a new project"""
     validate_name(project_name, "project_name")
     if project_name in os.listdir(constants.ALL_PROJECTS_FOLDER):
         raise ValueError(f"Project {project_name} already exists")
@@ -19,7 +20,8 @@ def create_project(project_name):
     return Project(project_name)
 
 
-def load_project(project_name):
+def load_project(project_name: str):
+    """Load an existing project"""
     if project_name not in os.listdir(constants.ALL_PROJECTS_FOLDER):
         raise ValueError(f"Project {project_name} does not exist")
     return Project(project_name)
