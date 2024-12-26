@@ -16,11 +16,6 @@ class DentalAgent(BaseAgent):
         has_conversation_ended = check_conversation_ended(response)
         return response, has_conversation_ended
 
-    @property
-    def starts_conversation(self):
-        return None
-
-
 @needs_openai_key
 @needs_deepgram_key
 @patch("mixedvoices.constants.TRANSCRIPTION_PROVIDER", "deepgram")
@@ -44,7 +39,7 @@ def test_full(temp_project_folder):
             assert not recording.is_successful
 
     evaluator = version.create_evaluator(1, 1, 1)
-    evaluator.run(DentalAgent)
+    evaluator.run(DentalAgent, assistant_starts=None)
 
     project = mv.load_project("test_project")
     version = project.load_version("v1")

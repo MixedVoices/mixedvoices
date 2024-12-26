@@ -34,7 +34,7 @@ def check_conversation_ended(assistant_message):
 
 
 class DentalAssistant:
-    def __init__(self, model="gpt-4o-mini"):
+    def __init__(self, model):
         self.conversation_memory = []
         self.model = model
         self.openai_client = OpenAI()
@@ -45,7 +45,7 @@ class DentalAssistant:
         messages.extend(self.conversation_memory)
 
         chat_completion = self.openai_client.chat.completions.create(
-            model="gpt-4o-mini", messages=messages
+            model=self.model, messages=messages
         )
         response = chat_completion.choices[0].message.content.strip()
         self.conversation_memory.append({"role": "assistant", "content": response})

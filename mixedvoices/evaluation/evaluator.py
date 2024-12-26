@@ -101,7 +101,19 @@ class Evaluator:
     def __iter__(self):
         yield from self.eval_agents
 
-    def run(self, agent_class: Type["BaseAgent"]):
+    def run(
+        self, agent_class: Type["BaseAgent"], assistant_starts: Optional[bool], **kwargs
+    ):
+        """Runs the evaluator and saves the results.
+
+        Args:
+            agent_class: The agent class to evaluate.
+            assistant_starts: Whether the assistant starts the conversation or not.
+                If True, the assistant starts the conversation
+                If False, the evaluator starts the conversation
+                If None, random choice
+            **kwargs: Keyword arguments to pass to the agent class
+        """
         for eval_agent in self.eval_agents:
-            eval_agent.evaluate(agent_class)
+            eval_agent.evaluate(agent_class, assistant_starts, **kwargs)
             self.save()
