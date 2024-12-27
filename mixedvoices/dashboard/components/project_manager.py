@@ -71,7 +71,7 @@ class ProjectManager:
         """Render version creation UI"""
         # Initialize states if they don't exist
         if "expander_state" not in st.session_state:
-            st.session_state.expander_state = True
+            st.session_state.expander_state = False
         if "metadata_pairs" not in st.session_state:
             st.session_state.metadata_pairs = [{"key": "", "value": ""}]
 
@@ -166,7 +166,7 @@ class ProjectManager:
             if "version_error" in st.session_state:
                 st.error(st.session_state.version_error)
 
-            st.subheader("Metadata")
+            st.subheader("Metadata (Optional)")
 
             to_remove = None
 
@@ -270,6 +270,9 @@ class ProjectManager:
                         margin: 0.5rem 0;
                         padding: 0.5rem 0;
                         border-bottom: 1px solid #333;
+                        display: flex;
+                        align-items: center;
+                        gap: 0.5rem;
                     }
                     .success-criteria-content {
                         color: #B0B0B0;
@@ -278,6 +281,9 @@ class ProjectManager:
                     }
                     .metadata-section {
                         margin-top: 0.5rem;
+                        display: flex;
+                        align-items: center;
+                        gap: 0.5rem;
                     }
                     .metadata-item {
                         display: grid;
@@ -307,14 +313,12 @@ class ProjectManager:
                     .no-metadata {
                         color: #666;
                         font-style: italic;
-                        text-align: center;
-                        padding: 1rem 0;
+                        display: inline;
                     }
                     .no-success-criteria {
                         color: #666;
                         font-style: italic;
-                        text-align: center;
-                        padding: 1rem 0;
+                        display: inline;
                     }
                 </style>
             """,
@@ -331,7 +335,7 @@ class ProjectManager:
                                 success_criteria_content = f'<div class="success-criteria-content">{html.escape(version["success_criteria"])}</div>'
                             else:
                                 success_criteria_content = (
-                                    '<div class="no-success-criteria">Not set</div>'
+                                    '<div class="no-success-criteria">None</div>'
                                 )
                             if version["metadata"]:
                                 metadata_items = []
@@ -361,7 +365,7 @@ class ProjectManager:
                                 metadata_content = "".join(metadata_items)
                             else:
                                 metadata_content = (
-                                    '<div class="no-metadata">No metadata</div>'
+                                    '<div class="no-metadata">None</div>'
                                 )
                             version_name = html.escape(version["name"])
                             n = version["recording_count"]
