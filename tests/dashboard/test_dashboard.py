@@ -31,9 +31,9 @@ def app_home():
 
 @pytest.fixture
 def app_flowchart():
-    """Create a Streamlit AppTest instance for View_Flowchart.py"""
+    """Create a Streamlit AppTest instance for View_Call_Flows.py"""
     app = AppTest(
-        str(ROOT_DIR / "mixedvoices/dashboard/pages/1_View_Flowchart.py"),
+        str(ROOT_DIR / "mixedvoices/dashboard/pages/1_View_Call_Flows.py"),
         default_timeout=10,
     )
     st.session_state["current_page"] = "flowchart"
@@ -42,9 +42,9 @@ def app_flowchart():
 
 @pytest.fixture
 def app_recordings():
-    """Create a Streamlit AppTest instance for View_Recordings.py"""
+    """Create a Streamlit AppTest instance for View_Call_Details.py"""
     app = AppTest(
-        str(ROOT_DIR / "mixedvoices/dashboard/pages/2_View_Recordings.py"),
+        str(ROOT_DIR / "mixedvoices/dashboard/pages/2_View_Call_Details.py"),
         default_timeout=10,
     )
     st.session_state["current_page"] = "recordings"

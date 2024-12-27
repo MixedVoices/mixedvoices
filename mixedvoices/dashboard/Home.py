@@ -119,7 +119,7 @@ def main():
         return
 
     # If we have both project and version, redirect to flow
-    st.switch_page("pages/1_View_Flowchart.py")
+    st.switch_page("pages/1_View_Call_Flows.py")
 
 
 if __name__ == "__main__":
