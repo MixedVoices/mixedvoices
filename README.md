@@ -1,4 +1,12 @@
 # MixedVoices 🎙️
+<div align="center">
+
+📚 [View Docs](https://mixedvoices.gitbook.io/docs)
+</div>
+
+<p align="center">
+    <a href="https://pypi.org/project/mixedvoices/"><img src="https://badge.fury.io/py/mixedvoices.svg" alt="PyPI version" height="18"></a>
+</p>    
 
 [MixedVoices](https://www.mixedvoices.xyz) is an analytics and evaluation tool for voice agents. Track, visualize, and optimize agent performance through conversation analysis, call quality metrics and call flow charts. Run simulations to test the agent before pushing to production.
 
