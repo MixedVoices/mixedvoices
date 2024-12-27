@@ -17,11 +17,11 @@ def run_server_thread(port: int):
 @cli.command()
 def dashboard(
     server_port: int = typer.Option(7760, help="Port to run the API server on"),
-    dash_port: int = typer.Option(7761, help="Port to run the dashboard on"),
+    dashboard_port: int = typer.Option(7761, help="Port to run the dashboard on"),
 ):
     """Launch both the MixedVoices API server and dashboard"""
     print(f"Starting MixedVoices API server on http://localhost:{server_port}")
-    print(f"Starting MixedVoices dashboard on http://localhost:{dash_port}")
+    print(f"Starting MixedVoices dashboard on http://localhost:{dashboard_port}")
 
     # Start the FastAPI server in a separate thread
     server_thread = threading.Thread(
@@ -30,7 +30,7 @@ def dashboard(
     server_thread.start()
 
     # Open the dashboard in the browser
-    webbrowser.open(f"http://localhost:{dash_port}")
+    webbrowser.open(f"http://localhost:{dashboard_port}")
 
     # Run the Streamlit dashboard (this will block)
-    run_dashboard(dash_port)
+    run_dashboard(dashboard_port)
