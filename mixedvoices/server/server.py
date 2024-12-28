@@ -138,6 +138,26 @@ async def create_version(project_name: str, version_data: VersionCreate):
         raise HTTPException(status_code=500, detail=str(e)) from e
 
 
+@app.get("/api/projects/{project_name}/versions/{version_name}/success_criteria")
+async def get_success_criteria(project_name: str, version_name: str):
+    """Get the success criteria for a version"""
+    try:
+        project = mixedvoices.load_project(project_name)
+        version = project.load_version(version_name)
+        return {"success_criteria": version.success_criteria}
+    except ValueError as e:
+        logger.error(
+            f"Version '{version_name}' not found in project '{project_name}': {str(e)}"
+        )
+        raise HTTPException(status_code=404, detail=str(e)) from e
+    except Exception as e:
+        logger.error(
+            f"Error getting success criteria for version '{version_name}' in project '{project_name}': {str(e)}",
+            exc_info=True,
+        )
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
 @app.get("/api/projects/{project_name}/versions/{version_name}/flow")
 async def get_version_flow(project_name: str, version_name: str):
     """Get the flow chart data for a version"""
@@ -181,7 +201,9 @@ async def get_recording_flow(project_name: str, version_name: str, recording_id:
         version = project.load_version(version_name)
         recording = version.recordings.get(recording_id, None)
         if recording is None:
-            raise ValueError(f"Recording {recording_id} not found in version {version_name}")
+            raise ValueError(
+                f"Recording {recording_id} not found in version {version_name}"
+            )
 
         steps_data = []
         for step_id in recording.step_ids:
@@ -403,7 +425,7 @@ async def handle_webhook(
                 is_successful=is_successful,
                 metadata=data,
                 summary=summary,
-                transcript=transcript
+                transcript=transcript,
             )
             logger.info(f"Recording processed successfully: {recording.recording_id}")
 
