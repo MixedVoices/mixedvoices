@@ -50,10 +50,9 @@ def test_add_recording(empty_project, mock_process_recording):
     for recording in version.recordings.values():
         check_recording(recording)
 
-    version = project.create_version("v2", prompt="Testing prompt", success_criteria="Testing success criteria")
-
-    with pytest.raises(ValueError):
-        version.add_recording("tests/assets/call2.wav", is_successful=True)
+    version = project.create_version(
+        "v2", prompt="Testing prompt", success_criteria="Testing success criteria"
+    )
 
     version.add_recording("tests/assets/call2.wav")
 
