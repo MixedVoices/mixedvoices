@@ -45,6 +45,7 @@ class UploadForm:
             options=["N/A", "Successful", "Unsuccessful"],
             key=f"success_status_{st.session_state.form_key}",
             disabled=st.session_state.is_uploading,
+            horizontal=True,
         )
 
         user_channel = st.radio(
@@ -52,6 +53,7 @@ class UploadForm:
             options=["left", "right"],
             key=f"user_channel_{st.session_state.form_key}",
             disabled=st.session_state.is_uploading,
+            horizontal=True,
         )
 
         # Convert selection to boolean or None
