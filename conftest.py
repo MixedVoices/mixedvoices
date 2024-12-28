@@ -65,7 +65,7 @@ def mock_process_recording():
     def side_effect(recording: "Recording", version: "Version", user_channel):
         recording.combined_transcript = "Test transcript"
         recording.duration = 10
-        if version.success_criteria:
+        if version.success_criteria and recording.is_successful is None:
             recording.is_successful = True
             recording.success_explanation = "Test success explanation"
         step_names = ["Testing A", "Testing B", "Testing C"]

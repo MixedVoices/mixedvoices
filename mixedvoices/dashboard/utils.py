@@ -71,27 +71,28 @@ def display_llm_metrics(metrics: dict) -> None:
 def display_llm_metrics_preview(llm_metrics_dict: dict):
     score_cols = st.columns(2)
     for i, (metric, score_data) in enumerate(llm_metrics_dict.items()):
-            with score_cols[i % 2]:
-                score = score_data["score"]
-                if isinstance(score, (int, float)):
-                    formatted_score = f"{score}/10"
-                else:
-                    formatted_score = str(score)
+        with score_cols[i % 2]:
+            score = score_data["score"]
+            if isinstance(score, (int, float)):
+                formatted_score = f"{score}/10"
+            else:
+                formatted_score = str(score)
 
-                if score == "PASS" or (
-                    isinstance(score, (int, float)) and score >= 7
-                ):
-                    color = "green"
-                elif score == "FAIL" or (
-                    isinstance(score, (int, float)) and score < 5
-                ):
-                    color = "red"
-                elif score == "NA":
-                    color = "gray"
-                else:
-                    color = "orange"
+            if score == "PASS" or (isinstance(score, (int, float)) and score >= 7):
+                color = "green"
+            elif score == "FAIL" or (isinstance(score, (int, float)) and score < 5):
+                color = "red"
+            elif score == "NA":
+                color = "gray"
+            else:
+                color = "orange"
 
-                st.markdown(
-                    f"**{metric}:** <span style='color: {color}'>{formatted_score}</span>",
-                    unsafe_allow_html=True,
-                )
+            st.markdown(
+                f"**{metric}:** <span style='color: {color}'>{formatted_score}</span>",
+                unsafe_allow_html=True,
+            )
+
+
+def clear_selected_node_path():
+    st.session_state.selected_node_id = None
+    st.session_state.selected_path = None

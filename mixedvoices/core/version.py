@@ -1,6 +1,7 @@
 import os
 from typing import Any, Dict, List, Optional
 from uuid import uuid4
+from warnings import warn
 
 import mixedvoices
 import mixedvoices.constants as constants
@@ -116,7 +117,7 @@ class Version:
             audio_path (str): Path to the audio file, should be a stereo recording with user and agent on separate channels
             user_channel (str): Audio channel of the user, either "left" or "right". Defaults to "left".
             is_successful (Optional[bool]): If the recording is successful or not Defaults to None.
-              If version already has success criteria, cannot set is_successful manually
+              This will override the automatic successs classification if version has success criteria
             blocking (bool): If True, block until recording is processed, otherwise adds to queue and processes in the background. Defaults to True.
             transcript (Optional[str]): Transcript of the recording, this overrides the transcript generated during analysis. Defaults to None.
               This doesn't stop the transcription, as that generates more granular transcript with timestamps.
@@ -125,8 +126,10 @@ class Version:
             metadata (Optional[Dict[str, Any]]): Metadata to be associated with the recording. Defaults to None.
         """  # noqa E501
         if self.success_criteria and is_successful is not None:
-            raise ValueError(
-                f"Version {self.version_id} already has success criteria set, cannot set is_successful manually"
+            warn(
+                "is_successful specified for a version with success criteria set. Overriding automatic success classification.",
+                UserWarning,
+                stacklevel=2,
             )
         if user_channel not in ["left", "right"]:
             raise ValueError(
@@ -248,20 +251,20 @@ class Version:
             test_cases_per_path (int, optional): Number of test cases to generate per path. Defaults to 2.
             test_cases_per_failure_reason (int, optional): Number of test cases to generate per failure reason. Defaults to 2.
             total_test_cases_for_edge_scenarios (int, optional): Total number of test cases to generate for edge scenarios. Defaults to 4.
-            empathy (bool, optional): Whether to include empathy metric. 
+            empathy (bool, optional): Whether to include empathy metric.
                 Returns score from 0 to 10. Defaults to True.
-            verbatim_repetition (bool, optional): Whether to include verbatim repetition metric. 
-                This metric fails if the repeat itself verbatim when asked the same/similar question. 
+            verbatim_repetition (bool, optional): Whether to include verbatim repetition metric.
+                This metric fails if the repeat itself verbatim when asked the same/similar question.
                 Returns PASS/FAIL/N/A. Defaults to True.
-            conciseness (bool, optional): Whether to include conciseness metric. 
+            conciseness (bool, optional): Whether to include conciseness metric.
                 Returns score from 0 to 10. Defaults to True.
-            hallucination (bool, optional): Whether to include hallucination metric. 
+            hallucination (bool, optional): Whether to include hallucination metric.
                 Returns PASS/FAIL. Defaults to True.
             context_awareness (bool, optional): Whether to include context awareness metric.
                 Returns PASS/FAIL. Defaults to True.
             scheduling (bool, optional): Whether to include scheduling metric.
                 Returns score from 0 to 10 or N/A. Defaults to True.
-            adaptive_qa (bool, optional): Whether to include adaptive qa metric. 
+            adaptive_qa (bool, optional): Whether to include adaptive qa metric.
                 This metric measures whether the bot only asks questions that are relevant to the topic of the conversation.
                 The bot should also not ask questions that have already been answered by the user.
                 Returns score from 0 to 10. Defaults to True.

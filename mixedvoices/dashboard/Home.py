@@ -4,6 +4,7 @@ from mixedvoices.dashboard.api.client import APIClient
 from mixedvoices.dashboard.components.project_manager import ProjectManager
 from mixedvoices.dashboard.components.sidebar import Sidebar
 from mixedvoices.dashboard.config import DEFAULT_PAGE_CONFIG
+from mixedvoices.dashboard.utils import clear_selected_node_path
 
 
 def apply_nav_styles():
@@ -81,6 +82,17 @@ def apply_nav_styles():
     st.markdown(nav_style, unsafe_allow_html=True)
 
 
+def remove_footer():
+    hide_default_format = """
+       <style>
+       #MainMenu {visibility: hidden; }
+       footer {visibility: hidden;}
+       </style>
+       """
+
+    st.markdown(hide_default_format, unsafe_allow_html=True)
+
+
 def main():
     """Main application"""
     # Set page config
@@ -89,11 +101,11 @@ def main():
     # Set current page to home
     st.session_state.current_page = "home"
 
-    # Initialize API client
     api_client = APIClient()
 
-    # Apply navigation styles
     apply_nav_styles()
+    remove_footer()
+    clear_selected_node_path()
 
     # Render sidebar
     sidebar = Sidebar(api_client)
