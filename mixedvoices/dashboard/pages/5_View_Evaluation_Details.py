@@ -2,7 +2,11 @@ import streamlit as st
 
 from mixedvoices.dashboard.api.client import APIClient
 from mixedvoices.dashboard.api.endpoints import get_eval_details_endpoint
-from mixedvoices.dashboard.utils import display_llm_metrics, display_llm_metrics_preview
+from mixedvoices.dashboard.utils import (
+    clear_selected_node_path,
+    display_llm_metrics,
+    display_llm_metrics_preview,
+)
 
 
 @st.dialog("Agent Details", width="large")
@@ -37,6 +41,8 @@ def evaluation_details_page():
     ):
         st.switch_page("pages/4_View_Evaluations.py")
         return
+
+    clear_selected_node_path()
 
     st.title(f"{st.session_state.current_project} | {st.session_state.current_version}")
 
