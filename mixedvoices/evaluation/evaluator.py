@@ -6,13 +6,11 @@ from uuid import uuid4
 import mixedvoices as mv
 import mixedvoices.constants as constants
 from mixedvoices.evaluation.eval_run import EvalRun
-from mixedvoices.metrics import deserialize_metrics, serialize_metrics
 from mixedvoices.utils import load_json, save_json
 
 if TYPE_CHECKING:
     from mixedvoices import BaseAgent  # pragma: no cover
     from mixedvoices.core.version import Version  # pragma: no cover
-    from mixedvoices.metrics import Metric  # pragma: no cover
 
 
 def get_info_path(project_id: str, eval_id: str):
@@ -30,14 +28,14 @@ class Evaluator:
         self,
         eval_id: str,
         project_id: str,
-        metrics: List["Metric"],
+        metric_names: List[str],
         eval_prompts: List[str],
         created_at: Optional[int] = None,
         eval_runs: Optional[List[EvalRun]] = None,
     ):
         self.eval_id = eval_id
         self.project_id = project_id
-        self.metrics = metrics
+        self.metric_names = metric_names
         self.eval_prompts = eval_prompts
         self.created_at = created_at or int(time.time())
         self.eval_runs = eval_runs or []
@@ -50,7 +48,7 @@ class Evaluator:
     def save(self):
         os.makedirs(os.path.dirname(self.path), exist_ok=True)
         d = {
-            "metrics": serialize_metrics(self.metrics),
+            "metric_names": self.metric_names,
             "eval_prompts": self.eval_prompts,
             "created_at": self.created_at,
             "eval_run_ids": [a.run_id for a in self.eval_runs],
@@ -69,13 +67,11 @@ class Evaluator:
             EvalRun.load(project_id, eval_id, run_id) for run_id in eval_run_ids
         ]
 
-        metrics = deserialize_metrics(d.pop("metrics"))
         d.update(
             {
                 "project_id": project_id,
                 "eval_id": eval_id,
                 "eval_runs": eval_runs,
-                "metrics": metrics,
             }
         )
 
@@ -112,7 +108,7 @@ class Evaluator:
             version_id,
             self.eval_id,
             prompt,
-            self.metrics,
+            self.metric_names,
             self.eval_prompts,
         )
         self.eval_runs.append(run)

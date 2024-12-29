@@ -2,10 +2,10 @@ import os
 from typing import Any, Dict, List, Optional
 from uuid import uuid4
 
+import mixedvoices
 import mixedvoices.constants as constants
 from mixedvoices.core.version import Version
 from mixedvoices.evaluation.evaluator import Evaluator
-from mixedvoices.metrics import Metric, deserialize_metrics, serialize_metrics
 from mixedvoices.utils import load_json, save_json, validate_name
 
 
@@ -17,16 +17,16 @@ class Project:
     def __init__(
         self,
         project_id: str,
-        metrics: Optional[List[Metric]] = None,
+        metric_names:List[str],
         evals: Optional[Dict[str, Evaluator]] = None,
     ):
         self.project_id = project_id
-        self.metrics = metrics
+        self.metric_names = metric_names
         self.evals: Dict[str, Evaluator] = evals or {}
         self.save()
 
-    def update_metrics(self, metrics: List[Metric]):
-        self.metrics = metrics
+    def update_metric_names(self, metric_names: List[str]):
+        self.metric_names = metric_names
         self.save()
 
     @property
@@ -47,7 +47,7 @@ class Project:
     def save(self):
         d = {
             "eval_ids": list(self.evals.keys()),
-            "metrics": serialize_metrics(self.metrics),
+            "metric_names": self.metric_names,
         }
         save_json(d, self.path)
 
@@ -56,14 +56,13 @@ class Project:
         try:
             load_path = get_info_path(project_id)
             d = load_json(load_path)
-            metrics = deserialize_metrics(d.pop("metrics"))
-
+            metric_names = d.pop("metric_names")
             eval_ids = d.pop("eval_ids")
             evals = {
                 eval_id: Evaluator.load(project_id, eval_id) for eval_id in eval_ids
             }
             evals = {k: v for k, v in evals.items() if v}
-            return cls(project_id, metrics, evals)
+            return cls(project_id, metric_names, evals)
         except FileNotFoundError:
             return cls(project_id)
 
@@ -116,23 +115,30 @@ class Project:
         return step_names
 
     def create_evaluator(
-        self, eval_prompts: List[str], metrics: List["Metric"]
+        self, eval_prompts: List[str], metric_names: Optional[List[str]]
     ) -> Evaluator:
         """
         Create a new evaluator for the project
 
         Args:
             eval_prompts (List[str]): List of evaluation prompts, each acts as a separate test case
-            metrics (List[Metric]): List of metrics to be evaluated
+            metric_names (Optional[List[str]]): List of metric names to be evaluated, or None to use the metrics of the project.
 
         Returns:
             Evaluator: The newly created evaluator
         """  # noqa E501
+        if isinstance(metric_names, list):
+            mixedvoices.get_metrics(metric_names)  # checks existence
+        elif metric_names is None:
+            metric_names = self.metric_names.copy()
+        else:
+            raise ValueError("metric_names must be a list or None")
+
         eval_id = uuid4().hex
         cur_eval = Evaluator(
             eval_id,
             self.project_id,
-            metrics,
+            metric_names,
             eval_prompts,
         )
 

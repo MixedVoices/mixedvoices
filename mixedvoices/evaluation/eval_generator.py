@@ -3,8 +3,8 @@ from typing import TYPE_CHECKING, List, Optional
 from mixedvoices.utils import get_openai_client
 
 if TYPE_CHECKING:
-    from mixedvoices.core.project import Project
-    from mixedvoices.core.version import Version
+    from mixedvoices.core.project import Project  # pragma: no cover
+    from mixedvoices.core.version import Version  # pragma: no cover
 
 # TODO: This style doesn't encapsulate transcription errors
 SYSTEM_PROMPT = """You're an expert at creating PROMPTS for TESTING agents to evaluate REAL agent.

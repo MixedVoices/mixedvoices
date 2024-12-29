@@ -235,5 +235,5 @@ class Version:
         # TODO optimize
         return self.project.get_step_names()
 
-    def get_project_metrics(self):
-        return self.project.metrics
+    def get_project_metric_names(self):
+        return self.project.metric_names

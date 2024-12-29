@@ -9,8 +9,6 @@ import mixedvoices as mv
 from mixedvoices.core.utils import create_steps_from_names
 
 if TYPE_CHECKING:
-    import os
-
     from mixedvoices.core.recording import Recording  # pragma: no cover
     from mixedvoices.core.version import Version  # pragma: no cover
 from functools import wraps

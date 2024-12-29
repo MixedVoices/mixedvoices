@@ -5,7 +5,6 @@ from typing import TYPE_CHECKING, Type
 
 import mixedvoices.constants as constants
 from mixedvoices.evaluation.utils import history_to_transcript
-from mixedvoices.metrics import deserialize_metrics, serialize_metrics
 from mixedvoices.processors.llm_metrics import generate_scores
 from mixedvoices.utils import get_openai_client, load_json, save_json
 
@@ -46,7 +45,7 @@ class EvalAgent:
         run_id,
         prompt,
         eval_prompt,
-        metrics,
+        metric_names,
         history=None,
         started=False,
         ended=False,
@@ -62,7 +61,7 @@ class EvalAgent:
 
         self.prompt = prompt
         self.eval_prompt = eval_prompt
-        self.metrics = metrics
+        self.metric_names = metric_names
         self.history = history or []
         self.started = started
         self.ended = ended
@@ -99,7 +98,9 @@ class EvalAgent:
         self.ended = True
         self.transcript = history_to_transcript(self.history)
         try:
-            self.scores = generate_scores(self.transcript, self.prompt, self.metrics)
+            self.scores = generate_scores(
+                self.transcript, self.prompt, self.metric_names
+            )
             print(self.scores)
             self.save()
         except Exception as e:
@@ -134,7 +135,7 @@ class EvalAgent:
         d = {
             "prompt": self.prompt,
             "eval_prompt": self.eval_prompt,
-            "metrics": serialize_metrics(self.metrics),
+            "metric_names": self.metric_names,
             "history": self.history,
             "started": self.started,
             "ended": self.ended,
@@ -152,8 +153,6 @@ class EvalAgent:
         except FileNotFoundError:
             return
 
-        metrics = deserialize_metrics(d.pop("metrics"))
-
         d.update(
             {
                 "project_id": project_id,
@@ -161,7 +160,6 @@ class EvalAgent:
                 "eval_id": eval_id,
                 "run_id": run_id,
                 "agent_id": agent_id,
-                "metrics": metrics,
             }
         )
         return cls(**d)

@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from typing import Literal
 
 # TODO: add more metrics, define better
-# TODO: allow creation of custom call metrics
+
 
 @dataclass
 class Metric:
@@ -10,6 +10,11 @@ class Metric:
     definition: str
     scoring: Literal["binary", "continuous"]
     include_prompt: bool = False
+
+    def __post_init__(self):
+        if self.scoring not in ["binary", "continuous"]:
+            raise ValueError("Scoring must be 'binary' or 'continuous'")
+        self.name = self.name.lower()
 
     @property
     def expected_values(self):
@@ -22,7 +27,7 @@ class Metric:
         return self.name
 
     def __repr__(self) -> str:
-        return f"Metric(name='{self.name}', scoring_range={self.scoring})"
+        return f"Metric(name='{self.name}', definition='{self.definition}', scoring_range={self.scoring}), include_prompt={self.include_prompt})"
 
     def to_dict(self):
         return {
@@ -31,14 +36,6 @@ class Metric:
             "scoring": self.scoring,
             "include_prompt": self.include_prompt,
         }
-
-
-def serialize_metrics(metrics: list[Metric]):
-    return [metric.to_dict() for metric in metrics]
-
-
-def deserialize_metrics(metrics: list[dict]):
-    return [Metric(**metric) for metric in metrics]
 
 
 empathy = Metric(
@@ -69,7 +66,7 @@ hallucination = Metric(
 context_awareness = Metric(
     "Context Awareness",
     "Does the bot maintain awareness of the context/information provided by user? The bot should make its answers contextual by acknowledging what the user said and customizing its responses.",
-    ["PASS", "FAIL"],
+    "binary",
 )
 
 scheduling = Metric(

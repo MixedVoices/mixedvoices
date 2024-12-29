@@ -1,7 +1,7 @@
 from unittest.mock import patch
 
 from conftest import needs_openai_key
-from mixedvoices.metrics import get_all_default_metrics
+from mixedvoices.metrics.api import get_all_default_metrics
 from mixedvoices.processors.llm_metrics import generate_scores
 
 

@@ -1,15 +1,15 @@
-from typing import TYPE_CHECKING, List
+from typing import List
 
 from mixedvoices import models
+from mixedvoices.metrics.api import _instance
 from mixedvoices.processors.utils import parse_explanation_response
 from mixedvoices.utils import get_openai_client
 
-if TYPE_CHECKING:
-    from mixedvoices.metrics import Metric
 
-
-def analyze_metric(transcript: str, prompt: str, metric: "Metric"):
-    metric_name = metric.name
+def analyze_metric(transcript: str, prompt: str, metric_name: str):
+    metric = _instance.get_metric(metric_name, raise_key_error=False)
+    if metric is None:
+        return {"explanation": "Metric definition not found", "score": "N/A"}
     metric_definition = metric.definition
     expected_values = metric.expected_values
 
@@ -58,7 +58,8 @@ def analyze_metric(transcript: str, prompt: str, metric: "Metric"):
             return {"explanation": "Analysis failed", "score": "N/A"}
 
 
-def generate_scores(transcript: str, prompt: str, metrics: List["Metric"]):
+def generate_scores(transcript: str, prompt: str, metric_names: List[str]):
     return {
-        metric.name: analyze_metric(transcript, prompt, metric) for metric in metrics
+        metric_name: analyze_metric(transcript, prompt, metric_name)
+        for metric_name in metric_names
     }
