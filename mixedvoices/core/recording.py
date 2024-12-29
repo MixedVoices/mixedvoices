@@ -6,6 +6,17 @@ import mixedvoices.constants as constants
 from mixedvoices.utils import load_json, save_json
 
 
+def get_info_path(project_id, version_id, recording_id):
+    return os.path.join(
+        constants.ALL_PROJECTS_FOLDER,
+        project_id,
+        version_id,
+        "recordings",
+        recording_id,
+        "info.json",
+    )
+
+
 class Recording:
     def __init__(
         self,
@@ -45,30 +56,16 @@ class Recording:
 
     @property
     def path(self):
-        return os.path.join(
-            constants.ALL_PROJECTS_FOLDER,
-            self.project_id,
-            self.version_id,
-            "recordings",
-            self.recording_id,
-        )
+        return get_info_path(self.project_id, self.version_id, self.recording_id)
 
     def save(self):
-        os.makedirs(self.path, exist_ok=True)
-        save_path = os.path.join(self.path, "info.json")
+        os.makedirs(os.path.dirname(self.path), exist_ok=True)
         d = self.to_dict()
-        save_json(d, save_path)
+        save_json(d, self.path)
 
     @classmethod
     def load(cls, project_id, version_id, recording_id):
-        path = os.path.join(
-            constants.ALL_PROJECTS_FOLDER,
-            project_id,
-            version_id,
-            "recordings",
-            recording_id,
-            "info.json",
-        )
+        path = get_info_path(project_id, version_id, recording_id)
         d = load_json(path)
         d.update(
             {

@@ -5,7 +5,8 @@ from typing import TYPE_CHECKING, Type
 
 import mixedvoices.constants as constants
 from mixedvoices.evaluation.utils import history_to_transcript
-from mixedvoices.processors.llm_metrics import get_llm_metrics
+from mixedvoices.metrics import deserialize_metrics, serialize_metrics
+from mixedvoices.processors.llm_metrics import generate_scores
 from mixedvoices.utils import get_openai_client, load_json, save_json
 
 if TYPE_CHECKING:
@@ -18,6 +19,22 @@ def has_ended_conversation(message):
     return "HANGUP" in message
 
 
+def get_info_path(project_id, version_id, eval_id, run_id, agent_id):
+    return os.path.join(
+        constants.ALL_PROJECTS_FOLDER,
+        project_id,
+        "evals",
+        eval_id,
+        "versions",
+        version_id,
+        "runs",
+        run_id,
+        "agents",
+        agent_id,
+        "info.json",
+    )
+
+
 # TODO: Better logging and better model management throughout
 class EvalAgent:
     def __init__(
@@ -26,9 +43,10 @@ class EvalAgent:
         project_id,
         version_id,
         eval_id,
+        run_id,
         prompt,
         eval_prompt,
-        enabled_llm_metrics,
+        metrics,
         history=None,
         started=False,
         ended=False,
@@ -40,9 +58,11 @@ class EvalAgent:
         self.project_id = project_id
         self.version_id = version_id
         self.eval_id = eval_id
+        self.run_id = run_id
+
         self.prompt = prompt
         self.eval_prompt = eval_prompt
-        self.enabled_llm_metrics = enabled_llm_metrics
+        self.metrics = metrics
         self.history = history or []
         self.started = started
         self.ended = ended
@@ -79,9 +99,7 @@ class EvalAgent:
         self.ended = True
         self.transcript = history_to_transcript(self.history)
         try:
-            self.scores = get_llm_metrics(
-                self.transcript, self.prompt, **self.enabled_llm_metrics
-            )
+            self.scores = generate_scores(self.transcript, self.prompt, self.metrics)
             print(self.scores)
             self.save()
         except Exception as e:
@@ -96,8 +114,9 @@ class EvalAgent:
     def get_system_prompt(self):
         return {
             "role": "system",
-            "content": f"You are a testing agent. Have a conversation, don't make sounds."
-            f"\n{self.eval_prompt}"
+            "content": f"You are a testing agent making a voice call. Have a conversation"
+            f"Don't make sounds or any other subtext, only say words in conversation"
+            f"\nThis is your persona:{self.eval_prompt}"
             "\nWhen conversation is complete, along with final response, return HANGUP to end."
             "\nEg: Have a good day. HANGUP"
             f"\nDate/time: {datetime.now().strftime('%I%p, %a, %d %b').lower().lstrip('0')}."
@@ -106,23 +125,16 @@ class EvalAgent:
 
     @property
     def path(self):
-        return os.path.join(
-            constants.ALL_PROJECTS_FOLDER,
-            self.project_id,
-            self.version_id,
-            "evals",
-            self.eval_id,
-            "agents",
-            self.agent_id,
+        return get_info_path(
+            self.project_id, self.version_id, self.eval_id, self.run_id, self.agent_id
         )
 
     def save(self):
-        os.makedirs(self.path, exist_ok=True)
-        save_path = os.path.join(self.path, "info.json")
+        os.makedirs(os.path.dirname(self.path), exist_ok=True)
         d = {
             "prompt": self.prompt,
             "eval_prompt": self.eval_prompt,
-            "enabled_llm_metrics": self.enabled_llm_metrics,
+            "metrics": serialize_metrics(self.metrics),
             "history": self.history,
             "started": self.started,
             "ended": self.ended,
@@ -130,31 +142,26 @@ class EvalAgent:
             "scores": self.scores,
             "error": self.error,
         }
-        save_json(d, save_path)
+        save_json(d, self.path)
 
     @classmethod
-    def load(cls, project_id, version_id, eval_id, agent_id):
-        load_path = os.path.join(
-            constants.ALL_PROJECTS_FOLDER,
-            project_id,
-            version_id,
-            "evals",
-            eval_id,
-            "agents",
-            agent_id,
-            "info.json",
-        )
+    def load(cls, project_id, version_id, eval_id, run_id, agent_id):
+        load_path = get_info_path(project_id, version_id, eval_id, run_id, agent_id)
         try:
             d = load_json(load_path)
         except FileNotFoundError:
             return
+
+        metrics = deserialize_metrics(d.pop("metrics"))
 
         d.update(
             {
                 "project_id": project_id,
                 "version_id": version_id,
                 "eval_id": eval_id,
+                "run_id": run_id,
                 "agent_id": agent_id,
+                "metrics": metrics,
             }
         )
         return cls(**d)

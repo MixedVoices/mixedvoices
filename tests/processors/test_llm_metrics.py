@@ -1,28 +1,21 @@
 from unittest.mock import patch
 
 from conftest import needs_openai_key
-from mixedvoices.processors.llm_metrics import get_llm_metrics
+from mixedvoices.metrics import get_all_default_metrics
+from mixedvoices.processors.llm_metrics import generate_scores
 
 
 @needs_openai_key
 @patch("mixedvoices.models.METRICS_MODEL", "gpt-4o-mini")
-def test_get_llm_metrics():
+def test_generate_scores():
     with open("tests/assets/transcript.txt", "r") as f:
         transcript = f.read()
     with open("tests/assets/prompt.txt", "r") as f:
         prompt = f.read()
-    metrics = get_llm_metrics(transcript, prompt)
 
-    metric_scoring = {
-        "empathy": list(range(11)),
-        "repetition": ["PASS", "FAIL", "N/A"],
-        "conciseness": list(range(11)),
-        "hallucination": ["PASS", "FAIL"],
-        "context": ["PASS", "FAIL"],
-        "scheduling": list(range(11)) + ["N/A"],
-        "adaptive_qa": list(range(11)),
-        "objection_handling": list(range(11)) + ["N/A"],
-    }
-
-    for metric, scores in metric_scoring.items():
-        assert metrics[metric]["score"] in scores
+    default_metrics = get_all_default_metrics()
+    scores = generate_scores(transcript, prompt, default_metrics)
+    for metric in default_metrics:
+        assert metric.name in scores
+        score = scores[metric.name]
+        assert score in metric.expected_values

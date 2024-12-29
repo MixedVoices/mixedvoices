@@ -9,6 +9,17 @@ if TYPE_CHECKING:
     from mixedvoices.core.recording import Recording  # pragma: no cover
 
 
+def get_info_path(project_id, version_id, step_id):
+    return os.path.join(
+        constants.ALL_PROJECTS_FOLDER,
+        project_id,
+        version_id,
+        "steps",
+        step_id,
+        "info.json",
+    )
+
+
 class Step:
     def __init__(
         self,
@@ -40,13 +51,7 @@ class Step:
 
     @property
     def path(self):
-        return os.path.join(
-            constants.ALL_PROJECTS_FOLDER,
-            self.project_id,
-            self.version_id,
-            "steps",
-            self.step_id,
-        )
+        return get_info_path(self.project_id, self.version_id, self.step_id)
 
     def record_usage(self, recording: "Recording", is_final_step, is_successful):
         self.recording_ids.append(recording.recording_id)
@@ -54,8 +59,7 @@ class Step:
             self.number_of_failed_calls += 1
 
     def save(self):
-        os.makedirs(self.path, exist_ok=True)
-        save_path = os.path.join(self.path, "info.json")
+        os.makedirs(os.path.dirname(self.path), exist_ok=True)
         d = {
             "name": self.name,
             "recording_ids": self.recording_ids,
@@ -64,18 +68,11 @@ class Step:
             "previous_step_id": self.previous_step_id,
             "next_step_ids": self.next_step_ids,
         }
-        save_json(d, save_path)
+        save_json(d, self.path)
 
     @classmethod
     def load(cls, project_id, version_id, step_id):
-        path = os.path.join(
-            constants.ALL_PROJECTS_FOLDER,
-            project_id,
-            version_id,
-            "steps",
-            step_id,
-            "info.json",
-        )
+        path = get_info_path(project_id, version_id, step_id)
         d = load_json(path)
         d.update(
             {"project_id": project_id, "version_id": version_id, "step_id": step_id}
