@@ -66,7 +66,7 @@ class TaskManager:
         self.monitor_thread = None
         self.is_processing = False
 
-        self.tasks_root = os.path.join(constants.ALL_PROJECTS_FOLDER, "_tasks")
+        self.tasks_root = os.path.join(constants.PROJECTS_FOLDER, "_tasks")
         self.create_folders()
 
         self._load_pending_tasks()

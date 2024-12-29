@@ -53,9 +53,9 @@ class RecordingUpload(BaseModel):
 async def list_projects():
     """List all available projects"""
     try:
-        if not os.path.exists(constants.ALL_PROJECTS_FOLDER):
+        if not os.path.exists(constants.PROJECTS_FOLDER):
             return {"projects": []}
-        projects = os.listdir(constants.ALL_PROJECTS_FOLDER)
+        projects = os.listdir(constants.PROJECTS_FOLDER)
         if "_tasks" in projects:
             projects.remove("_tasks")
         return {"projects": projects}

@@ -11,7 +11,7 @@ if TYPE_CHECKING:
 
 def get_info_path(project_id, version_id, step_id):
     return os.path.join(
-        constants.ALL_PROJECTS_FOLDER,
+        constants.PROJECTS_FOLDER,
         project_id,
         version_id,
         "steps",

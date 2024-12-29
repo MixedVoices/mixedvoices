@@ -34,29 +34,36 @@ needs_deepgram_key = needs_api_key("DEEPGRAM_API_KEY")
 
 
 @pytest.fixture
-def temp_project_folder(tmp_path):
-    """Create a temporary project folder for testing"""
-    test_folder = str(tmp_path / "test_projects")
-    os.makedirs(test_folder)
+def mock_base_folder(tmp_path, monkeypatch):
+    """Create temporary folder and patch all folder constants."""
+    # Create required subdirectories
+    (tmp_path / "projects").mkdir()
+    (tmp_path / "tasks").mkdir()
 
-    # Mock the ALL_PROJECTS_FOLDER constant
-    with patch("mixedvoices.constants.ALL_PROJECTS_FOLDER", test_folder):
-        yield test_folder
+    # Patch all constants directly
+    monkeypatch.setattr("mixedvoices.constants.MIXEDVOICES_FOLDER", str(tmp_path))
+    monkeypatch.setattr(
+        "mixedvoices.constants.PROJECTS_FOLDER", str(tmp_path / "projects")
+    )
+    monkeypatch.setattr("mixedvoices.constants.TASKS_FOLDER", str(tmp_path / "tasks"))
+    monkeypatch.setattr(
+        "mixedvoices.constants.METRICS_FILE", str(tmp_path / "metrics.json")
+    )
 
-    shutil.rmtree(test_folder)
+    yield tmp_path
 
 
 @pytest.fixture
-def empty_project(temp_project_folder):
+def empty_project(mock_base_folder):
     project = mv.create_project("test_project")
     project.create_version("v1", prompt="Testing prompt")
     return project
 
 
 @pytest.fixture
-def sample_project(temp_project_folder):
+def sample_project(mock_base_folder):
     project_path = os.path.join("tests", "assets", "sample_project")
-    shutil.copytree(project_path, os.path.join(temp_project_folder, "sample_project"))
+    shutil.copytree(project_path, os.path.join(mock_base_folder, "sample_project"))
     return mv.load_project("sample_project")
 
 

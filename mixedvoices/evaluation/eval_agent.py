@@ -21,7 +21,7 @@ def has_ended_conversation(message):
 
 def get_info_path(project_id, version_id, eval_id, run_id, agent_id):
     return os.path.join(
-        constants.ALL_PROJECTS_FOLDER,
+        constants.PROJECTS_FOLDER,
         project_id,
         "evals",
         eval_id,

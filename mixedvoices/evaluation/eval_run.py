@@ -15,7 +15,7 @@ if TYPE_CHECKING:
 
 def get_info_path(project_id, version_id, eval_id, run_id):
     return os.path.join(
-        constants.ALL_PROJECTS_FOLDER,
+        constants.PROJECTS_FOLDER,
         project_id,
         "evals",
         eval_id,
@@ -65,7 +65,9 @@ class EvalRun:
 
     @property
     def path(self):
-        return get_info_path(self.project_id, self.version_id, self.eval_id, self.run_id)
+        return get_info_path(
+            self.project_id, self.version_id, self.eval_id, self.run_id
+        )
 
     def save(self):
         os.makedirs(os.path.dirname(self.path), exist_ok=True)

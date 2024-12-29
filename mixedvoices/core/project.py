@@ -10,7 +10,7 @@ from mixedvoices.utils import load_json, save_json, validate_name
 
 
 def get_info_path(project_id):
-    return os.path.join(constants.ALL_PROJECTS_FOLDER, project_id, "info.json")
+    return os.path.join(constants.PROJECTS_FOLDER, project_id, "info.json")
 
 
 class Project:
@@ -31,7 +31,7 @@ class Project:
 
     @property
     def project_folder(self):
-        return os.path.join(constants.ALL_PROJECTS_FOLDER, self.project_id)
+        return os.path.join(constants.PROJECTS_FOLDER, self.project_id)
 
     @property
     def versions(self):
