@@ -1,77 +1,82 @@
 import streamlit as st
 
-from mixedvoices.dashboard.api.client import APIClient
-from mixedvoices.dashboard.api.endpoints import (
-    get_project_versions_endpoint,
-    get_projects_endpoint,
-)
-
 
 class Sidebar:
-    def __init__(self, api_client: APIClient):
+    def __init__(self, api_client):
         self.api_client = api_client
+        if "current_project" not in st.session_state:
+            st.session_state.current_project = None
+        if "current_version" not in st.session_state:
+            st.session_state.current_version = None
 
-    def render(self) -> None:
-        """Render the sidebar"""
+    def render(self):
         with st.sidebar:
             st.title("🎙️ MixedVoices")
-            self._handle_project_selection()
+
+            # Project Selection
+            self._render_project_selection()
+
+            if st.session_state.current_project:
+                self._render_navigation()
 
             st.divider()
 
-            with st.expander("Create New Project"):
-                self._handle_project_creation()
+            # Create Project Button
+            if st.button("Create New Project"):
+                st.session_state.show_create_project = True
 
-    def _handle_project_selection(self) -> None:
-        """Handle project and version selection"""
+    def _render_project_selection(self):
         # Fetch projects
-        projects_data = self.api_client.fetch_data(get_projects_endpoint())
+        projects_data = self.api_client.fetch_data("projects")
         projects = projects_data.get("projects", [])
 
         # Project selection
-        st.session_state.current_project = st.selectbox(
-            "Select Project", [""] + projects, key="project_selector"
+        selected_project = st.selectbox(
+            "Select Project",
+            [""] + projects,
+            index=(
+                0
+                if not st.session_state.current_project
+                else projects.index(st.session_state.current_project) + 1
+            ),
         )
 
-        # Version selection if project is selected
-        if st.session_state.current_project:
-            versions_data = self.api_client.fetch_data(
-                get_project_versions_endpoint(st.session_state.current_project)
-            )
-            versions = versions_data.get("versions", [])
-            st.session_state.current_version = st.selectbox(
-                "Select Version",
-                [""] + [v["name"] for v in versions],
-                key="version_selector",
-            )
+        if selected_project != st.session_state.current_project:
+            st.session_state.current_project = selected_project
+            st.session_state.current_version = None
+            st.rerun()
 
-    def _handle_project_creation(self) -> None:
-        """Handle new project creation"""
-        # Initialize states if they don't exist
-        if "show_project_success" not in st.session_state:
-            st.session_state.show_project_success = False
+    def _render_navigation(self):
+        st.subheader("Navigation")
 
-        # Key for project name input to force re-render when needed
-        if "project_input_key" not in st.session_state:
-            st.session_state.project_input_key = 0
+        # Project Home
+        if st.button("Project Home", use_container_width=True):
+            st.switch_page("pages/project_home.py")
 
-        # Show success message if needed
-        if st.session_state.show_project_success:
-            st.success("Project created successfully!")
-            st.session_state.show_project_success = False
+        # Analytics Section
+        st.subheader("Analytics")
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            if st.button("View Recordings"):
+                st.switch_page("pages/analytics/view_recordings.py")
+        with col2:
+            if st.button("View Flow"):
+                st.switch_page("pages/analytics/view_flow.py")
+        with col3:
+            if st.button("Upload"):
+                st.switch_page("pages/analytics/upload_recording.py")
 
-        # Project creation form
-        new_project_name = st.text_input(
-            "Project Name",
-            key=f"project_name_input_{st.session_state.project_input_key}",
-        )
+        # Evals Section
+        st.subheader("Evals")
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("Evals List"):
+                st.switch_page("pages/evals/evals_list.py")
+        with col2:
+            if st.button("Create Eval"):
+                st.switch_page("pages/evals/create_evaluator.py")
 
-        if st.button("Create Project") and new_project_name:
-            response = self.api_client.post_data(
-                f"projects?name={new_project_name}", {}
-            )
-            if response.get("message"):
-                # Increment the input key to force a fresh input field
-                st.session_state.project_input_key += 1
-                st.session_state.show_project_success = True
-                st.rerun()
+        # Metrics Section
+        st.subheader("Metrics")
+        if st.button("View Metrics", use_container_width=True):
+            st.switch_page("pages/metrics/metrics_page.py")
