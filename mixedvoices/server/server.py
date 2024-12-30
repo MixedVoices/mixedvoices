@@ -43,6 +43,11 @@ class VersionCreate(BaseModel):
     metadata: Optional[Dict[str, Any]] = None
 
 
+class EvalCreate(BaseModel):
+    eval_prompts: List[str]
+    metric_names: List[str]
+
+
 class RecordingUpload(BaseModel):
     url: Optional[str] = None
     is_successful: Optional[bool] = None
@@ -501,6 +506,22 @@ async def list_evals(project_name: str):
         raise HTTPException(status_code=404, detail=str(e)) from e
     except Exception as e:
         logger.error(f"Error listing evals: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+@app.post("/api/projects/{project_name}/evals")
+async def create_eval(project_name: str, eval_data: EvalCreate):
+    try:
+        project = mixedvoices.load_project(project_name)
+        current_eval = project.create_evaluator(
+            eval_data.eval_prompts, eval_data.metric_names
+        )
+        return {"eval_id": current_eval.eval_id}
+    except ValueError as e:
+        logger.error(f"Project '{project_name}' not found: {str(e)}")
+        raise HTTPException(status_code=404, detail=str(e)) from e
+    except Exception as e:
+        logger.error(f"Error creating eval: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e)) from e
 
 
