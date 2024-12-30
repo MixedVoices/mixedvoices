@@ -541,6 +541,48 @@ async def get_eval_details(project_name: str, eval_id: str):
         raise HTTPException(status_code=500, detail=str(e)) from e
 
 
+@app.get("/api/projects/{project_name}/evals/{eval_id}/versions/{version_name}")
+async def get_version_eval_details(project_name: str, eval_id: str, version_name: str):
+    try:
+        project = mixedvoices.load_project(project_name)
+        if version_name not in project.versions:
+            raise ValueError(
+                f"Version {version_name} not found in project {project_name}"
+            )
+        current_eval = project.evals.get(eval_id, None)
+        if current_eval is None:
+            raise ValueError(f"Eval {eval_id} not found in project {project_name}")
+        prompts = current_eval.eval_prompts
+        eval_runs = current_eval.eval_runs
+
+        eval_run_data = [
+            {
+                "run_id": eval_run.run_id,
+                "version_id": eval_run.version_id,
+                "created_at": eval_run.created_at,
+            }
+            for eval_run in eval_runs.values()
+            if eval_run.version_id == version_name
+        ]
+        metrics_data = [
+            {"name": metric_name} for metric_name in current_eval.metric_names
+        ]
+
+        return {
+            "metrics": metrics_data,
+            "eval_runs": eval_run_data,
+            "prompts": prompts,
+        }
+    except ValueError as e:
+        logger.error(
+            f"Eval '{eval_id}' or project '{project_name}' or version '{version_name}' not found: {str(e)}"
+        )
+        raise HTTPException(status_code=404, detail=str(e)) from e
+    except Exception as e:
+        logger.error(f"Error listing version evals: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
 @app.get("/api/projects/{project_name}/evals/{eval_id}/runs/{run_id}")
 async def get_eval_run_details(project_name: str, eval_id: str, run_id: str):
     try:
