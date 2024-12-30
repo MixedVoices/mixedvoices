@@ -245,3 +245,8 @@ class Project:
         self.evals[eval_id] = cur_eval
         self.save()
         return cur_eval
+
+    def load_evaluator(self, eval_id: str):
+        if eval_id not in self.evals:
+            raise ValueError(f"Eval {eval_id} does not exist")
+        return self.evals[eval_id]
