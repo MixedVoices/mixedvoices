@@ -66,9 +66,11 @@ async def list_projects():
 
 
 @app.post("/api/projects")
-async def create_project(name: str, metrics: List[Metric]):
+async def create_project(name: str, metrics: List[Dict]):
+    # here the dict will have name, definition and scoring (which can be binary(PASS/FAIL) or continuous (0-10))
     """Create a new project"""
     try:
+        metrics = [Metric(**metric) for metric in metrics]
         mixedvoices.create_project(name, metrics)
         logger.info(f"Project '{name}' created successfully")
         return {"message": f"Project {name} created successfully"}
@@ -109,6 +111,17 @@ async def list_versions(project_name: str):
         raise HTTPException(status_code=500, detail=str(e)) from e
 
 
+@app.get("/api/default_metrics")
+async def list_default_metrics():
+    try:
+        metrics = mixedvoices.metrics.get_all_default_metrics()
+        metrics = [metric.to_dict() for metric in metrics]
+        return {"metrics": metrics}
+    except Exception as e:
+        logger.error(f"Error listing default metrics: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
 @app.get("/api/projects/{project_name}/metrics")
 async def list_metrics(project_name: str):
     """List all metrics for a project"""
@@ -126,6 +139,7 @@ async def list_metrics(project_name: str):
             exc_info=True,
         )
         raise HTTPException(status_code=500, detail=str(e)) from e
+
 
 @app.post("/api/projects/{project_name}/versions")
 async def create_version(project_name: str, version_data: VersionCreate):
