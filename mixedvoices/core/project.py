@@ -132,9 +132,11 @@ class Project:
 
     @property
     def versions(self):
-        all_files = os.listdir(self.project_folder)
+        all_files = os.listdir(os.path.join(self.project_folder, "versions"))
         return [
-            f for f in all_files if os.path.isdir(os.path.join(self.project_folder, f))
+            f
+            for f in all_files
+            if os.path.isdir(os.path.join(self.project_folder, "versions", f))
         ]
 
     @property
@@ -187,7 +189,7 @@ class Project:
         validate_name(version_id, "version_id")
         if version_id in self.versions:
             raise ValueError(f"Version {version_id} already exists")
-        version_folder = os.path.join(self.project_folder, version_id)
+        version_folder = os.path.join(self.project_folder, "versions", version_id)
         os.makedirs(version_folder)
         os.makedirs(os.path.join(version_folder, "recordings"))
         os.makedirs(os.path.join(version_folder, "steps"))

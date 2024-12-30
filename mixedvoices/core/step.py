@@ -13,6 +13,7 @@ def get_info_path(project_id, version_id, step_id):
     return os.path.join(
         constants.PROJECTS_FOLDER,
         project_id,
+        "versions",
         version_id,
         "steps",
         step_id,

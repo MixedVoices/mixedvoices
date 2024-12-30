@@ -31,7 +31,9 @@ def dfs(
 
 
 def get_info_path(project_id, version_id):
-    return os.path.join(constants.PROJECTS_FOLDER, project_id, version_id, "info.json")
+    return os.path.join(
+        constants.PROJECTS_FOLDER, project_id, "versions", version_id, "info.json"
+    )
 
 
 class Version:
