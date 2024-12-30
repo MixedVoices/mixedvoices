@@ -2,7 +2,7 @@ import logging
 import os
 import shutil
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 import aiohttp
 import uvicorn
@@ -12,6 +12,7 @@ from pydantic import BaseModel
 
 import mixedvoices
 from mixedvoices import constants
+from mixedvoices.metrics.metric import Metric
 from mixedvoices.server.utils import process_vapi_webhook
 
 # Configure logging
@@ -65,10 +66,10 @@ async def list_projects():
 
 
 @app.post("/api/projects")
-async def create_project(name: str):
+async def create_project(name: str, metrics: List[Metric]):
     """Create a new project"""
     try:
-        mixedvoices.create_project(name)
+        mixedvoices.create_project(name, metrics)
         logger.info(f"Project '{name}' created successfully")
         return {"message": f"Project {name} created successfully"}
     except ValueError as e:
@@ -107,6 +108,24 @@ async def list_versions(project_name: str):
         )
         raise HTTPException(status_code=500, detail=str(e)) from e
 
+
+@app.get("/api/projects/{project_name}/metrics")
+async def list_metrics(project_name: str):
+    """List all metrics for a project"""
+    try:
+        project = mixedvoices.load_project(project_name)
+        metrics = project.list_metrics()
+        metrics = [metric.to_dict() for metric in metrics]
+        return {"metrics": metrics}
+    except ValueError as e:
+        logger.error(f"Project '{project_name}' not found: {str(e)}")
+        raise HTTPException(status_code=404, detail=str(e)) from e
+    except Exception as e:
+        logger.error(
+            f"Error listing metrics for project '{project_name}': {str(e)}",
+            exc_info=True,
+        )
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 @app.post("/api/projects/{project_name}/versions")
 async def create_version(project_name: str, version_data: VersionCreate):
@@ -447,61 +466,96 @@ async def handle_webhook(
         raise HTTPException(status_code=500, detail=str(e)) from e
 
 
-@app.get("/api/projects/{project_name}/versions/{version_name}/evals")
-async def list_evals(project_name: str, version_name: str):
+@app.get("/api/projects/{project_name}/evals")
+async def list_evals(project_name: str):
     try:
         project = mixedvoices.load_project(project_name)
-        version = project.load_version(version_name)
-        evals = version.evals
-        eval_data = []
-        for eval_id, cur_eval in evals.items():
-            eval_data.append(
-                {
-                    "eval_id": eval_id,
-                    "created_at": cur_eval.created_at,
-                }
-            )
+        evals = project.evals
+        eval_data = [
+            {
+                "eval_id": eval_id,
+                "created_at": cur_eval.created_at,
+                "num_prompts": len(cur_eval.eval_prompts),
+                "num_eval_runs": len(cur_eval.eval_runs),
+                "metric_names": cur_eval.metric_names,
+            }
+            for eval_id, cur_eval in evals.items()
+        ]
         return {"evals": eval_data}
     except ValueError as e:
-        logger.error(
-            f"Version '{version_name}' or project '{project_name}' not found: {str(e)}"
-        )
+        logger.error(f"Project '{project_name}' not found: {str(e)}")
         raise HTTPException(status_code=404, detail=str(e)) from e
     except Exception as e:
         logger.error(f"Error listing evals: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e)) from e
 
 
-@app.get("/api/projects/{project_name}/versions/{version_name}/evals/{eval_id}")
-async def get_eval_details(project_name: str, version_name: str, eval_id: str):
+@app.get("/api/projects/{project_name}/evals/{eval_id}")
+async def get_eval_details(project_name: str, eval_id: str):
     try:
         project = mixedvoices.load_project(project_name)
-        version = project.load_version(version_name)
-        current_eval = version.evals.get(eval_id, None)
+        current_eval = project.evals.get(eval_id, None)
         if current_eval is None:
-            raise ValueError(f"Eval {eval_id} not found in version {version_name}")
-        agents = current_eval.eval_agents
-        agent_data = []
-        for agent in agents:
-            agent_data.append(
-                {
-                    "prompt": agent.eval_prompt,
-                    "started": agent.started,
-                    "ended": agent.ended,
-                    "transcript": agent.transcript,
-                    "scores": agent.scores,
-                    "error": agent.error,
-                }
-            )
+            raise ValueError(f"Eval {eval_id} not found in project {project_name}")
+        prompts = current_eval.eval_prompts
+        eval_runs = current_eval.eval_runs
 
-        return {"agents": agent_data}
+        eval_run_data = [
+            {
+                "run_id": eval_run.run_id,
+                "version_id": eval_run.version_id,
+                "created_at": eval_run.created_at,
+            }
+            for eval_run in eval_runs.values()
+        ]
+
+        metrics_data = [
+            {"name": metric_name} for metric_name in current_eval.metric_names
+        ]
+        return {
+            "metrics": metrics_data,
+            "eval_runs": eval_run_data,
+            "prompts": prompts,
+        }
     except ValueError as e:
         logger.error(
-            f"Eval '{eval_id}' or version '{version_name}' or project '{project_name}' not found: {str(e)}"
+            f"Eval '{eval_id}' or project '{project_name}' not found: {str(e)}"
         )
         raise HTTPException(status_code=404, detail=str(e)) from e
     except Exception as e:
         logger.error(f"Error getting eval details: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+@app.get("/api/projects/{project_name}/evals/{eval_id}/runs/{run_id}")
+async def get_eval_run_details(project_name: str, eval_id: str, run_id: str):
+    try:
+        project = mixedvoices.load_project(project_name)
+        current_eval = project.evals.get(eval_id, None)
+        if current_eval is None:
+            raise ValueError(f"Eval {eval_id} not found in project {project_name}")
+        eval_run = current_eval.eval_runs.get(run_id, None)
+
+        agents = eval_run.eval_agents
+        agent_data = [
+            {
+                "prompt": agent.eval_prompt,
+                "started": agent.started,
+                "ended": agent.ended,
+                "transcript": agent.transcript,
+                "scores": agent.scores,
+                "error": agent.error,
+            }
+            for agent in agents
+        ]
+        return {"agents": agent_data, "version": eval_run.version_id}
+    except ValueError as e:
+        logger.error(
+            f"Run {run_id} or Eval '{eval_id}' or project '{project_name}' not found: {str(e)}"
+        )
+        raise HTTPException(status_code=404, detail=str(e)) from e
+    except Exception as e:
+        logger.error(f"Error getting eval run details: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e)) from e
 
 

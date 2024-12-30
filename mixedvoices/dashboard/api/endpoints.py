@@ -28,11 +28,16 @@ def get_recording_flow_endpoint(
     return f"projects/{project_id}/versions/{version}/recordings/{recording_id}/flow"
 
 
-def list_evals_endpoint(project_name: str, version_name: str) -> str:
+def list_evals_endpoint(project_name) -> str:
     """Get endpoint for listing evaluations"""
-    return f"projects/{project_name}/versions/{version_name}/evals"
+    return f"projects/{project_name}/evals"
 
 
-def get_eval_details_endpoint(project_name: str, version_name: str, eval_id: str) -> str:
+def get_eval_details_endpoint(project_name: str, eval_id: str) -> str:
     """Get endpoint for getting evaluation details"""
-    return f"projects/{project_name}/versions/{version_name}/evals/{eval_id}"
+    return f"projects/{project_name}/evals/{eval_id}"
+
+
+def get_eval_run_details_endpoint(project_name: str, eval_id: str, run_id: str) -> str:
+    """Get endpoint for getting evaluation run details"""
+    return f"projects/{project_name}/evals/{eval_id}/runs/{run_id}"

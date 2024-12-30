@@ -31,14 +31,14 @@ class Evaluator:
         metric_names: List[str],
         eval_prompts: List[str],
         created_at: Optional[int] = None,
-        eval_runs: Optional[List[EvalRun]] = None,
+        eval_runs: Optional[dict[str, EvalRun]] = None,
     ):
         self.eval_id = eval_id
         self.project_id = project_id
         self.metric_names = metric_names
         self.eval_prompts = eval_prompts
         self.created_at = created_at or int(time.time())
-        self.eval_runs = eval_runs or []
+        self.eval_runs = eval_runs or {}
         self.save()
 
     @property
@@ -51,8 +51,8 @@ class Evaluator:
             "metric_names": self.metric_names,
             "eval_prompts": self.eval_prompts,
             "created_at": self.created_at,
-            "eval_run_ids": [a.run_id for a in self.eval_runs],
-            "eval_run_version_ids": [a.version_id for a in self.eval_runs],
+            "eval_run_ids": list(self.eval_runs.keys()),
+            "eval_run_version_ids": [run.version_id for run in self.eval_runs.values()],
         }
         save_json(d, self.path)
 
@@ -63,13 +63,13 @@ class Evaluator:
             d = load_json(load_path)
         except FileNotFoundError:
             return
+
         eval_run_ids = d.pop("eval_run_ids")
         eval_run_version_ids = d.pop("eval_run_version_ids")
-        eval_runs = [
-            EvalRun.load(project_id, version_id, eval_id, run_id)
+        eval_runs = {
+            run_id: EvalRun.load(project_id, version_id, eval_id, run_id)
             for run_id, version_id in zip(eval_run_ids, eval_run_version_ids)
-        ]
-
+        }
         d.update(
             {
                 "project_id": project_id,
@@ -114,6 +114,6 @@ class Evaluator:
             self.metric_names,
             self.eval_prompts,
         )
-        self.eval_runs.append(run)
+        self.eval_runs[run_id] = run
         self.save()
         run.run(agent_class, agent_starts, **kwargs)
