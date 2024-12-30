@@ -16,22 +16,18 @@ class MyDentalAgent(mv.BaseAgent):
         return response, has_conversation_ended
 
 
-descriptions = ["Young lady who is scared of coming for root canal"]
-
-project = mv.create_project("dental_clinic")
-version = project.create_version("v1", prompt=AGENT_PROMPT)
-
-eval_generator = mv.EvalGenerator(AGENT_PROMPT)
-eval_generator.add_from_descriptions(descriptions).add_edge_cases(2)
-all_evals = eval_generator.generate()
-
-repetition = Metric(
-    name="Repetition",
-    definition="If the user has to repeat something or gets frustrated because bot misunderstood",
+hangup_metric = Metric(
+    name="call hangup",
+    definition="FAILS if the bot faces problems in ending the call",
     scoring="binary",
 )
 
-metrics = [empathy, repetition]
+project = mv.create_project("dental_clinic", metrics=[empathy, hangup_metric])
+v1 = project.create_version("v1", prompt=AGENT_PROMPT)
 
-evaluator = project.create_evaluator(all_evals, metrics=metrics)
-evaluator.run(version, MyDentalAgent, agent_starts=False, model="gpt-4o-mini")
+eval_generator = mv.EvalGenerator(AGENT_PROMPT)
+eval_generator.add_from_descriptions(["Young lady who is scared of root canal"])
+all_evals = eval_generator.generate()
+
+evaluator = project.create_evaluator(all_evals, metric_names=["call hangup"])
+evaluator.run(v1, MyDentalAgent, agent_starts=False, model="gpt-4o-mini")
