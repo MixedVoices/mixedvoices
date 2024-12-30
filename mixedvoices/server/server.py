@@ -43,6 +43,17 @@ class VersionCreate(BaseModel):
     metadata: Optional[Dict[str, Any]] = None
 
 
+class MetricCreate(BaseModel):
+    name: str
+    definition: str
+    scoring: str
+
+
+class MetricUpdate(BaseModel):
+    definition: str
+    scoring: str
+
+
 class EvalCreate(BaseModel):
     eval_prompts: List[str]
     metric_names: List[str]
@@ -143,6 +154,44 @@ async def list_metrics(project_name: str):
             f"Error listing metrics for project '{project_name}': {str(e)}",
             exc_info=True,
         )
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+@app.post("/api/projects/{project_name}/metrics")
+async def create_metric(project_name: str, metric_data: MetricCreate):
+    try:
+        project = mixedvoices.load_project(project_name)
+        metric = Metric(
+            name=metric_data.name,
+            definition=metric_data.definition,
+            scoring=metric_data.scoring,
+        )
+        project.add_metrics([metric])
+        return {"message": f"Metric {metric.name} created successfully"}
+    except ValueError as e:
+        logger.error(f"Invalid metric data: {str(e)}")
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    except Exception as e:
+        logger.error(f"Error creating metric: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+@app.post("/api/projects/{project_name}/metrics/{metric_name}")
+async def update_metric(project_name: str, metric_name: str, metric_data: MetricUpdate):
+    try:
+        project = mixedvoices.load_project(project_name)
+        metric_object = Metric(
+            name=metric_name,
+            definition=metric_data.definition,
+            scoring=metric_data.scoring,
+        )
+        project.update_metric(metric_object)
+        return {"message": f"Metric {metric_name} updated successfully"}
+    except ValueError as e:
+        logger.error(f"Invalid metric data: {str(e)}")
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    except Exception as e:
+        logger.error(f"Error updating metric: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e)) from e
 
 
