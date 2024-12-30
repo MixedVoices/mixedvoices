@@ -43,6 +43,7 @@ class EvalRun:
         self.version_id = version_id
         self.eval_id = eval_id
 
+        self.prompt = prompt
         self.metric_names = metric_names
         self.eval_prompts = eval_prompts
         self.created_at = created_at or int(time.time())
@@ -70,6 +71,7 @@ class EvalRun:
     def save(self):
         os.makedirs(os.path.dirname(self.path), exist_ok=True)
         d = {
+            "prompt": self.prompt,
             "metric_names": self.metric_names,
             "eval_prompts": self.eval_prompts,
             "created_at": self.created_at,
@@ -87,7 +89,8 @@ class EvalRun:
 
         eval_agent_ids = d.pop("eval_agent_ids")
         eval_agents = [
-            EvalAgent.load(project_id, eval_id, agent_id) for agent_id in eval_agent_ids
+            EvalAgent.load(project_id, version_id, eval_id, run_id, agent_id)
+            for agent_id in eval_agent_ids
         ]
         eval_agents = [a for a in eval_agents if a]
 

@@ -1,10 +1,12 @@
 import os
 import random
 from datetime import datetime
-from typing import TYPE_CHECKING, Type
+from typing import TYPE_CHECKING, List, Type
 
+import mixedvoices as mv
 import mixedvoices.constants as constants
 from mixedvoices.evaluation.utils import history_to_transcript
+from mixedvoices.metrics.metric import Metric
 from mixedvoices.processors.llm_metrics import generate_scores
 from mixedvoices.utils import get_openai_client, load_json, save_json
 
@@ -70,6 +72,11 @@ class EvalAgent:
         self.error = error or None
         self.save()
 
+    @property
+    def metrics(self) -> List[Metric]:
+        project = mv.load_project(self.project_id)
+        return project.get_metrics_by_names(self.metric_names)
+
     def respond(self, input):
         if not self.started:
             self.started = True
@@ -98,9 +105,7 @@ class EvalAgent:
         self.ended = True
         self.transcript = history_to_transcript(self.history)
         try:
-            self.scores = generate_scores(
-                self.transcript, self.prompt, self.metric_names
-            )
+            self.scores = generate_scores(self.transcript, self.prompt, self.metrics)
             print(self.scores)
             self.save()
         except Exception as e:
@@ -113,14 +118,16 @@ class EvalAgent:
         self.save()
 
     def get_system_prompt(self):
+        datetime_str = datetime.now().strftime("%I%p, %a, %d %b").lower().lstrip("0")
         return {
             "role": "system",
-            "content": f"You are a testing agent making a voice call. Have a conversation"
-            f"Don't make sounds or any other subtext, only say words in conversation"
+            "content": f"You are a testing agent making a voice call. "
+            f"\nHave a conversation. Take a single turn at a time."
+            f"\nDon't make sounds or any other subtext, only say words in conversation"
             f"\nThis is your persona:{self.eval_prompt}"
-            "\nWhen conversation is complete, along with final response, return HANGUP to end."
+            "\nWhen conversation is complete, with final response return HANGUP to end."
             "\nEg: Have a good day. HANGUP"
-            f"\nDate/time: {datetime.now().strftime('%I%p, %a, %d %b').lower().lstrip('0')}."
+            f"\nDate/time: {datetime_str}."
             "\nKeep responses short, under 20 words.",
         }
 

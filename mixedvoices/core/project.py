@@ -1,12 +1,48 @@
 import os
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 from uuid import uuid4
 
-import mixedvoices
 import mixedvoices.constants as constants
 from mixedvoices.core.version import Version
 from mixedvoices.evaluation.evaluator import Evaluator
+from mixedvoices.metrics.metric import Metric
 from mixedvoices.utils import load_json, save_json, validate_name
+
+
+def create_project(project_name: str, metrics: List[Metric]):
+    """Create a new project"""
+    validate_name(project_name, "project_name")
+    check_metrics_while_adding(metrics)
+    if project_name in os.listdir(constants.PROJECTS_FOLDER):
+        raise ValueError(f"Project {project_name} already exists")
+    os.makedirs(os.path.join(constants.PROJECTS_FOLDER, project_name))
+    return Project(project_name, metrics)
+
+
+def load_project(project_name: str):
+    """Load an existing project"""
+    if project_name not in os.listdir(constants.PROJECTS_FOLDER):
+        raise ValueError(f"Project {project_name} does not exist")
+    return Project.load(project_name)
+
+
+def check_metrics_while_adding(
+    metrics: List[Metric], existing_metrics: Optional[Dict[str, Metric]] = None
+) -> List[Metric]:
+    if not isinstance(metrics, list):
+        metrics = [metrics]
+
+    if not all(isinstance(metric, Metric) for metric in metrics):
+        raise TypeError(
+            "Metrics must be a list of Metric objects or a single Metric object"
+        )
+    if existing_metrics:
+        for metric in metrics:
+            if metric.name in existing_metrics:
+                raise ValueError(
+                    f"Metric with name '{metric.name}' already exists in project"
+                )
+    return metrics
 
 
 def get_info_path(project_id):
@@ -17,17 +53,78 @@ class Project:
     def __init__(
         self,
         project_id: str,
-        metric_names:List[str],
+        metrics: Optional[List[Metric]] = None,
         evals: Optional[Dict[str, Evaluator]] = None,
+        _metrics: Optional[Dict[str, Metric]] = None,
     ):
         self.project_id = project_id
-        self.metric_names = metric_names
+        self._metrics: Dict[str, Metric] = _metrics or {}
         self.evals: Dict[str, Evaluator] = evals or {}
+        if metrics:
+            self.add_metrics(metrics)
+
+    def add_metrics(self, metrics: Union[Metric, List[Metric]]) -> None:
+        """
+        Add a new metrics to the project.
+        Raises ValueError if metric with same name already exists.
+        """
+        metrics = check_metrics_while_adding(metrics, self._metrics)
+        for metric in metrics:
+            self._metrics[metric.name] = metric
         self.save()
 
-    def update_metric_names(self, metric_names: List[str]):
-        self.metric_names = metric_names
+    def update_metric(self, metric: Metric) -> None:
+        """
+        Update an existing metric.
+        Raises KeyError if metric doesn't exist.
+        """
+        if metric.name not in self._metrics:
+            raise KeyError(
+                f"Metric with name '{metric.name}' does not exist in project"
+            )
+        self._metrics[metric.name] = metric
         self.save()
+
+    def get_metric(self, metric_name: str) -> Metric:
+        """
+        Get a metric by name.
+        Raises KeyError if metric doesn't exist.
+        """
+        if metric_name not in self._metrics:
+            raise KeyError(
+                f"Metric with name '{metric_name}' does not exist in project"
+            )
+        return self._metrics[metric_name]
+
+    def get_metrics_by_names(self, metric_names: List[str]) -> List[Metric]:
+        """
+        Get multiple metrics by their names.
+        Raises KeyError if any metric doesn't exist.
+        """
+        missing = [name for name in metric_names if name not in self._metrics]
+        if missing:
+            raise KeyError(f"Metrics not found in project: {', '.join(missing)}")
+        return [self._metrics[name] for name in metric_names]
+
+    def remove_metric(self, metric_name: str) -> None:
+        """
+        Remove a metric by name.
+        Raises KeyError if metric doesn't exist.
+        """
+        if metric_name not in self._metrics:
+            raise KeyError(
+                f"Metric with name '{metric_name}' does not exist in project"
+            )
+        del self._metrics[metric_name]
+        self.save()
+
+    def list_metrics(self) -> List[Metric]:
+        """Get all metrics as a list."""
+        return list(self._metrics.values())
+
+    def list_metric_names(self) -> List[str]:
+        """Get all metric names."""
+        return list(self._metrics.keys())
 
     @property
     def project_folder(self):
@@ -45,9 +142,10 @@ class Project:
         return get_info_path(self.project_id)
 
     def save(self):
+        metrics = {k: v.to_dict() for k, v in self._metrics.items()}
         d = {
             "eval_ids": list(self.evals.keys()),
-            "metric_names": self.metric_names,
+            "metrics": metrics,
         }
         save_json(d, self.path)
 
@@ -56,13 +154,17 @@ class Project:
         try:
             load_path = get_info_path(project_id)
             d = load_json(load_path)
-            metric_names = d.pop("metric_names")
+            metrics = d.pop("metrics")
+            metrics = {
+                k: Metric(name=k, definition=v["definition"], scoring=v["scoring"])
+                for k, v in metrics.items()
+            }
             eval_ids = d.pop("eval_ids")
             evals = {
                 eval_id: Evaluator.load(project_id, eval_id) for eval_id in eval_ids
             }
             evals = {k: v for k, v in evals.items() if v}
-            return cls(project_id, metric_names, evals)
+            return cls(project_id, evals=evals, _metrics=metrics)
         except FileNotFoundError:
             return cls(project_id)
 
@@ -115,24 +217,20 @@ class Project:
         return step_names
 
     def create_evaluator(
-        self, eval_prompts: List[str], metric_names: Optional[List[str]]
+        self, eval_prompts: List[str], metric_names: Optional[List[str]] = None
     ) -> Evaluator:
         """
         Create a new evaluator for the project
 
         Args:
             eval_prompts (List[str]): List of evaluation prompts, each acts as a separate test case
-            metric_names (Optional[List[str]]): List of metric names to be evaluated, or None to use the metrics of the project.
+            metrics (Optional[List[str]]): List of metric names to be evaluated, or None to use all project metrics.
 
         Returns:
             Evaluator: The newly created evaluator
         """  # noqa E501
-        if isinstance(metric_names, list):
-            mixedvoices.get_metrics(metric_names)  # checks existence
-        elif metric_names is None:
-            metric_names = self.metric_names.copy()
-        else:
-            raise ValueError("metric_names must be a list or None")
+        if metric_names is not None:
+            self.get_metrics_by_names(metric_names)  # check for existence
 
         eval_id = uuid4().hex
         cur_eval = Evaluator(

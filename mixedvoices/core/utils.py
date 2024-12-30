@@ -126,7 +126,7 @@ def process_recording(recording: "Recording", version: "Version", user_channel="
             combined_transcript
         )
         recording.llm_metrics = generate_scores(
-            combined_transcript, version.prompt, version.get_project_metric_names()
+            combined_transcript, version.prompt, version.get_project_metrics()
         )
         recording.call_metrics = get_call_metrics(
             audio_path, user_words, agent_words, duration, user_channel

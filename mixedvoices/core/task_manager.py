@@ -318,3 +318,6 @@ class TaskManager:
     def get_pending_task_count(self) -> int:
         """Get the number of pending and in-progress tasks."""
         return self.task_queue.unfinished_tasks
+
+
+TASK_MANAGER = TaskManager()

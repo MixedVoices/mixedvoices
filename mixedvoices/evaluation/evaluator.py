@@ -52,6 +52,7 @@ class Evaluator:
             "eval_prompts": self.eval_prompts,
             "created_at": self.created_at,
             "eval_run_ids": [a.run_id for a in self.eval_runs],
+            "eval_run_version_ids": [a.version_id for a in self.eval_runs],
         }
         save_json(d, self.path)
 
@@ -63,8 +64,10 @@ class Evaluator:
         except FileNotFoundError:
             return
         eval_run_ids = d.pop("eval_run_ids")
+        eval_run_version_ids = d.pop("eval_run_version_ids")
         eval_runs = [
-            EvalRun.load(project_id, eval_id, run_id) for run_id in eval_run_ids
+            EvalRun.load(project_id, version_id, eval_id, run_id)
+            for run_id, version_id in zip(eval_run_ids, eval_run_version_ids)
         ]
 
         d.update(

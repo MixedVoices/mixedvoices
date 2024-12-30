@@ -8,6 +8,7 @@ import mixedvoices.constants as constants
 from mixedvoices.core import utils
 from mixedvoices.core.recording import Recording
 from mixedvoices.core.step import Step
+from mixedvoices.core.task_manager import TASK_MANAGER
 from mixedvoices.utils import load_json, save_json
 
 
@@ -177,7 +178,7 @@ class Version:
         if blocking:
             utils.process_recording(recording, self, user_channel)
         else:
-            recording.processing_task_id = mixedvoices.TASK_MANAGER.add_task(
+            recording.processing_task_id = TASK_MANAGER.add_task(
                 "process_recording",
                 recording=recording,
                 version=self,
@@ -235,5 +236,5 @@ class Version:
         # TODO optimize
         return self.project.get_step_names()
 
-    def get_project_metric_names(self):
-        return self.project.metric_names
+    def get_project_metrics(self):
+        return self.project.list_metrics()
