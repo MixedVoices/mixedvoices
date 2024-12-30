@@ -157,7 +157,7 @@ class Version:
         if extension not in [".mp3", ".wav"]:
             raise ValueError(f"Audio path {audio_path} is not an mp3 or wav file")
 
-        output_folder = os.path.join(self.path, "recordings", recording_id)
+        output_folder = os.path.join(self.recordings_path, recording_id)
         output_audio_path = os.path.join(output_folder, file_name)
         os.makedirs(output_folder)
         os.system(f"cp {audio_path} {output_audio_path}")

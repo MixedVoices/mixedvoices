@@ -53,7 +53,7 @@ def mock_base_folder(tmp_path, monkeypatch):
 
 @pytest.fixture
 def empty_project(mock_base_folder):
-    project = mv.create_project("test_project")
+    project = mv.create_project("test_project", [])
     project.create_version("v1", prompt="Testing prompt")
     return project
 
@@ -61,7 +61,9 @@ def empty_project(mock_base_folder):
 @pytest.fixture
 def sample_project(mock_base_folder):
     project_path = os.path.join("tests", "assets", "sample_project")
-    shutil.copytree(project_path, os.path.join(mock_base_folder, "sample_project"))
+    shutil.copytree(
+        project_path, os.path.join(mock_base_folder, "projects", "sample_project")
+    )
     return mv.load_project("sample_project")
 
 

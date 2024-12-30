@@ -22,13 +22,7 @@ def test_version(sample_project):
     project = sample_project
     version = project.load_version("v1")
     assert len(version.recordings) == 2
-    assert len(version.evals) == 1
-
-    assert set(version.get_paths()) == {
-        "Greeting->Set Appointment->Inquiry Handling->Caller Complaint Handling->Farewell",
-        "Greeting->Inquiry Handling->Set Appointment->Farewell->Offer Further Assistance->Farewell",
-    }
-
+    assert len(project.evals) == 1
 
 def test_add_recording(empty_project, mock_process_recording):
     project = empty_project

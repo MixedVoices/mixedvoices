@@ -231,6 +231,8 @@ class Project:
         """  # noqa E501
         if metric_names is not None:
             self.get_metrics_by_names(metric_names)  # check for existence
+        else:
+            metric_names = self.list_metric_names()
 
         eval_id = uuid4().hex
         cur_eval = Evaluator(

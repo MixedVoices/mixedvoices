@@ -18,4 +18,4 @@ def test_generate_scores():
     for metric in default_metrics:
         assert metric.name in scores
         score = scores[metric.name]
-        assert score in metric.expected_values
+        assert score["score"] in metric.expected_values

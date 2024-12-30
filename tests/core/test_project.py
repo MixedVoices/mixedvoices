@@ -8,7 +8,7 @@ def test_project(empty_project):
     assert "v1" in project.versions
 
     with pytest.raises(ValueError):
-        mv.create_project("test_project")
+        mv.create_project("test_project", [])
 
     project = mv.load_project("test_project")
     assert "v1" in project.versions
