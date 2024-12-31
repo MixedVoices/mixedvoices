@@ -15,15 +15,18 @@ class MetricsManager:
         is_selectable: bool = False,
         is_editable: bool = False,
     ) -> Optional[Dict]:
-        cols = st.columns([1, 30])
         selected_metric = None
 
-        with cols[0]:
-            if is_selectable:
+        if is_selectable:
+            cols = st.columns([1, 30])
+            with cols[0]:
                 if st.checkbox("", key=f"{prefix}_{metric['name']}"):
                     selected_metric = metric
+        else:
+            cols = st.columns([1])
+        container = cols[-1]
 
-        with cols[1]:
+        with container:
             with st.expander(metric["name"]):
                 if is_editable and st.session_state.get("is_editing", {}).get(
                     f"edit_{metric['name']}", False
