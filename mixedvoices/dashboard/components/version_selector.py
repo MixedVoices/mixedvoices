@@ -24,7 +24,7 @@ def render_version_selector(
 
     if not versions:
         if not optional:
-            st.warning("No versions found for this project")
+            st.info("No versions found for this project")
         return None
 
     # Prepare version options
@@ -39,10 +39,13 @@ def render_version_selector(
     elif st.session_state.current_version in [v["name"] for v in versions]:
         current_index = version_options.index(st.session_state.current_version)
     else:
-        current_index = 0
+        current_index = None
 
     selected_version = st.selectbox(
-        "Select Version", version_options, index=current_index
+        "Select Version",
+        version_options,
+        index=current_index,
+        placeholder="Select a version",
     )
 
     # Handle "All Versions" selection
