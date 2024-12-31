@@ -159,7 +159,12 @@ class Project:
             d = load_json(load_path)
             metrics = d.pop("metrics")
             metrics = {
-                k: Metric(name=k, definition=v["definition"], scoring=v["scoring"])
+                k: Metric(
+                    name=k,
+                    definition=v["definition"],
+                    scoring=v["scoring"],
+                    include_prompt=v["include_prompt"],
+                )
                 for k, v in metrics.items()
             }
             eval_ids = d.pop("eval_ids")
