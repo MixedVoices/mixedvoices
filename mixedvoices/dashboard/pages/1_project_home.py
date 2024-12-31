@@ -42,7 +42,7 @@ def project_home_page():
     for version in versions:
         with st.expander(
             f"{version['name']} - Recordings: {version['recording_count']}",
-            expanded=True,
+            expanded=False,
         ):
             st.write("Prompt:")
             st.text_area(
