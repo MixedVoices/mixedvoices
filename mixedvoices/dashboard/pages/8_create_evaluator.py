@@ -14,14 +14,14 @@ def create_evaluator_page():
     sidebar = Sidebar(api_client)
     sidebar.render()
 
-    st.title(f"{st.session_state.current_project} | Create Evaluator")
+    st.title("Create Evaluator")
 
     # Initialize state for prompts
     if "eval_prompts" not in st.session_state:
         st.session_state.eval_prompts = [""]
 
     # Prompts section
-    st.subheader("Evaluation Prompts")
+    st.subheader("Evaluator Prompts")
 
     prompts_to_remove = []
     for i, prompt in enumerate(st.session_state.eval_prompts):

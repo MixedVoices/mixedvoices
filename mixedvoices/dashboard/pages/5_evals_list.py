@@ -13,7 +13,7 @@ def evals_list_page():
     sidebar = Sidebar(api_client)
     sidebar.render()
 
-    st.title(f"{st.session_state.current_project} | Evaluations")
+    st.title("Evaluators")
 
     # Fetch evaluations
     evals_data = api_client.fetch_data(
@@ -22,7 +22,7 @@ def evals_list_page():
 
     if evals_data.get("evals"):
         for eval_item in evals_data["evals"]:
-            with st.expander(f"Evaluation {eval_item['eval_id']}", expanded=False):
+            with st.expander(f"Evaluator {eval_item['eval_id']}", expanded=False):
                 st.write(f"Created: {eval_item['created_at']}")
                 st.write(f"Number of prompts: {eval_item['num_prompts']}")
                 st.write(f"Number of runs: {eval_item['num_eval_runs']}")

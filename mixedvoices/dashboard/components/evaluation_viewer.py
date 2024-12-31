@@ -15,7 +15,7 @@ class EvaluationViewer:
         # Header row with refresh button
         header_row = st.columns([8, 1])
         with header_row[0]:
-            st.write("## Evaluations")
+            st.write("## Evaluators")
         with header_row[1]:
             if st.button("Refresh", help="Refresh evaluations"):
                 st.rerun()
@@ -32,7 +32,7 @@ class EvaluationViewer:
         # Table header
         header_cols = st.columns([3, 2])
         with header_cols[0]:
-            st.markdown("**Evaluation ID**")
+            st.markdown("**Evaluator ID**")
         with header_cols[1]:
             st.markdown("**Created At**")
         st.markdown(

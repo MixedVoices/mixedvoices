@@ -10,8 +10,8 @@ class Sidebar:
             st.session_state.current_project = None
 
     def render(self):
+        hide_default_nav()
         with st.sidebar:
-            hide_default_nav()
             # Logo and Title
             st.title("🎙️ MixedVoices")
             self._render_project_selection()
@@ -32,10 +32,9 @@ class Sidebar:
             st.page_link("pages/4_upload_recording.py", label="Upload Recordings")
 
             st.markdown("### Evals")
-            st.page_link("pages/5_evals_list.py", label="View Evaluations")
-            st.page_link("pages/6_eval_details.py", label="View Evaluation Details")
-            st.page_link("pages/7_eval_run_details.py", label="View Evaluation Run")
-            st.page_link("pages/8_create_evaluator.py", label="Create Evaluation")
+            st.page_link("pages/5_evals_list.py", label="View Evaluators")
+            st.page_link("pages/7_eval_run_details.py", label="View Evaluator Run")
+            st.page_link("pages/8_create_evaluator.py", label="Create Evaluator")
 
     def _render_project_selection(self):
         # Fetch projects

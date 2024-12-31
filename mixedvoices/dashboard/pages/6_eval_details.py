@@ -19,10 +19,10 @@ def eval_details_page():
     sidebar = Sidebar(api_client)
     sidebar.render()
 
-    st.title(f"{st.session_state.current_project} | Evaluation Details")
+    st.title("Evaluator Details")
 
     # Add back button
-    if st.button("← Back to Evaluations"):
+    if st.button("← Back to Evaluators"):
         st.session_state.selected_eval_id = None
         st.switch_page("pages/5_evals_list.py")
 
@@ -59,7 +59,7 @@ def eval_details_page():
             st.text_area(f"Prompt {i+1}", prompt, height=100, disabled=True)
 
     # Eval Runs Section
-    st.subheader("Evaluation Runs")
+    st.subheader("Evaluator Runs")
 
     if not eval_details.get("eval_runs"):
         st.info("No evaluation runs found.")

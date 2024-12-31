@@ -45,10 +45,10 @@ def eval_run_details_page():
     sidebar = Sidebar(api_client)
     sidebar.render()
 
-    st.title(f"{st.session_state.current_project} | Evaluation Run")
+    st.title("Evaluator Run")
 
     # Back button
-    if st.button("← Back to Evaluation Details"):
+    if st.button("← Back to Evaluator Details"):
         st.session_state.selected_run_id = None
         st.switch_page("pages/6_eval_details.py")
 

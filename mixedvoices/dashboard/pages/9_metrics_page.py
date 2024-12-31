@@ -14,7 +14,7 @@ def metrics_page():
     sidebar = Sidebar(api_client)
     sidebar.render()
 
-    st.title(f"{st.session_state.current_project} | Metrics")
+    st.title("Metrics")
 
     metrics_manager = MetricsManager(api_client, st.session_state.current_project)
     metrics_manager.render()
