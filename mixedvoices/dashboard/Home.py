@@ -7,31 +7,52 @@ from mixedvoices.dashboard.components.sidebar import Sidebar
 from mixedvoices.dashboard.config import DEFAULT_PAGE_CONFIG
 
 
+def apply_nav_styles():
+    """Apply minimal styles to the navigation"""
+    has_project = bool(st.session_state.get("current_project"))
+
+    nav_style = """
+        <style>
+            [data-testid="stSidebarNav"] {
+                display: none;
+            }
+            section[data-testid="stSidebar"] > div:first-child {
+                width: 350px;
+            }
+            
+            section[data-testid="stSidebar"] a:not([href*="Home.py"]) {
+                opacity: %s;
+                pointer-events: %s;
+                position: relative;
+            }
+            
+            section[data-testid="stSidebar"] a:not([href*="Home.py"]):hover::after {
+                content: "Select project first";
+                position: absolute;
+                left: 100%%;
+                margin-left: 10px;
+                background: rgba(0, 0, 0, 0.8);
+                color: white;
+                padding: 5px 10px;
+                border-radius: 4px;
+                font-size: 12px;
+                white-space: nowrap;
+                z-index: 1000;
+                display: %s;
+            }
+        </style>
+    """ % (
+        "1" if has_project else "0.4",  # opacity
+        "auto" if has_project else "none",  # pointer-events
+        "none" if has_project else "block",  # tooltip display
+    )
+    st.markdown(nav_style, unsafe_allow_html=True)
+
+
 def main():
     """Main application"""
     # Set page config
     st.set_page_config(**DEFAULT_PAGE_CONFIG)
-
-    pages = {
-        "Dashboard": [
-            st.Page("Home.py", title="MixedVoices Home"),
-            st.Page("pages/1_project_home.py", title="Project Home"),
-            st.Page("pages/9_metrics_page.py", title="Metrics"),
-        ],
-        "Analytics": [
-            st.Page("pages/2_view_flow.py", title="View Call Flows"),
-            st.Page("pages/3_view_recordings.py", title="View Call Details"),
-            st.Page("pages/4_upload_recording.py", title="Upload Recordings"),
-        ],
-        "Evals": [
-            st.Page("pages/5_evals_list.py", title="View Evaluations"),
-            st.Page("pages/6_eval_details.py", title="View Evaluation Details"),
-            st.Page("pages/7_eval_run_details.py", title="View Evaluation Run"),
-            st.Page("pages/8_create_evaluator.py", title="Create Evaluation"),
-        ],
-    }
-
-    st.navigation(pages)
 
     api_client = APIClient()
 
@@ -42,6 +63,8 @@ def main():
         st.session_state.current_version = None
     if "show_create_project" not in st.session_state:
         st.session_state.show_create_project = False
+
+    apply_nav_styles()
 
     # Render sidebar
     sidebar = Sidebar(api_client)
@@ -55,10 +78,10 @@ def main():
         st.header("Getting Started")
         st.markdown(
             """
-        1. Select or create a project using the sidebar
-        2. Add versions to track changes
-        3. Upload recordings to analyze
-        """
+            1. Select or create a project using the sidebar
+            2. Add versions to track changes
+            3. Upload recordings to analyze
+            """
         )
     else:
         st.switch_page("pages/1_project_home.py")

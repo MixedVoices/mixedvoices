@@ -16,16 +16,30 @@ class Sidebar:
             st.subheader("Select Project")
             self._render_project_selection()
 
-            if st.session_state.current_project:
-                st.divider()
-                st.subheader("Navigation")
-                self._render_navigation()
-
-            st.divider()
-
             # Create Project Button
             if st.button("Create New Project", use_container_width=True):
                 st.session_state.show_create_project = True
+
+            st.divider()
+
+            # Navigation sections
+            st.markdown("### Dashboard")
+            st.page_link("Home.py", label="MixedVoices Home")
+            st.page_link("pages/1_project_home.py", label="Project Home")
+            st.page_link("pages/9_metrics_page.py", label="Metrics")
+
+            st.markdown("### Analytics")
+            st.page_link("pages/2_view_flow.py", label="View Call Flows")
+            st.page_link("pages/3_view_recordings.py", label="View Call Details")
+            st.page_link("pages/4_upload_recording.py", label="Upload Recordings")
+
+            st.markdown("### Evals")
+            st.page_link("pages/5_evals_list.py", label="View Evaluations")
+            st.page_link("pages/6_eval_details.py", label="View Evaluation Details")
+            st.page_link("pages/7_eval_run_details.py", label="View Evaluation Run")
+            st.page_link("pages/8_create_evaluator.py", label="Create Evaluation")
+
+            st.divider()
 
     def _render_project_selection(self):
         # Fetch projects
@@ -34,14 +48,14 @@ class Sidebar:
 
         # Project selection
         selected_project = st.selectbox(
-            "",  # Empty label since we have the subheader
+            "selected project",
             [""] + projects,
             index=(
                 0
                 if not st.session_state.current_project
                 else projects.index(st.session_state.current_project) + 1
             ),
-            label_visibility="collapsed",
+            label_visibility="hidden",
         )
 
         if selected_project != st.session_state.current_project:
@@ -51,31 +65,3 @@ class Sidebar:
             if selected_project:
                 st.switch_page("pages/1_project_home.py")
             st.rerun()
-
-    def _render_navigation(self):
-        """Render sidebar navigation links"""
-        # Home
-        if st.button("Home", use_container_width=True, key="nav_home"):
-            st.switch_page("pages/1_project_home.py")
-
-        # Analytics group
-        st.write("Analytics")
-        if st.button("View Call Flows", use_container_width=True):
-            st.switch_page("pages/2_view_flow.py")
-        if st.button("View Call Details", use_container_width=True):
-            st.switch_page("pages/3_view_recordings.py")
-        if st.button("Upload Recordings", use_container_width=True):
-            st.switch_page("pages/4_upload_recording.py")
-
-        # Evals group
-        st.write("Evals")
-        if st.button("View Evaluations", use_container_width=True):
-            st.switch_page("pages/5_evals_list.py")
-        if st.button("View Evaluation Details", use_container_width=True):
-            st.switch_page("pages/6_eval_details.py")
-
-        # Project Home and Metrics
-        if st.button("project home", use_container_width=True):
-            st.switch_page("pages/1_project_home.py")
-        if st.button("Metrics", use_container_width=True):
-            st.switch_page("pages/9_metrics_page.py")
