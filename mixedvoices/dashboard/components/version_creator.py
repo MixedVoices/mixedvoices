@@ -15,8 +15,8 @@ class VersionCreator:
             st.session_state.success_criteria = ""
         if "metadata_pairs" not in st.session_state:
             st.session_state.metadata_pairs = [{"key": "", "value": ""}]
-        if "show_version_form" not in st.session_state:
-            st.session_state.show_version_form = False
+        if "show_version_creator" not in st.session_state:
+            st.session_state.show_version_creator = False
 
     def render_version_form(self) -> None:
         """Render version creation form"""
@@ -80,7 +80,7 @@ class VersionCreator:
 
         if response.get("message"):
             st.success("Version created successfully!")
-            st.session_state.show_version_form = False
+            st.session_state.show_version_creator = False
             st.session_state.metadata_pairs = [{"key": "", "value": ""}]
             st.rerun()
         else:

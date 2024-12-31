@@ -21,13 +21,12 @@ def project_home_page():
     # Versions Section
     st.header("Versions")
 
-    # Create Version Button
-
-    if not st.session_state.show_version_form:
+    if not st.session_state.show_version_creator:
         if st.button("Create New Version"):
-            st.session_state.show_version_form = True
+            st.session_state.show_version_creator = True
+            st.rerun()
 
-    if st.session_state.show_version_form:
+    if st.session_state.show_version_creator:
         version_manager.render_version_form()
 
     # Fetch and display versions
@@ -36,7 +35,7 @@ def project_home_page():
     )
     versions = versions_data.get("versions", [])
 
-    if not versions and not st.session_state.show_version_form:
+    if not versions and not st.session_state.show_version_creator:
         st.info("No versions found for this project")
         return
 
