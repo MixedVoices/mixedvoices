@@ -16,6 +16,7 @@ class Sidebar:
             # Create Project Button
             if st.button("Create New Project", use_container_width=True):
                 st.session_state.show_create_project = True
+                st.switch_page("Home.py")
 
             st.divider()
 
