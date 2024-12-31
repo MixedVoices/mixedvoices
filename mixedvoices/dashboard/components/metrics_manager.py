@@ -22,11 +22,6 @@ class MetricsManager:
             if is_selectable:
                 if st.checkbox("", key=f"{prefix}_{metric['name']}"):
                     selected_metric = metric
-            elif is_editable:
-                if st.button("✏️", key=f"edit_{metric['name']}"):
-                    st.session_state.is_editing = st.session_state.get("is_editing", {})
-                    st.session_state.is_editing[f"edit_{metric['name']}"] = True
-                    st.rerun()
 
         with cols[1]:
             with st.expander(metric["name"]):
@@ -38,6 +33,13 @@ class MetricsManager:
                     st.write("**Definition:**", metric["definition"])
                     st.write("**Scoring:**", metric["scoring"])
                     st.write("**Include Prompt:**", metric.get("include_prompt", False))
+                    if is_editable:
+                        if st.button("Edit Metric", key=f"edit_{metric['name']}"):
+                            st.session_state.is_editing = st.session_state.get(
+                                "is_editing", {}
+                            )
+                            st.session_state.is_editing[f"edit_{metric['name']}"] = True
+                            st.rerun()
 
         return selected_metric
 
