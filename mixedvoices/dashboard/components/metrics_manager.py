@@ -1,164 +1,167 @@
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 import streamlit as st
 
 
-# metrics_manager.py
 class MetricsManager:
     def __init__(self, api_client, project_id: Optional[str] = None):
         self.api_client = api_client
         self.project_id = project_id
 
-    def render(self, selection_mode: bool = False) -> Optional[List[str]]:
-        selected_metrics = []
+    def _render_metric_row(
+        self,
+        metric: Dict,
+        prefix: str,
+        is_selectable: bool = False,
+        is_editable: bool = False,
+    ) -> Optional[str]:
+        cols = st.columns([1, 30])
+        selected_name = None
 
-        if self.project_id:
-            project_metrics = self.api_client.fetch_data(
-                f"projects/{self.project_id}/metrics"
-            )
-            project_metrics = project_metrics.get("metrics", [])
-        else:
-            project_metrics = []
+        with cols[0]:
+            if is_selectable:
+                if st.checkbox("", key=f"{prefix}_{metric['name']}"):
+                    selected_name = metric["name"]
+            elif is_editable:
+                if st.button("✏️", key=f"edit_{metric['name']}"):
+                    st.session_state.is_editing = st.session_state.get("is_editing", {})
+                    st.session_state.is_editing[f"edit_{metric['name']}"] = True
+                    st.rerun()
 
-        default_metrics = self.api_client.fetch_data("default_metrics")
-        default_metrics = default_metrics.get("metrics", [])
+        with cols[1]:
+            with st.expander(metric["name"]):
+                if is_editable and st.session_state.get("is_editing", {}).get(
+                    f"edit_{metric['name']}", False
+                ):
+                    self._render_edit_form(metric)
+                else:
+                    st.write("**Definition:**", metric["definition"])
+                    st.write("**Scoring:**", metric["scoring"])
 
-        if not self.project_id:
-            # Initialize custom metrics list in session state
-            if "custom_metrics" not in st.session_state:
-                st.session_state.custom_metrics = []
+        return selected_name
 
-            col1, col2 = st.columns([1, 2])
+    def _render_edit_form(self, metric: Dict):
+        new_definition = st.text_area(
+            "Definition", value=metric["definition"], key=f"def_{metric['name']}"
+        )
+        new_scoring = st.selectbox(
+            "Scoring Type",
+            ["binary", "continuous"],
+            index=0 if metric["scoring"] == "binary" else 1,
+            key=f"score_{metric['name']}",
+        )
 
+        cols = st.columns([1, 4])
+        with cols[0]:
+            if st.button("Save", key=f"save_{metric['name']}"):
+                self.api_client.post_data(
+                    f"projects/{self.project_id}/metrics/{metric['name']}",
+                    {"definition": new_definition, "scoring": new_scoring},
+                )
+                st.session_state.is_editing[f"edit_{metric['name']}"] = False
+                st.rerun()
+        with cols[1]:
+            if st.button("Cancel", key=f"cancel_{metric['name']}"):
+                st.session_state.is_editing[f"edit_{metric['name']}"] = False
+                st.rerun()
+
+    def _render_add_metric_form(self, key_prefix: str = "") -> Optional[Dict]:
+        with st.container():
+            st.markdown("### Add New Metric")
+            col1, col2 = st.columns(2)
             with col1:
-                st.subheader("Select Metrics")
-
-                if default_metrics:
-                    st.markdown("##### Default Metrics")
-                    for metric in default_metrics:
-                        if st.checkbox(
-                            f"{metric['name']}", key=f"default_{metric['name']}"
-                        ):
-                            selected_metrics.append(metric["name"])
-
-                if st.session_state.custom_metrics:
-                    st.markdown("##### Custom Metrics")
-                    for metric in st.session_state.custom_metrics:
-                        if st.checkbox(
-                            f"{metric['name']}", key=f"custom_{metric['name']}"
-                        ):
-                            selected_metrics.append(metric["name"])
-
-            with col2:
-                st.markdown("### Add New Metric")
-                metric_name = st.text_input("Metric Name")
-                metric_definition = st.text_area("Definition")
+                metric_name = st.text_input(
+                    "Metric Name", key=f"{key_prefix}metric_name"
+                )
                 metric_scoring = st.selectbox(
                     "Scoring Type",
                     ["binary", "continuous"],
                     help="Binary for PASS/FAIL, Continuous for 0-10 scale",
+                    key=f"{key_prefix}metric_scoring",
+                )
+            with col2:
+                metric_definition = st.text_area(
+                    "Definition", key=f"{key_prefix}metric_def", height=100
                 )
 
-                if st.button("Add Metric"):
-                    if metric_name and metric_definition:
-                        st.session_state.custom_metrics.append(
-                            {
-                                "name": metric_name,
-                                "definition": metric_definition,
-                                "scoring": metric_scoring,
-                            }
-                        )
-                        st.rerun()
-                    else:
-                        st.error("Please provide both name and definition")
+            if st.button("Add Metric", key=f"{key_prefix}add_btn"):
+                if metric_name and metric_definition:
+                    return {
+                        "name": metric_name,
+                        "definition": metric_definition,
+                        "scoring": metric_scoring,
+                    }
+                st.error("Please provide both name and definition")
+            return None
 
-            # Validate selection
+    def render(self, selection_mode: bool = False) -> Optional[List[str]]:
+        selected_metrics = []
+
+        if not self.project_id:
+            if "custom_metrics" not in st.session_state:
+                st.session_state.custom_metrics = []
+
+            new_metric = self._render_add_metric_form("new_")
+            if new_metric:
+                st.session_state.custom_metrics.append(new_metric)
+                st.rerun()
+
+            st.divider()
+            st.markdown("### Available Metrics")
+
+            default_metrics = self.api_client.fetch_data("default_metrics").get(
+                "metrics", []
+            )
+            if default_metrics:
+                st.markdown("#### Default Metrics")
+                for metric in default_metrics:
+                    selected = self._render_metric_row(
+                        metric, "default", is_selectable=True
+                    )
+                    if selected:
+                        selected_metrics.append(selected)
+
+            if st.session_state.custom_metrics:
+                st.markdown("#### Custom Metrics")
+                for metric in st.session_state.custom_metrics:
+                    selected = self._render_metric_row(
+                        metric, "custom", is_selectable=True
+                    )
+                    if selected:
+                        selected_metrics.append(selected)
+
             if len(selected_metrics) != len(set(selected_metrics)):
-                st.error("You have selected duplicate metrics")
+                st.error(
+                    "You have multipe metrics with the same name which isn't allowed"
+                )
                 return None
 
         else:
-            # Project Metrics Page Mode
-            st.markdown("### Add New Metric")
+            new_metric = self._render_add_metric_form("project_")
+            if new_metric:
+                existing_names = [
+                    m["name"]
+                    for m in self.api_client.fetch_data(
+                        f"projects/{self.project_id}/metrics"
+                    ).get("metrics", [])
+                ]
 
-            metric_name = st.text_input("Metric Name")
-            metric_definition = st.text_area("Definition")
-            metric_scoring = st.selectbox(
-                "Scoring Type",
-                ["binary", "continuous"],
-                help="Binary for PASS/FAIL, Continuous for 0-10 scale",
-            )
-
-            if st.button("Add Metric"):
-                if metric_name and metric_definition:
-                    # Check for existing metric
-                    existing_names = [m["name"] for m in project_metrics]
-                    if metric_name in existing_names:
-                        st.error("A metric with this name already exists")
-                        return None
-
+                if new_metric["name"] in existing_names:
+                    st.error("A metric with this name already exists")
+                else:
                     response = self.api_client.post_data(
-                        f"projects/{self.project_id}/metrics",
-                        {
-                            "name": metric_name,
-                            "definition": metric_definition,
-                            "scoring": metric_scoring,
-                        },
+                        f"projects/{self.project_id}/metrics", new_metric
                     )
                     if response.get("message"):
                         st.success("Metric added successfully!")
                         st.rerun()
-                else:
-                    st.error("Please provide both name and definition")
 
-            # Display existing metrics
+            project_metrics = self.api_client.fetch_data(
+                f"projects/{self.project_id}/metrics"
+            ).get("metrics", [])
+
             st.write("### Current Metrics")
             for metric in project_metrics:
-                with st.expander(metric["name"], expanded=False):
-                    if "is_editing" not in st.session_state:
-                        st.session_state.is_editing = {}
-
-                    metric_id = f"edit_{metric['name']}"
-
-                    if st.session_state.is_editing.get(metric_id, False):
-                        # Edit mode
-                        new_definition = st.text_area(
-                            "Definition",
-                            value=metric["definition"],
-                            key=f"def_{metric_id}",
-                        )
-                        new_scoring = st.selectbox(
-                            "Scoring Type",
-                            ["binary", "continuous"],
-                            index=0 if metric["scoring"] == "binary" else 1,
-                            key=f"score_{metric_id}",
-                        )
-
-                        col1, col2 = st.columns([1, 4])
-                        with col1:
-                            if st.button("Save", key=f"save_{metric_id}"):
-                                self.api_client.post_data(
-                                    f"projects/{self.project_id}/metrics/{metric['name']}",
-                                    {
-                                        "definition": new_definition,
-                                        "scoring": new_scoring,
-                                    },
-                                )
-                                st.session_state.is_editing[metric_id] = False
-                                st.rerun()
-                        with col2:
-                            if st.button("Cancel", key=f"cancel_{metric_id}"):
-                                st.session_state.is_editing[metric_id] = False
-                                st.rerun()
-                    else:
-                        # View mode
-                        st.write("**Definition:**", metric["definition"])
-                        st.write("**Scoring:**", metric["scoring"])
-
-                        col1, col2 = st.columns([1, 20])
-                        with col1:
-                            if st.button("✏️", key=f"edit_{metric_id}"):
-                                st.session_state.is_editing[metric_id] = True
-                                st.rerun()
+                self._render_metric_row(metric, "project", is_editable=True)
 
         return selected_metrics if selection_mode else None
