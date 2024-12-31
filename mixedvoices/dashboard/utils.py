@@ -135,16 +135,3 @@ def apply_nav_styles():
         "none" if has_project else "block",  # tooltip display
     )
     st.markdown(nav_style, unsafe_allow_html=True)
-
-
-def hide_default_nav():
-    st.markdown(
-        """
-        <style>
-            [data-testid="stSidebarNav"] {
-                display: none;
-            }
-        </style>
-        """,
-        unsafe_allow_html=True,
-    )

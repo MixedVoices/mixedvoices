@@ -1,7 +1,5 @@
 import streamlit as st
 
-from mixedvoices.dashboard.utils import hide_default_nav
-
 
 class Sidebar:
     def __init__(self, api_client):
@@ -10,7 +8,6 @@ class Sidebar:
             st.session_state.current_project = None
 
     def render(self):
-        hide_default_nav()
         with st.sidebar:
             # Logo and Title
             st.page_link("Home.py", label="🎙️ MixedVoices Home")
