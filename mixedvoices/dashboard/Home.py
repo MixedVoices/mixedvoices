@@ -5,48 +5,7 @@ from mixedvoices.dashboard.api.client import APIClient
 from mixedvoices.dashboard.components.project_creator import render_project_creator
 from mixedvoices.dashboard.components.sidebar import Sidebar
 from mixedvoices.dashboard.config import DEFAULT_PAGE_CONFIG
-
-
-def apply_nav_styles():
-    """Apply minimal styles to the navigation"""
-    has_project = bool(st.session_state.get("current_project"))
-
-    nav_style = """
-        <style>
-            [data-testid="stSidebarNav"] {
-                display: none;
-            }
-            section[data-testid="stSidebar"] > div:first-child {
-                width: 350px;
-            }
-            
-            section[data-testid="stSidebar"] a:not([href*="Home.py"]) {
-                opacity: %s;
-                pointer-events: %s;
-                position: relative;
-            }
-            
-            section[data-testid="stSidebar"] a:not([href*="Home.py"]):hover::after {
-                content: "Select project first";
-                position: absolute;
-                left: 100%%;
-                margin-left: 10px;
-                background: rgba(0, 0, 0, 0.8);
-                color: white;
-                padding: 5px 10px;
-                border-radius: 4px;
-                font-size: 12px;
-                white-space: nowrap;
-                z-index: 1000;
-                display: %s;
-            }
-        </style>
-    """ % (
-        "1" if has_project else "0.4",  # opacity
-        "auto" if has_project else "none",  # pointer-events
-        "none" if has_project else "block",  # tooltip display
-    )
-    st.markdown(nav_style, unsafe_allow_html=True)
+from mixedvoices.dashboard.utils import apply_nav_styles
 
 
 def main():

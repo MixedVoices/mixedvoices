@@ -1,5 +1,7 @@
 import streamlit as st
 
+from mixedvoices.dashboard.utils import hide_default_nav
+
 
 class Sidebar:
     def __init__(self, api_client):
@@ -9,11 +11,9 @@ class Sidebar:
 
     def render(self):
         with st.sidebar:
+            hide_default_nav()
             # Logo and Title
             st.title("🎙️ MixedVoices")
-
-            # Project Selection
-            st.subheader("Select Project")
             self._render_project_selection()
 
             # Create Project Button
@@ -22,8 +22,6 @@ class Sidebar:
 
             st.divider()
 
-            # Navigation sections
-            st.markdown("### Dashboard")
             st.page_link("Home.py", label="MixedVoices Home")
             st.page_link("pages/1_project_home.py", label="Project Home")
             st.page_link("pages/9_metrics_page.py", label="Metrics")
@@ -39,8 +37,6 @@ class Sidebar:
             st.page_link("pages/7_eval_run_details.py", label="View Evaluation Run")
             st.page_link("pages/8_create_evaluator.py", label="Create Evaluation")
 
-            st.divider()
-
     def _render_project_selection(self):
         # Fetch projects
         projects_data = self.api_client.fetch_data("projects")
@@ -51,11 +47,12 @@ class Sidebar:
             "selected project",
             [""] + projects,
             index=(
-                0
+                None
                 if not st.session_state.current_project
                 else projects.index(st.session_state.current_project) + 1
             ),
             label_visibility="hidden",
+            placeholder="Select a project",
         )
 
         if selected_project != st.session_state.current_project:
