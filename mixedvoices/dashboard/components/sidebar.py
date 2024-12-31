@@ -30,7 +30,6 @@ class Sidebar:
 
             st.markdown("### Evals")
             st.page_link("pages/5_evals_list.py", label="View Evaluators")
-            st.page_link("pages/7_eval_run_details.py", label="View Evaluator Run")
             st.page_link("pages/8_create_evaluator.py", label="Create Evaluator")
 
     def _render_project_selection(self):

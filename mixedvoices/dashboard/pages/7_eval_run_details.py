@@ -61,6 +61,7 @@ def eval_run_details_page():
         st.error("Failed to load evaluation run details")
         return
 
+    st.subheader(f"Evaluator ID: {st.session_state.selected_eval_id}")
     st.subheader(f"Run ID: {st.session_state.selected_run_id}")
     st.write(f"Version: {run_details.get('version', 'N/A')}")
 
