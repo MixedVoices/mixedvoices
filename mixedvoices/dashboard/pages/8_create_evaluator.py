@@ -69,3 +69,7 @@ def create_evaluator_page():
             st.success("Evaluator created successfully!")
             st.session_state.eval_prompts = [""]  # Reset prompts
             st.rerun()
+
+
+if __name__ == "__main__":
+    create_evaluator_page()

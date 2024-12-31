@@ -32,6 +32,10 @@ def evals_list_page():
 
                 if st.button("View Details", key=f"view_{eval_item['eval_id']}"):
                     st.session_state.selected_eval_id = eval_item["eval_id"]
-                    st.switch_page("pages/evals/eval_details.py")
+                    st.switch_page("pages/6_eval_details.py")
     else:
         st.info("No evaluations found. Create one using the Create Evaluator page.")
+
+
+if __name__ == "__main__":
+    evals_list_page()

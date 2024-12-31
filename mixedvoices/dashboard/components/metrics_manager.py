@@ -44,7 +44,11 @@ class MetricsManager:
                 st.info(f"Updating existing metric: {metric_name}")
 
             metric_definition = st.text_area("Definition")
-            metric_scoring = st.selectbox("Scoring Type", ["binary", "continuous"])
+            metric_scoring = st.selectbox(
+                "Scoring Type",
+                ["binary", "continuous"],
+                help="Binary for PASS/FAIL, Continuous for 0-10 scale",
+            )
 
             if st.button("Save Metric"):
                 if metric_name and metric_definition:
@@ -74,18 +78,33 @@ class MetricsManager:
         # Display/Select Metrics
         st.write("### Available Metrics")
 
-        for metric_name, metric in all_metrics.items():
-            col1, col2 = st.columns([6, 1])
+        if selection_mode:
+            # Selection mode - use checkboxes
+            for metric_name, metric in all_metrics.items():
+                col1, col2 = st.columns([6, 1])
 
-            with col1:
-                expander = st.expander(metric_name)
-                with expander:
+                with col1:
+                    with st.expander(metric_name):
+                        st.write("**Definition:**", metric["definition"])
+                        st.write("**Scoring:**", metric["scoring"])
+
+                with col2:
+                    if st.checkbox(
+                        "Select",
+                        key=f"select_{metric_name}",
+                        help=f"Select {metric_name} metric",
+                    ):
+                        selected_metrics.append(metric_name)
+        else:
+            # View mode - just show metrics
+            for metric_name, metric in all_metrics.items():
+                with st.expander(metric_name):
                     st.write("**Definition:**", metric["definition"])
                     st.write("**Scoring:**", metric["scoring"])
 
-            with col2:
-                if selection_mode:
-                    if st.checkbox("Select", key=f"select_{metric_name}"):
-                        selected_metrics.append(metric_name)
+                    if st.button("Update", key=f"update_{metric_name}"):
+                        # Pre-fill the add/update form
+                        st.session_state.update_metric = metric
+                        st.rerun()
 
         return selected_metrics if selection_mode else None

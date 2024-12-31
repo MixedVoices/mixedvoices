@@ -40,3 +40,7 @@ def view_recordings_page():
         recording_viewer.display_recordings_list(recordings_data["recordings"])
     else:
         st.info("No recordings found. Upload recordings using the Upload tab.")
+
+
+if __name__ == "__main__":
+    view_recordings_page()

@@ -29,3 +29,7 @@ def upload_recording_page():
         api_client, st.session_state.current_project, selected_version
     )
     upload_form.render()
+
+
+if __name__ == "__main__":
+    upload_recording_page()

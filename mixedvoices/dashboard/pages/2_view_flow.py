@@ -36,3 +36,7 @@ def view_flow_page():
         st.plotly_chart(fig, use_container_width=True)
     else:
         st.info("No flow data available. Add recordings to see the flow visualization.")
+
+
+if __name__ == "__main__":
+    view_flow_page()
