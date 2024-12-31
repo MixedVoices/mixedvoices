@@ -12,6 +12,27 @@ def main():
     # Set page config
     st.set_page_config(**DEFAULT_PAGE_CONFIG)
 
+    pages = {
+        "Dashboard": [
+            st.Page("Home.py", title="MixedVoices Home"),
+            st.Page("pages/1_project_home.py", title="Project Home"),
+            st.Page("pages/9_metrics_page.py", title="Metrics"),
+        ],
+        "Analytics": [
+            st.Page("pages/2_view_flow.py", title="View Call Flows"),
+            st.Page("pages/3_view_recordings.py", title="View Call Details"),
+            st.Page("pages/4_upload_recording.py", title="Upload Recordings"),
+        ],
+        "Evals": [
+            st.Page("pages/5_evals_list.py", title="View Evaluations"),
+            st.Page("pages/6_eval_details.py", title="View Evaluation Details"),
+            st.Page("pages/7_eval_run_details.py", title="View Evaluation Run"),
+            st.Page("pages/8_create_evaluator.py", title="Create Evaluation"),
+        ],
+    }
+
+    st.navigation(pages)
+
     api_client = APIClient()
 
     # Initialize session states
