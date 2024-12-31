@@ -16,18 +16,15 @@ def main():
     api_client = APIClient()
 
     # Initialize session states
-    if "current_project" not in st.session_state:
-        st.session_state.current_project = None
-    if "current_version" not in st.session_state:
-        st.session_state.current_version = None
+    st.session_state.current_project = None
+    st.session_state.current_version = None
+    # Render sidebar
+    sidebar = Sidebar(api_client)
+    sidebar.render()
     if "show_create_project" not in st.session_state:
         st.session_state.show_create_project = False
 
     apply_nav_styles()
-
-    # Render sidebar
-    sidebar = Sidebar(api_client)
-    sidebar.render()
 
     # Main content
     if st.session_state.show_create_project:
