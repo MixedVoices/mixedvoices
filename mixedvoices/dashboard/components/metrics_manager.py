@@ -37,6 +37,7 @@ class MetricsManager:
                 else:
                     st.write("**Definition:**", metric["definition"])
                     st.write("**Scoring:**", metric["scoring"])
+                    st.write("**Include Prompt:**", metric.get("include_prompt", False))
 
         return selected_metric
 
@@ -50,13 +51,22 @@ class MetricsManager:
             index=0 if metric["scoring"] == "binary" else 1,
             key=f"score_{metric['name']}",
         )
+        new_include_prompt = st.checkbox(
+            "Include Prompt",
+            value=metric.get("include_prompt", False),
+            key=f"prompt_{metric['name']}",
+        )
 
         cols = st.columns([1, 4])
         with cols[0]:
             if st.button("Save", key=f"save_{metric['name']}"):
                 self.api_client.post_data(
                     f"projects/{self.project_id}/metrics/{metric['name']}",
-                    {"definition": new_definition, "scoring": new_scoring},
+                    {
+                        "definition": new_definition,
+                        "scoring": new_scoring,
+                        "include_prompt": new_include_prompt,
+                    },
                 )
                 st.session_state.is_editing[f"edit_{metric['name']}"] = False
                 st.rerun()
@@ -82,6 +92,10 @@ class MetricsManager:
                     help="Binary for PASS/FAIL, Continuous for 0-10 scale",
                     key=f"{key_prefix}metric_scoring_{form_key}",
                 )
+                include_prompt = st.checkbox(
+                    "Include Prompt",
+                    key=f"{key_prefix}include_prompt_{form_key}",
+                )
             with col2:
                 metric_definition = st.text_area(
                     "Definition", key=f"{key_prefix}metric_def_{form_key}", height=100
@@ -95,6 +109,7 @@ class MetricsManager:
                         "name": metric_name,
                         "definition": metric_definition,
                         "scoring": metric_scoring,
+                        "include_prompt": include_prompt,
                     }
                 st.error("Please provide both name and definition")
             return None

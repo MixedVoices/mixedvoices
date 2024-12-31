@@ -51,6 +51,7 @@ class MetricCreate(BaseModel):
     name: str
     definition: str
     scoring: str
+    include_prompt: bool
 
 
 class MetricUpdate(BaseModel):
