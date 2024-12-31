@@ -15,7 +15,7 @@ def upload_recording_page():
     sidebar = Sidebar(api_client)
     sidebar.render()
 
-    st.title(f"{st.session_state.current_project}")
+    st.title("Upload Recording")
 
     # Version selection required
     selected_version = render_version_selector(

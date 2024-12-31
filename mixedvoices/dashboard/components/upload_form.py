@@ -18,8 +18,6 @@ class UploadForm:
 
     def render(self) -> None:
         """Render upload form"""
-        st.subheader("Upload Recording")
-
         # Initialize states if not exists
         if "is_uploading" not in st.session_state:
             st.session_state.is_uploading = False

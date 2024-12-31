@@ -13,7 +13,7 @@ class Sidebar:
         hide_default_nav()
         with st.sidebar:
             # Logo and Title
-            st.title("🎙️ MixedVoices")
+            st.page_link("Home.py", label="🎙️ MixedVoices Home")
             self._render_project_selection()
 
             # Create Project Button
@@ -22,9 +22,8 @@ class Sidebar:
 
             st.divider()
 
-            st.page_link("Home.py", label="MixedVoices Home")
             st.page_link("pages/1_project_home.py", label="Project Home")
-            st.page_link("pages/9_metrics_page.py", label="Metrics")
+            st.page_link("pages/9_metrics_page.py", label="Project Metrics")
 
             st.markdown("### Analytics")
             st.page_link("pages/2_view_flow.py", label="View Call Flows")

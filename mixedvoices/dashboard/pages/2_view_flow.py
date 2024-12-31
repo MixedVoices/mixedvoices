@@ -15,7 +15,7 @@ def view_flow_page():
     sidebar = Sidebar(api_client)
     sidebar.render()
 
-    st.title(f"{st.session_state.current_project}")
+    st.title("Call Flow Visualization")
 
     # Version selection required
     selected_version = render_version_selector(
@@ -30,7 +30,6 @@ def view_flow_page():
     )
 
     if flow_data.get("steps"):
-        st.subheader("Call Flow Visualization")
         flow_chart = FlowChart(flow_data)
         fig = flow_chart.create_figure()
         st.plotly_chart(fig, use_container_width=True)
