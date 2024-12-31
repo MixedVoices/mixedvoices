@@ -2,6 +2,7 @@ import streamlit as st
 
 from mixedvoices.dashboard.api.client import APIClient
 from mixedvoices.dashboard.components.sidebar import Sidebar
+from mixedvoices.dashboard.components.version_creator import VersionCreator
 
 
 def project_home_page():
@@ -13,21 +14,27 @@ def project_home_page():
     sidebar = Sidebar(api_client)
     sidebar.render()
 
+    version_manager = VersionCreator(api_client, st.session_state.current_project)
+
     st.title(f"Project Home: {st.session_state.current_project}")
 
     # Versions Section
     st.header("Versions")
 
     # Create Version Button
-    st.button("Create New Version")
+    if st.button("Create New Version"):
+        st.session_state.show_version_form = True
 
-    # Fetch versions
+    if st.session_state.show_version_form:
+        version_manager.render_version_form()
+
+    # Fetch and display versions
     versions_data = api_client.fetch_data(
         f"projects/{st.session_state.current_project}/versions"
     )
     versions = versions_data.get("versions", [])
 
-    if not versions:
+    if not versions and not st.session_state.show_version_form:
         st.write("No versions found for this project")
         return
 
@@ -40,7 +47,7 @@ def project_home_page():
             st.text_area(
                 "Prompt",
                 version["prompt"],
-                height=200,
+                height=100,
                 disabled=True,
                 label_visibility="collapsed",
             )
