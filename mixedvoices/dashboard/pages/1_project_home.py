@@ -13,19 +13,23 @@ def project_home_page():
     sidebar = Sidebar(api_client)
     sidebar.render()
 
-    st.title(f"Project: {st.session_state.current_project}")
-
-    # Create Version Button
-    st.button("Create New Version")
+    st.title(f"Project Home: {st.session_state.current_project}")
 
     # Versions Section
     st.header("Versions")
+
+    # Create Version Button
+    st.button("Create New Version")
 
     # Fetch versions
     versions_data = api_client.fetch_data(
         f"projects/{st.session_state.current_project}/versions"
     )
     versions = versions_data.get("versions", [])
+
+    if not versions:
+        st.write("No versions found for this project")
+        return
 
     for version in versions:
         with st.expander(
