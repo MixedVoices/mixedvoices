@@ -43,6 +43,10 @@ class VersionCreate(BaseModel):
     metadata: Optional[Dict[str, Any]] = None
 
 
+class ProjectCreate(BaseModel):
+    metrics: List[Dict]
+
+
 class MetricCreate(BaseModel):
     name: str
     definition: str
@@ -82,11 +86,11 @@ async def list_projects():
 
 
 @app.post("/api/projects")
-async def create_project(name: str, metrics: List[Dict]):
+async def create_project(name: str, metrics_data: ProjectCreate):
     # here the dict will have name, definition and scoring (which can be binary(PASS/FAIL) or continuous (0-10))
     """Create a new project"""
     try:
-        metrics = [Metric(**metric) for metric in metrics]
+        metrics = [Metric(**metric) for metric in metrics_data.metrics]
         mixedvoices.create_project(name, metrics)
         logger.info(f"Project '{name}' created successfully")
         return {"message": f"Project {name} created successfully"}

@@ -16,7 +16,9 @@ def render_project_creator(api_client):
     if st.button("Create Project"):
         if project_name and selected_metrics:
             response = api_client.post_data(
-                "projects", {"name": project_name, "metrics": selected_metrics}
+                "projects",
+                json_data={"metrics": selected_metrics},
+                params={"name": project_name},
             )
             if response.get("message"):
                 st.success("Project created successfully!")

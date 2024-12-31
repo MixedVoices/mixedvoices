@@ -14,14 +14,14 @@ class MetricsManager:
         prefix: str,
         is_selectable: bool = False,
         is_editable: bool = False,
-    ) -> Optional[str]:
+    ) -> Optional[Dict]:
         cols = st.columns([1, 30])
-        selected_name = None
+        selected_metric = None
 
         with cols[0]:
             if is_selectable:
                 if st.checkbox("", key=f"{prefix}_{metric['name']}"):
-                    selected_name = metric["name"]
+                    selected_metric = metric
             elif is_editable:
                 if st.button("✏️", key=f"edit_{metric['name']}"):
                     st.session_state.is_editing = st.session_state.get("is_editing", {})
@@ -38,7 +38,7 @@ class MetricsManager:
                     st.write("**Definition:**", metric["definition"])
                     st.write("**Scoring:**", metric["scoring"])
 
-        return selected_name
+        return selected_metric
 
     def _render_edit_form(self, metric: Dict):
         new_definition = st.text_area(
@@ -99,7 +99,7 @@ class MetricsManager:
                 st.error("Please provide both name and definition")
             return None
 
-    def render(self, selection_mode: bool = False) -> Optional[List[str]]:
+    def render(self, selection_mode: bool = False) -> Optional[List[Dict]]:
         selected_metrics = []
 
         if not self.project_id:
@@ -135,7 +135,8 @@ class MetricsManager:
                     if selected:
                         selected_metrics.append(selected)
 
-            if len(selected_metrics) != len(set(selected_metrics)):
+            metric_names = [m["name"] for m in selected_metrics]
+            if len(metric_names) != len(set(metric_names)):
                 st.error(
                     "You have multipe metrics with the same name which isn't allowed"
                 )
