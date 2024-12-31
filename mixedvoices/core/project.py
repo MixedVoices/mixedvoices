@@ -60,6 +60,7 @@ class Project:
         self.project_id = project_id
         self._metrics: Dict[str, Metric] = _metrics or {}
         self.evals: Dict[str, Evaluator] = evals or {}
+        os.makedirs(os.path.join(self.project_folder, "versions"), exist_ok=True)
         if metrics:
             self.add_metrics(metrics)
 
