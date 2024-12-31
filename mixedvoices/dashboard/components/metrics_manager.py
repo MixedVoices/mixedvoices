@@ -69,23 +69,28 @@ class MetricsManager:
         with st.container():
             st.markdown("### Add New Metric")
             col1, col2 = st.columns(2)
+
+            form_key = st.session_state.get(f"{key_prefix}form_key", 0)
+
             with col1:
                 metric_name = st.text_input(
-                    "Metric Name", key=f"{key_prefix}metric_name"
+                    "Metric Name", key=f"{key_prefix}metric_name_{form_key}"
                 )
                 metric_scoring = st.selectbox(
                     "Scoring Type",
                     ["binary", "continuous"],
                     help="Binary for PASS/FAIL, Continuous for 0-10 scale",
-                    key=f"{key_prefix}metric_scoring",
+                    key=f"{key_prefix}metric_scoring_{form_key}",
                 )
             with col2:
                 metric_definition = st.text_area(
-                    "Definition", key=f"{key_prefix}metric_def", height=100
+                    "Definition", key=f"{key_prefix}metric_def_{form_key}", height=100
                 )
 
-            if st.button("Add Metric", key=f"{key_prefix}add_btn"):
+            if st.button("Add Metric", key=f"{key_prefix}add_btn_{form_key}"):
                 if metric_name and metric_definition:
+                    # Increment form key to reset fields
+                    st.session_state[f"{key_prefix}form_key"] = form_key + 1
                     return {
                         "name": metric_name,
                         "definition": metric_definition,
