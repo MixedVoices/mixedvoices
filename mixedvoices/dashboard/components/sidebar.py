@@ -24,9 +24,9 @@ class Sidebar:
             st.page_link("pages/9_metrics_page.py", label="Project Metrics")
 
             st.markdown("### Analytics")
-            st.page_link("pages/2_view_flow.py", label="View Call Flows")
             st.page_link("pages/3_view_recordings.py", label="View Call Details")
-            st.page_link("pages/4_upload_recording.py", label="Upload Recordings")
+            st.page_link("pages/2_view_flow.py", label="View Call Flows")
+            st.page_link("pages/4_upload_recording.py", label="Upload Calls")
 
             st.markdown("### Evals")
             st.page_link("pages/5_evals_list.py", label="View Evaluators")
