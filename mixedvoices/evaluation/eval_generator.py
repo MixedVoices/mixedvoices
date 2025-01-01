@@ -1,5 +1,7 @@
+import tempfile
 from typing import TYPE_CHECKING, List, Optional
 
+from mixedvoices.core.utils import get_transcript_and_duration
 from mixedvoices.utils import get_openai_client
 
 if TYPE_CHECKING:
@@ -196,9 +198,15 @@ def generate_eval_prompts_from_transcripts(
 def generate_eval_prompts_from_recording(
     agent_prompt: str,
     recording_paths: List[str],
+    user_channels: List[str],
     user_demographic_info: Optional[str] = None,
 ):
-    transcripts = recording_paths  # TODO: Add transcription
+    transcripts = []
+    with tempfile.TemporaryDirectory() as temp_dir:
+        for path, user_channel in zip(recording_paths, user_channels):
+            out = get_transcript_and_duration(path, temp_dir, user_channel)
+            transcripts.append(out[0])
+
     return generate_eval_prompts_from_transcripts(
         agent_prompt, transcripts, user_demographic_info=user_demographic_info
     )
@@ -227,6 +235,7 @@ class EvalGenerator:
         self.user_demographic_info = user_demographic_info
         self.transcripts = []
         self.recordings = []
+        self.user_channels = []
         self.versions = []
         self.version_cases_per_path = 1
         self.projects = []
@@ -239,8 +248,9 @@ class EvalGenerator:
         self.transcripts.extend(transcripts)
         return self
 
-    def add_from_recordings(self, recording_paths: List[str]):
+    def add_from_recordings(self, recording_paths: List[str], user_channel=None):
         self.recordings.extend(recording_paths)
+        self.user_channels.extend([user_channel] * len(recording_paths))
         return self
 
     def add_from_version(self, version: "Version", cases_per_path=1):
@@ -282,6 +292,7 @@ class EvalGenerator:
                 generate_eval_prompts_from_recording(
                     self.prompt,
                     self.recordings,
+                    self.user_channels,
                     user_demographic_info=self.user_demographic_info,
                 )
             )
