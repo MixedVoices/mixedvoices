@@ -1,6 +1,7 @@
 import logging
 import os
 import shutil
+import tempfile
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -11,7 +12,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 import mixedvoices
-from mixedvoices import constants
+from mixedvoices import EvalPromptGenerator, constants
 from mixedvoices.metrics.metric import Metric
 from mixedvoices.server.utils import process_vapi_webhook
 
@@ -68,6 +69,16 @@ class RecordingUpload(BaseModel):
     url: Optional[str] = None
     is_successful: Optional[bool] = None
     user_channel: Optional[str] = None
+
+
+class PromptGenerate(BaseModel):
+    agent_prompt: str
+    user_demographic_info: Optional[str] = None
+    transcript: Optional[str]
+    recording_file: Optional[UploadFile]
+    user_channel: Optional[str] = "left"
+    description: Optional[str]
+    edge_case_count: Optional[int]
 
 
 # API Routes
@@ -379,8 +390,8 @@ async def add_recording(
         version = project.load_version(version_name)
 
         if file:
-            temp_path = Path(f"/tmp/{file.filename}")
-            try:
+            with tempfile.TemporaryDirectory() as temp_dir:
+                temp_path = os.path.join(temp_dir, file.filename)
                 with temp_path.open("wb") as buffer:
                     shutil.copyfileobj(file.file, buffer)
 
@@ -395,11 +406,6 @@ async def add_recording(
                     "message": "Recording is being processed",
                     "recording_id": recording.recording_id,
                 }
-            finally:
-                if temp_path.exists():
-                    temp_path.unlink()
-                    logger.debug(f"Temporary file removed: {temp_path}")
-
         elif recording_data and recording_data.url:
             # TODO: Implement URL upload and processing
             logger.error("URL upload not implemented yet")
@@ -687,6 +693,34 @@ async def get_eval_run_details(project_name: str, eval_id: str, run_id: str):
         raise HTTPException(status_code=404, detail=str(e)) from e
     except Exception as e:
         logger.error(f"Error getting eval run details: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+@app.post("/api/prompt_generator")
+async def generate_prompt(generation_data: PromptGenerate):
+    try:
+        eval_prompt_generator = EvalPromptGenerator(
+            generation_data.agent_prompt, generation_data.user_demographic_info
+        )
+        if generation_data.transcript:
+            eval_prompt_generator.add_from_transcripts([generation_data.transcript])
+        elif generation_data.recording_file:
+            file = generation_data.recording_file
+            with tempfile.TemporaryDirectory() as temp_dir:
+                temp_path = os.path.join(temp_dir, file.filename)
+                with temp_path.open("wb") as buffer:
+                    shutil.copyfileobj(file.file, buffer)
+                eval_prompt_generator.add_from_recordings(
+                    [temp_path], generation_data.user_channel
+                )
+        elif generation_data.description:
+            eval_prompt_generator.add_from_descriptions([generation_data.description])
+        elif generation_data.edge_case_count:
+            eval_prompt_generator.add_edge_cases(generation_data.edge_case_count)
+        prompts = eval_prompt_generator.generate()
+        return {"prompts": prompts}
+    except Exception as e:
+        logger.error(f"Error generating prompt: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e)) from e
 
 
