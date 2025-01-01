@@ -186,7 +186,7 @@ def generate_eval_prompts_from_transcripts(
     eval_prompts = []
     for transcript in transcripts:
         part = get_prompt_part(count)
-        instruction = f"Generate {part} that try to recreate this transcript: {transcript}"  # noqa E501
+        instruction = f"Generate {part} that try to recreate this transcript: {transcript}. You will simulate the USER."  # noqa E501
         eval_prompts.extend(
             generate_eval_prompts(
                 agent_prompt, instruction, count, user_demographic_info
