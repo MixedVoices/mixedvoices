@@ -132,6 +132,11 @@ def display_prompts(prompts: List[dict], selected_prompts: List[int]):
     with col3:
         st.write("Created From")
 
+    st.markdown(
+        "<hr style='margin: 0; padding: 0; background-color: #333; height: 1px;'>",
+        unsafe_allow_html=True,
+    )
+
     current_idx = 0
     for prompt_group_idx, prompt in enumerate(prompts):
         for gen_prompt in prompt["generated_prompts"]:
@@ -163,6 +168,12 @@ def display_prompts(prompts: List[dict], selected_prompts: List[int]):
                 st.write(prompt["type"].replace("_", " ").title())
 
             current_idx += 1
+
+            st.markdown(
+                "<hr style='margin: 0; padding: 0; background-color: #333;"
+                " height: 1px;'>",
+                unsafe_allow_html=True,
+            )
 
 
 def create_evaluator_page():
