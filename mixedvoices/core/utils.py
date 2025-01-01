@@ -106,7 +106,7 @@ def create_steps_from_names(
 def process_recording(recording: "Recording", version: "Version", user_channel="left"):
     try:
         audio_path = recording.audio_path
-        output_folder = os.path.join(version.path, "recordings", recording.recording_id)
+        output_folder = os.path.join(version.recordings_path, recording.recording_id)
         combined_transcript, user_words, agent_words, duration = (
             get_transcript_and_duration(audio_path, output_folder, user_channel)
         )
