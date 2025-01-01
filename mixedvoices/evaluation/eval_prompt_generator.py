@@ -229,7 +229,7 @@ def generate_eval_prompts_from_descriptions(
     return eval_prompts
 
 
-class EvalGenerator:
+class EvalPromptGenerator:
     def __init__(self, prompt, user_demographic_info: Optional[str] = None):
         self.prompt = prompt
         self.user_demographic_info = user_demographic_info

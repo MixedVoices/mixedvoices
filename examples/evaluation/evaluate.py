@@ -25,9 +25,9 @@ hangup_metric = Metric(
 project = mv.create_project("dental_clinic", metrics=[empathy, hangup_metric])
 v1 = project.create_version("v1", prompt=AGENT_PROMPT)
 
-eval_generator = mv.EvalGenerator(AGENT_PROMPT)
-eval_generator.add_from_descriptions(["Young lady who is scared of root canal"])
-all_evals = eval_generator.generate()
+eval_prompt_generator = mv.EvalPromptGenerator(AGENT_PROMPT)
+eval_prompt_generator.add_from_descriptions(["Young lady who is scared of root canal"])
+all_evals = eval_prompt_generator.generate()
 
 evaluator = project.create_evaluator(all_evals, metric_names=["call hangup"])
 evaluator.run(v1, MyDentalAgent, agent_starts=False, model="gpt-4o-mini")
