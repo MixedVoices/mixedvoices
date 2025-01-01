@@ -170,8 +170,7 @@ def display_prompts(prompts: List[dict], selected_prompts: List[int]):
             current_idx += 1
 
             st.markdown(
-                "<hr style='margin: 0; padding: 0; background-color: #333;"
-                " height: 1px;'>",
+                "<hr style='margin: 0; padding: 0; background-color: #333; height: 1px;'>",
                 unsafe_allow_html=True,
             )
 
@@ -211,10 +210,27 @@ def create_evaluator_page():
                 st.rerun()
 
     elif st.session_state.eval_step == 2:
-        st.subheader("Step 2: Create Prompts")
+        st.subheader("Step 2: Select Metrics")
 
         if st.button("Back"):
             st.session_state.eval_step = 1
+            st.rerun()
+
+        metrics_manager = MetricsManager(api_client, st.session_state.current_project)
+        selected_metrics = metrics_manager.render(selection_mode=True)
+
+        if st.button("Next"):
+            if not selected_metrics:
+                st.error("Please select at least one metric")
+            else:
+                st.session_state.eval_step = 3
+                st.rerun()
+
+    elif st.session_state.eval_step == 3:
+        st.subheader("Step 3: Create Prompts")
+
+        if st.button("Back"):
+            st.session_state.eval_step = 2
             st.rerun()
 
         prompt_data = prompt_creation_dialog(api_client)
@@ -227,26 +243,9 @@ def create_evaluator_page():
             st.session_state.eval_prompts, st.session_state.selected_prompts
         )
 
-        if st.button("Next"):
+        if st.button("Create Evaluator"):
             if not st.session_state.selected_prompts:
                 st.error("Please select at least one prompt")
-            else:
-                st.session_state.eval_step = 3
-                st.rerun()
-
-    elif st.session_state.eval_step == 3:
-        st.subheader("Step 3: Select Metrics")
-
-        if st.button("Back"):
-            st.session_state.eval_step = 2
-            st.rerun()
-
-        metrics_manager = MetricsManager(api_client, st.session_state.current_project)
-        selected_metrics = metrics_manager.render(selection_mode=True)
-
-        if st.button("Create Evaluator"):
-            if not selected_metrics:
-                st.error("Please select at least one metric")
                 return
 
             final_prompts = []
