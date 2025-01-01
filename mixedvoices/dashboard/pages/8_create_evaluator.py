@@ -1,5 +1,3 @@
-import shutil
-import tempfile
 from typing import List
 
 import streamlit as st
@@ -10,12 +8,13 @@ from mixedvoices.dashboard.components.sidebar import Sidebar
 from mixedvoices.dashboard.utils import clear_selected_node_path
 
 
-def generate_prompt(api_client, prompt_data: dict, agent_prompt: str) -> List[str]:
+def generate_prompt(
+    api_client, prompt_data: dict, agent_prompt: str, file=None
+) -> List[str]:
     generation_data = {
         "agent_prompt": agent_prompt,
         "user_demographic_info": None,
         "transcript": None,
-        "recording_file": None,
         "user_channel": None,
         "description": None,
         "edge_case_count": None,
@@ -27,15 +26,16 @@ def generate_prompt(api_client, prompt_data: dict, agent_prompt: str) -> List[st
     if prompt_data["type"] == "transcript":
         generation_data["transcript"] = prompt_data["content"]
     elif prompt_data["type"] == "recording":
-        generation_data["recording_file"] = prompt_data["file_path"]
         generation_data["user_channel"] = prompt_data["user_channel"]
     elif prompt_data["type"] == "edge_cases":
         generation_data["edge_case_count"] = prompt_data["count"]
     elif prompt_data["type"] == "description":
         generation_data["description"] = prompt_data["content"]
 
-    print("Posting data", generation_data)
-    response = api_client.post_data("prompt_generator", generation_data)
+    files = {"file": file} if file else None
+    response = api_client.post_data(
+        "prompt_generator", files=files, params=generation_data
+    )
     return response.get("prompts", [])
 
 
@@ -51,7 +51,6 @@ def prompt_creation_dialog(api_client):
                 if prompt:
                     return {
                         "type": "plain_text",
-                        "content": prompt,
                         "generated_prompts": [prompt],
                     }
 
@@ -66,7 +65,6 @@ def prompt_creation_dialog(api_client):
                     )
                     return {
                         "type": "transcript",
-                        "content": transcript,
                         "generated_prompts": prompts,
                     }
 
@@ -77,26 +75,19 @@ def prompt_creation_dialog(api_client):
             user_channel = st.selectbox("Select user channel", ["left", "right"])
             if st.button("Add Recording Prompt"):
                 if uploaded_file:
-                    with tempfile.NamedTemporaryFile(
-                        delete=False, suffix=".wav"
-                    ) as tmp_file:
-                        shutil.copyfileobj(uploaded_file, tmp_file)
-                        prompts = generate_prompt(
-                            api_client,
-                            {
-                                "type": "recording",
-                                "file_path": tmp_file.name,
-                                "user_channel": user_channel,
-                            },
-                            st.session_state.agent_prompt,
-                        )
-                        return {
+                    prompts = generate_prompt(
+                        api_client,
+                        {
                             "type": "recording",
-                            "file": uploaded_file,
                             "user_channel": user_channel,
-                            "file_path": tmp_file.name,
-                            "generated_prompts": prompts,
-                        }
+                        },
+                        st.session_state.agent_prompt,
+                        file=uploaded_file,
+                    )
+                    return {
+                        "type": "recording",
+                        "generated_prompts": prompts,
+                    }
 
         with tabs[3]:
             count = st.number_input("Number of edge cases", min_value=1, value=1)
@@ -108,7 +99,6 @@ def prompt_creation_dialog(api_client):
                 )
                 return {
                     "type": "edge_cases",
-                    "count": count,
                     "generated_prompts": prompts,
                 }
 
@@ -123,7 +113,6 @@ def prompt_creation_dialog(api_client):
                     )
                     return {
                         "type": "description",
-                        "content": description,
                         "generated_prompts": prompts,
                     }
 
@@ -135,7 +124,7 @@ def display_prompts(prompts: List[dict], selected_prompts: List[int]):
         st.write("No prompts created yet")
         return
 
-    col1, col2, col3 = st.columns([1, 3, 2])
+    col1, col2, col3 = st.columns([1, 20, 3])
     with col1:
         st.write("Select")
     with col2:
@@ -143,41 +132,37 @@ def display_prompts(prompts: List[dict], selected_prompts: List[int]):
     with col3:
         st.write("Created From")
 
-    for i, prompt in enumerate(prompts):
-        col1, col2, col3 = st.columns([1, 3, 2])
-        with col1:
-            if st.checkbox("", key=f"prompt_select_{i}", value=i in selected_prompts):
-                if i not in selected_prompts:
-                    selected_prompts.append(i)
-            else:
-                if i in selected_prompts:
-                    selected_prompts.remove(i)
+    current_idx = 0
+    for prompt_group_idx, prompt in enumerate(prompts):
+        for gen_prompt in prompt["generated_prompts"]:
+            col1, col2, col3 = st.columns([1, 20, 3])
+            with col1:
+                if st.checkbox(
+                    "Prompt Select",
+                    key=f"prompt_select_{current_idx}",
+                    value=current_idx in selected_prompts,
+                    label_visibility="collapsed",
+                ):
+                    if current_idx not in selected_prompts:
+                        selected_prompts.append(current_idx)
+                else:
+                    if current_idx in selected_prompts:
+                        selected_prompts.remove(current_idx)
 
-        with col2:
-            if prompt["type"] in ["plain_text", "transcript", "description"]:
+            with col2:
                 st.text_area(
-                    "",
-                    prompt["content"],
-                    key=f"prompt_content_{i}",
+                    "Prompt Content",
+                    gen_prompt,
+                    key=f"prompt_content_{current_idx}",
                     label_visibility="collapsed",
                     disabled=True,
+                    height=150,
                 )
-                with st.expander("Generated Prompts"):
-                    for gen_prompt in prompt["generated_prompts"]:
-                        st.write(gen_prompt)
-            elif prompt["type"] == "recording":
-                st.write(f"Recording: {prompt['file'].name}")
-                with st.expander("Generated Prompts"):
-                    for gen_prompt in prompt["generated_prompts"]:
-                        st.write(gen_prompt)
-            elif prompt["type"] == "edge_cases":
-                st.write(f"Edge cases: {prompt['count']}")
-                with st.expander("Generated Prompts"):
-                    for gen_prompt in prompt["generated_prompts"]:
-                        st.write(gen_prompt)
 
-        with col3:
-            st.write(prompt["type"].replace("_", " ").title())
+            with col3:
+                st.write(prompt["type"].replace("_", " ").title())
+
+            current_idx += 1
 
 
 def create_evaluator_page():
@@ -204,7 +189,7 @@ def create_evaluator_page():
     if st.session_state.eval_step == 1:
         st.subheader("Step 1: Agent Prompt")
         st.session_state.agent_prompt = st.text_area(
-            "Enter agent prompt", st.session_state.agent_prompt
+            "Enter agent prompt", st.session_state.agent_prompt, height=600
         )
 
         if st.button("Next"):
@@ -226,7 +211,6 @@ def create_evaluator_page():
             st.session_state.eval_prompts.append(prompt_data)
             st.rerun()
 
-        st.divider()
         st.subheader("Created Prompts")
         display_prompts(
             st.session_state.eval_prompts, st.session_state.selected_prompts
