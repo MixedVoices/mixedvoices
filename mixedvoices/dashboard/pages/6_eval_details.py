@@ -3,6 +3,7 @@ import streamlit as st
 from mixedvoices.dashboard.api.client import APIClient
 from mixedvoices.dashboard.components.sidebar import Sidebar
 from mixedvoices.dashboard.components.version_selector import render_version_selector
+from mixedvoices.dashboard.utils import clear_selected_node_path
 
 
 @st.dialog("Metrics", width="large")
@@ -32,6 +33,7 @@ def eval_details_page():
         return
 
     api_client = APIClient()
+    clear_selected_node_path()
     sidebar = Sidebar(api_client)
     sidebar.render()
 

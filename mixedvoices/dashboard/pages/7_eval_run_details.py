@@ -4,7 +4,11 @@ import streamlit as st
 
 from mixedvoices.dashboard.api.client import APIClient
 from mixedvoices.dashboard.components.sidebar import Sidebar
-from mixedvoices.dashboard.utils import display_llm_metrics, display_llm_metrics_preview
+from mixedvoices.dashboard.utils import (
+    clear_selected_node_path,
+    display_llm_metrics,
+    display_llm_metrics_preview,
+)
 
 
 @st.dialog("Agent Details", width="large")
@@ -42,6 +46,7 @@ def eval_run_details_page():
         return
 
     api_client = APIClient()
+    clear_selected_node_path()
     sidebar = Sidebar(api_client)
     sidebar.render()
 

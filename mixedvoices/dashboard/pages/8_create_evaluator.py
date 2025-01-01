@@ -3,6 +3,7 @@ import streamlit as st
 from mixedvoices.dashboard.api.client import APIClient
 from mixedvoices.dashboard.components.metrics_manager import MetricsManager
 from mixedvoices.dashboard.components.sidebar import Sidebar
+from mixedvoices.dashboard.utils import clear_selected_node_path
 
 
 def create_evaluator_page():
@@ -11,6 +12,7 @@ def create_evaluator_page():
         return
 
     api_client = APIClient()
+    clear_selected_node_path()
     sidebar = Sidebar(api_client)
     sidebar.render()
 

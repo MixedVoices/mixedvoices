@@ -5,7 +5,7 @@ from mixedvoices.dashboard.api.client import APIClient
 from mixedvoices.dashboard.components.project_creator import render_project_creator
 from mixedvoices.dashboard.components.sidebar import Sidebar
 from mixedvoices.dashboard.config import DEFAULT_PAGE_CONFIG
-from mixedvoices.dashboard.utils import apply_nav_styles
+from mixedvoices.dashboard.utils import apply_nav_styles, clear_selected_node_path
 
 
 def main():
@@ -14,6 +14,8 @@ def main():
     st.set_page_config(**DEFAULT_PAGE_CONFIG)
 
     api_client = APIClient()
+
+    clear_selected_node_path()
 
     # Initialize session states
     st.session_state.current_project = None
