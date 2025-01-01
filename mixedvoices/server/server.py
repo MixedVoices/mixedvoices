@@ -65,22 +65,6 @@ class EvalCreate(BaseModel):
     metric_names: List[str]
 
 
-class RecordingUpload(BaseModel):
-    url: Optional[str] = None
-    is_successful: Optional[bool] = None
-    user_channel: Optional[str] = None
-
-
-class PromptGenerate(BaseModel):
-    agent_prompt: str
-    user_demographic_info: Optional[str] = None
-    transcript: Optional[str]
-    recording_file: Optional[UploadFile]
-    user_channel: Optional[str] = "left"
-    description: Optional[str]
-    edge_case_count: Optional[int]
-
-
 # API Routes
 @app.get("/api/projects")
 async def list_projects():
@@ -373,49 +357,35 @@ async def list_recordings(project_name: str, version_name: str):
 async def add_recording(
     project_name: str,
     version_name: str,
+    file: UploadFile,
+    user_channel: str = "left",
     is_successful: Optional[bool] = None,
-    user_channel: Optional[str] = None,
-    file: Optional[UploadFile] = None,
-    recording_data: Optional[RecordingUpload] = None,
 ):
     """Add a new recording to a version"""
     logger.info(
         f"Adding recording to version '{version_name}' in project '{project_name}'"
     )
     logger.debug(f"is_successful: {is_successful}")
-    logger.debug(f"recording_data: {recording_data}")
 
     try:
         project = mixedvoices.load_project(project_name)
         version = project.load_version(version_name)
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_path = os.path.join(temp_dir, file.filename)
+            with open(temp_path, "wb") as buffer:
+                shutil.copyfileobj(file.file, buffer)
 
-        if file:
-            with tempfile.TemporaryDirectory() as temp_dir:
-                temp_path = os.path.join(temp_dir, file.filename)
-                with temp_path.open("wb") as buffer:
-                    shutil.copyfileobj(file.file, buffer)
-
-                recording = version.add_recording(
-                    str(temp_path),
-                    blocking=False,
-                    is_successful=is_successful,
-                    user_channel=user_channel,
-                )
-                logger.info(f"Recording is being processed: {recording.recording_id}")
-                return {
-                    "message": "Recording is being processed",
-                    "recording_id": recording.recording_id,
-                }
-        elif recording_data and recording_data.url:
-            # TODO: Implement URL upload and processing
-            logger.error("URL upload not implemented yet")
-            raise HTTPException(
-                status_code=501, detail="URL upload not implemented yet"
+            recording = version.add_recording(
+                str(temp_path),
+                blocking=False,
+                is_successful=is_successful,
+                user_channel=user_channel,
             )
-        else:
-            logger.error("No file or URL provided")
-            raise HTTPException(status_code=400, detail="No file or URL provided")
-
+            logger.info(f"Recording is being processed: {recording.recording_id}")
+            return {
+                "message": "Recording is being processed",
+                "recording_id": recording.recording_id,
+            }
     except ValueError as e:
         logger.error(f"Invalid recording data: {str(e)}")
         raise HTTPException(status_code=400, detail=str(e)) from e
@@ -697,31 +667,40 @@ async def get_eval_run_details(project_name: str, eval_id: str, run_id: str):
 
 
 @app.post("/api/prompt_generator")
-async def generate_prompt(generation_data: PromptGenerate):
+async def generate_prompt(
+    agent_prompt: str,
+    user_demographic_info: Optional[str] = None,
+    transcript: Optional[str] = None,
+    user_channel: Optional[str] = "left",
+    description: Optional[str] = None,
+    edge_case_count: Optional[int] = None,
+    file: Optional[UploadFile] = None,
+):
     try:
-        eval_prompt_generator = EvalPromptGenerator(
-            generation_data.agent_prompt, generation_data.user_demographic_info
-        )
-        if generation_data.transcript:
-            eval_prompt_generator.add_from_transcripts([generation_data.transcript])
-        elif generation_data.recording_file:
-            file = generation_data.recording_file
-            with tempfile.TemporaryDirectory() as temp_dir:
-                temp_path = os.path.join(temp_dir, file.filename)
-                with temp_path.open("wb") as buffer:
-                    shutil.copyfileobj(file.file, buffer)
-                eval_prompt_generator.add_from_recordings(
-                    [temp_path], generation_data.user_channel
-                )
-        elif generation_data.description:
-            eval_prompt_generator.add_from_descriptions([generation_data.description])
-        elif generation_data.edge_case_count:
-            eval_prompt_generator.add_edge_cases(generation_data.edge_case_count)
+        temp_dir = None
+        eval_prompt_generator = EvalPromptGenerator(agent_prompt, user_demographic_info)
+        if transcript:
+            eval_prompt_generator.add_from_transcripts([transcript])
+        elif file:
+            temp_dir = tempfile.TemporaryDirectory()
+            temp_dir_str = temp_dir.name
+            temp_path = os.path.join(temp_dir_str, file.filename)
+            with open(temp_path, "wb") as buffer:
+                shutil.copyfileobj(file.file, buffer)
+
+            eval_prompt_generator.add_from_recordings([temp_path], user_channel)
+        elif description:
+            eval_prompt_generator.add_from_descriptions([description])
+        elif edge_case_count:
+            eval_prompt_generator.add_edge_cases(edge_case_count)
         prompts = eval_prompt_generator.generate()
         return {"prompts": prompts}
     except Exception as e:
         logger.error(f"Error generating prompt: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e)) from e
+    finally:
+        if temp_dir:
+            temp_dir.cleanup()
 
 
 def run_server(port: int = 7760):
