@@ -24,7 +24,7 @@ def get_path_to_node(flow_data: dict, target_node_id: str) -> list:
 
 def view_flow_page():
     if "current_project" not in st.session_state:
-        st.switch_page("Home.py")
+        st.switch_page("app.py")
         return
 
     api_client = APIClient()

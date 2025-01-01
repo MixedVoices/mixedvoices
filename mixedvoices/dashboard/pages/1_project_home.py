@@ -7,7 +7,7 @@ from mixedvoices.dashboard.components.version_creator import VersionCreator
 
 def project_home_page():
     if "current_project" not in st.session_state:
-        st.switch_page("Home.py")
+        st.switch_page("app.py")
         return
 
     api_client = APIClient()

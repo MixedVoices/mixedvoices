@@ -8,7 +8,7 @@ from mixedvoices.dashboard.components.version_selector import render_version_sel
 
 def upload_recording_page():
     if "current_project" not in st.session_state:
-        st.switch_page("Home.py")
+        st.switch_page("app.py")
         return
 
     api_client = APIClient()

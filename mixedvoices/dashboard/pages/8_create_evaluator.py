@@ -8,7 +8,7 @@ from mixedvoices.dashboard.utils import clear_selected_node_path
 
 def create_evaluator_page():
     if "current_project" not in st.session_state:
-        st.switch_page("Home.py")
+        st.switch_page("app.py")
         return
 
     api_client = APIClient()

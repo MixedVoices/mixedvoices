@@ -85,7 +85,7 @@ def apply_nav_styles():
     has_project = bool(st.session_state.get("current_project"))
     nav_style = """
     <style>
-    section[data-testid="stSidebar"] a:not([href*="Home"]):not([href=""]) {
+    section[data-testid="stSidebar"] a:not([href*="app"]):not([href=""]) {
         opacity: %s;
         pointer-events: %s;
         position: relative;
@@ -97,7 +97,7 @@ def apply_nav_styles():
     }
 
     /* Tooltip for disabled links */
-    section[data-testid="stSidebar"] a:not([href*="Home"]):not([href=""]):hover::after {
+    section[data-testid="stSidebar"] a:not([href*="app"]):not([href=""]):hover::after {
         content: "Select project first";
         position: absolute;
         left: 100%%;
