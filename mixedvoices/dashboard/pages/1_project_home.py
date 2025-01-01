@@ -48,7 +48,7 @@ def project_home_page():
             st.text_area(
                 "Prompt",
                 version["prompt"],
-                height=100,
+                height=200,
                 disabled=True,
                 label_visibility="collapsed",
             )
@@ -57,7 +57,7 @@ def project_home_page():
                 st.text_area(
                     "Success Criteria",
                     version["success_criteria"],
-                    height=100,
+                    height=200,
                     disabled=True,
                     label_visibility="collapsed",
                 )
