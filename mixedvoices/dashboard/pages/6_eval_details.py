@@ -19,7 +19,7 @@ def render_prompts_dialog(prompts):
     """Render prompts in a dialog."""
     st.subheader("Prompts")
     for i, prompt in enumerate(prompts):
-        st.text_area(f"Prompt {i+1}", prompt, height=100, disabled=True)
+        st.text_area(f"Prompt {i+1}", prompt, height=200, disabled=True)
 
 
 def eval_details_page():
