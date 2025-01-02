@@ -20,8 +20,8 @@ class Sidebar:
 
             st.divider()
 
-            st.page_link("pages/1_project_home.py", label="Project Home")
-            st.page_link("pages/9_metrics_page.py", label="Project Metrics")
+            st.page_link("pages/0_project_home.py", label="Project Home")
+            st.page_link("pages/1_metrics_page.py", label="Project Metrics")
 
             st.markdown("### Analytics")
             st.page_link("pages/3_view_recordings.py", label="View Call Details")
@@ -30,7 +30,7 @@ class Sidebar:
 
             st.markdown("### Evals")
             st.page_link("pages/5_evals_list.py", label="View Evaluators")
-            st.page_link("pages/8_create_evaluator.py", label="Create Evaluator")
+            st.page_link("pages/8_create_evaluator_agent_prompt.py", label="Create Evaluator")
 
     def _render_project_selection(self):
         # Fetch projects
@@ -56,5 +56,5 @@ class Sidebar:
             # Redirect to project home on selection
             if selected_project:
                 st.session_state.show_create_project = False
-                st.switch_page("pages/1_project_home.py")
+                st.switch_page("pages/0_project_home.py")
             st.rerun()

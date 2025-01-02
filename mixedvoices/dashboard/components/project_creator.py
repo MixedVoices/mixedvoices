@@ -11,7 +11,10 @@ def render_project_creator(api_client):
 
     st.divider()
 
-    st.subheader("Select Metrics", help="These will be analyzed for all calls added. Can be added/updated later if needed.")
+    st.subheader(
+        "Select Metrics",
+        help="These will be analyzed for all calls added. Can be added/updated later if needed.",
+    )
 
     # Use metrics manager for metric selection
     metrics_manager = MetricsManager(api_client)
@@ -28,7 +31,7 @@ def render_project_creator(api_client):
                 st.success("Project created successfully!")
                 st.session_state.show_create_project = False
                 st.session_state.current_project = response.get("project_id")
-                st.switch_page("pages/1_project_home.py")
+                st.switch_page("pages/0_project_home.py")
                 st.rerun()
         else:
             st.error("Please provide a project name")

@@ -3,7 +3,6 @@ from typing import List
 import streamlit as st
 
 from mixedvoices.dashboard.api.client import APIClient
-from mixedvoices.dashboard.components.metrics_manager import MetricsManager
 from mixedvoices.dashboard.components.sidebar import Sidebar
 from mixedvoices.dashboard.utils import clear_selected_node_path
 
@@ -175,98 +174,70 @@ def display_prompts(prompts: List[dict], selected_prompts: List[int]):
             )
 
 
-def create_evaluator_page():
+def create_prompts_page():
     if "current_project" not in st.session_state:
         st.switch_page("app.py")
         return
+
+    if "agent_prompt" not in st.session_state:
+        st.switch_page("pages/8_create_evaluator_agent_prompt.py")
+        return
+
+    if "selected_metrics" not in st.session_state:
+        st.switch_page("pages/9_create_evaluator_select_metrics.py")
+        return
+
+    if "eval_prompts" not in st.session_state:
+        st.session_state.eval_prompts = []
+    if "selected_prompts" not in st.session_state:
+        st.session_state.selected_prompts = []
 
     api_client = APIClient()
     clear_selected_node_path()
     sidebar = Sidebar(api_client)
     sidebar.render()
 
-    if "eval_step" not in st.session_state:
-        st.session_state.eval_step = 1
-    if "eval_prompts" not in st.session_state:
-        st.session_state.eval_prompts = []
-    if "selected_prompts" not in st.session_state:
-        st.session_state.selected_prompts = []
-    if "agent_prompt" not in st.session_state:
-        st.session_state.agent_prompt = ""
+    st.title("Create Evaluator - Step 3")
+    st.subheader("Create Prompts")
 
-    st.title("Create Evaluator")
+    if st.button("← Back to Select Metrics"):
+        st.switch_page("pages/9_create_evaluator_select_metrics.py")
 
-    if st.session_state.eval_step == 1:
-        st.subheader("Step 1: Agent Prompt")
-        st.session_state.agent_prompt = st.text_area(
-            "Enter agent prompt", st.session_state.agent_prompt, height=600
+    prompt_data = prompt_creation_dialog(api_client)
+    if prompt_data:
+        st.session_state.eval_prompts.append(prompt_data)
+        st.rerun()
+
+    st.subheader("Created Prompts")
+    display_prompts(st.session_state.eval_prompts, st.session_state.selected_prompts)
+
+    if st.button("Create Evaluator"):
+        if not st.session_state.selected_prompts:
+            st.error("Please select at least one prompt")
+            return
+
+        final_prompts = []
+        for idx in st.session_state.selected_prompts:
+            current_prompt_group = st.session_state.eval_prompts[idx]
+            final_prompts.extend(current_prompt_group["generated_prompts"])
+
+        response = api_client.post_data(
+            f"projects/{st.session_state.current_project}/evals",
+            {
+                "eval_prompts": final_prompts,
+                "metric_names": st.session_state.selected_metrics,
+            },
         )
 
-        if st.button("Next"):
-            if not st.session_state.agent_prompt.strip():
-                st.error("Please enter an agent prompt")
-            else:
-                st.session_state.eval_step = 2
-                st.rerun()
-
-    elif st.session_state.eval_step == 2:
-        if st.button("← Back to Agent Prompt"):
-            st.session_state.eval_step = 1
-            st.rerun()
-        st.subheader("Step 2: Select Metrics")
-
-        metrics_manager = MetricsManager(api_client, st.session_state.current_project)
-        selected_metrics = metrics_manager.render(
-            selection_mode=True, creation_mode=False
-        )
-
-        if st.button("Next"):
-            if not selected_metrics:
-                st.error("Please select at least one metric")
-            else:
-                st.session_state.eval_step = 3
-                st.rerun()
-
-    elif st.session_state.eval_step == 3:
-        if st.button("← Back to Select Metrics"):
-            st.session_state.eval_step = 2
-            st.rerun()
-        st.subheader("Step 3: Create Prompts")
-
-        prompt_data = prompt_creation_dialog(api_client)
-        if prompt_data:
-            st.session_state.eval_prompts.append(prompt_data)
-            st.rerun()
-
-        st.subheader("Created Prompts")
-        display_prompts(
-            st.session_state.eval_prompts, st.session_state.selected_prompts
-        )
-
-        if st.button("Create Evaluator"):
-            if not st.session_state.selected_prompts:
-                st.error("Please select at least one prompt")
-                return
-
-            final_prompts = []
-            for idx in st.session_state.selected_prompts:
-                final_prompts.extend(
-                    st.session_state.eval_prompts[idx]["generated_prompts"]
-                )
-
-            response = api_client.post_data(
-                f"projects/{st.session_state.current_project}/evals",
-                {"eval_prompts": final_prompts, "metric_names": selected_metrics},
-            )
-
-            if response.get("eval_id"):
-                st.success("Evaluator created successfully!")
-                st.session_state.eval_step = 1
-                st.session_state.eval_prompts = []
-                st.session_state.selected_prompts = []
-                st.session_state.agent_prompt = ""
-                st.rerun()
+        if response.get("eval_id"):
+            st.success("Evaluator created successfully!")
+            # Clear session state
+            del st.session_state.eval_prompts
+            del st.session_state.selected_prompts
+            del st.session_state.agent_prompt
+            del st.session_state.selected_metrics
+            st.switch_page("pages/5_evals_list.py")
 
 
 if __name__ == "__main__":
-    create_evaluator_page()
+    create_prompts_page()

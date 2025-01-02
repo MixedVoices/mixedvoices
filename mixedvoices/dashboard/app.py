@@ -41,7 +41,7 @@ def main():
             """
         )
     else:
-        st.switch_page("pages/1_project_home.py")
+        st.switch_page("pages/0_project_home.py")
 
 
 if __name__ == "__main__":
