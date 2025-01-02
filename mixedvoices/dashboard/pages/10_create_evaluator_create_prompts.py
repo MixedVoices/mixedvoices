@@ -41,6 +41,24 @@ def generate_prompt(
 def prompt_creation_dialog(api_client):
     if "is_generating" not in st.session_state:
         st.session_state.is_generating = False
+    if "pending_generation" not in st.session_state:
+        st.session_state.pending_generation = None
+
+    # Handle pending generation from previous run
+    if st.session_state.is_generating and st.session_state.pending_generation:
+        generation_data = st.session_state.pending_generation
+        prompts = generate_prompt(
+            api_client,
+            generation_data["data"],
+            st.session_state.agent_prompt,
+            file=generation_data.get("file"),
+        )
+        # Clear generation state
+        st.session_state.is_generating = False
+        st.session_state.pending_generation = None
+        return [
+            {"type": generation_data["type"], "content": prompt} for prompt in prompts
+        ]
 
     with st.expander("Create New Prompt", expanded=True):
         tabs = st.tabs(
@@ -48,84 +66,86 @@ def prompt_creation_dialog(api_client):
         )
 
         with tabs[0]:
-            prompt = st.text_area("Enter your prompt")
+            prompt = st.text_area(
+                "Enter your prompt", disabled=st.session_state.is_generating
+            )
             if st.button(
                 "Add Plain Text Prompt", disabled=st.session_state.is_generating
             ):
                 if prompt:
                     st.session_state.is_generating = True
-                    return [
-                        {
-                            "type": "plain_text",
-                            "content": prompt,
-                        }
-                    ]
+                    return [{"type": "plain_text", "content": prompt}]
 
         with tabs[1]:
-            transcript = st.text_area("Enter the transcript")
+            transcript = st.text_area(
+                "Enter the transcript", disabled=st.session_state.is_generating
+            )
             if st.button(
                 "Add Transcript Prompt", disabled=st.session_state.is_generating
             ):
                 if transcript:
                     st.session_state.is_generating = True
-                    prompts = generate_prompt(
-                        api_client,
-                        {"type": "transcript", "content": transcript},
-                        st.session_state.agent_prompt,
-                    )
-                    return [
-                        {"type": "transcript", "content": prompt} for prompt in prompts
-                    ]
+                    st.session_state.pending_generation = {
+                        "type": "transcript",
+                        "data": {"type": "transcript", "content": transcript},
+                    }
+                    st.rerun()
 
         with tabs[2]:
             uploaded_file = st.file_uploader(
-                "Upload recording file", type=["wav", "mp3"]
+                "Upload recording file",
+                type=["wav", "mp3"],
+                disabled=st.session_state.is_generating,
             )
-            user_channel = st.selectbox("Select user channel", ["left", "right"])
+            user_channel = st.selectbox(
+                "Select user channel",
+                ["left", "right"],
+                disabled=st.session_state.is_generating,
+            )
             if st.button(
                 "Add Recording Prompt", disabled=st.session_state.is_generating
             ):
                 if uploaded_file:
                     st.session_state.is_generating = True
-                    prompts = generate_prompt(
-                        api_client,
-                        {
+                    st.session_state.pending_generation = {
+                        "type": "recording",
+                        "data": {
                             "type": "recording",
                             "user_channel": user_channel,
                         },
-                        st.session_state.agent_prompt,
-                        file=uploaded_file,
-                    )
-                    return [
-                        {"type": "recording", "content": prompt} for prompt in prompts
-                    ]
+                        "file": uploaded_file,
+                    }
+                    st.rerun()
 
         with tabs[3]:
-            count = st.number_input("Number of edge cases", min_value=1, value=1)
+            count = st.number_input(
+                "Number of edge cases",
+                min_value=1,
+                value=1,
+                disabled=st.session_state.is_generating,
+            )
             if st.button("Add Edge Cases", disabled=st.session_state.is_generating):
                 st.session_state.is_generating = True
-                prompts = generate_prompt(
-                    api_client,
-                    {"type": "edge_cases", "count": count},
-                    st.session_state.agent_prompt,
-                )
-                return [{"type": "edge_cases", "content": prompt} for prompt in prompts]
+                st.session_state.pending_generation = {
+                    "type": "edge_cases",
+                    "data": {"type": "edge_cases", "count": count},
+                }
+                st.rerun()
 
         with tabs[4]:
-            description = st.text_area("Enter description")
+            description = st.text_area(
+                "Enter description", disabled=st.session_state.is_generating
+            )
             if st.button(
                 "Add Description Prompt", disabled=st.session_state.is_generating
             ):
                 if description:
                     st.session_state.is_generating = True
-                    prompts = generate_prompt(
-                        api_client,
-                        {"type": "description", "content": description},
-                        st.session_state.agent_prompt,
-                    )
-                    return [
-                        {"type": "description", "content": prompt} for prompt in prompts
-                    ]
+                    st.session_state.pending_generation = {
+                        "type": "description",
+                        "data": {"type": "description", "content": description},
+                    }
+                    st.rerun()
 
     return None
 
