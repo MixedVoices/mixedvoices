@@ -100,8 +100,7 @@ class MetricsManager:
                 st.rerun()
 
     def _render_add_metric_form(self, key_prefix: str = "") -> Optional[Dict]:
-        with st.container():
-            st.markdown("### Add New Metric")
+        with st.expander("Add New Metric"):
             col1, col2 = st.columns(2)
 
             form_key = st.session_state.get(f"{key_prefix}form_key", 0)
@@ -119,6 +118,7 @@ class MetricsManager:
                 include_prompt = st.checkbox(
                     "Include Prompt",
                     key=f"{key_prefix}include_prompt_{form_key}",
+                    help="If the agent prompt must be passed to judge the score"
                 )
             with col2:
                 metric_definition = st.text_area(
@@ -187,12 +187,10 @@ class MetricsManager:
                         st.session_state.custom_metrics.append(new_metric)
                         st.rerun()
 
-            st.divider()
-
-        st.markdown("### Available Metrics")
 
         # Show metrics based on mode and project_id
         if self.project_id:
+            st.markdown("#### Existing Metrics")
             # Project mode: fetch and display project metrics
             project_metrics = self.api_client.fetch_data(
                 f"projects/{self.project_id}/metrics"

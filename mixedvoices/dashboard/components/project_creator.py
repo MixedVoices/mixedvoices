@@ -5,9 +5,13 @@ from mixedvoices.dashboard.components.metrics_manager import MetricsManager
 
 def render_project_creator(api_client):
     """Render project creation form using metrics manager"""
-    st.subheader("Create New Project")
+    st.header("Create New Project")
 
     project_name = st.text_input("Project Name")
+
+    st.divider()
+
+    st.subheader("Select Metrics", help="These will be analyzed for all calls added. Can be added/updated later if needed.")
 
     # Use metrics manager for metric selection
     metrics_manager = MetricsManager(api_client)

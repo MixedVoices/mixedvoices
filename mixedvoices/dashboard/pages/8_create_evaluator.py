@@ -210,11 +210,10 @@ def create_evaluator_page():
                 st.rerun()
 
     elif st.session_state.eval_step == 2:
-        st.subheader("Step 2: Select Metrics")
-
-        if st.button("Back"):
+        if st.button("← Back to Agent Prompt"):
             st.session_state.eval_step = 1
             st.rerun()
+        st.subheader("Step 2: Select Metrics")
 
         metrics_manager = MetricsManager(api_client, st.session_state.current_project)
         selected_metrics = metrics_manager.render(
@@ -229,11 +228,10 @@ def create_evaluator_page():
                 st.rerun()
 
     elif st.session_state.eval_step == 3:
-        st.subheader("Step 3: Create Prompts")
-
-        if st.button("Back"):
+        if st.button("← Back to Select Metrics"):
             st.session_state.eval_step = 2
             st.rerun()
+        st.subheader("Step 3: Create Prompts")
 
         prompt_data = prompt_creation_dialog(api_client)
         if prompt_data:

@@ -55,5 +55,6 @@ class Sidebar:
             st.session_state.current_version = None
             # Redirect to project home on selection
             if selected_project:
+                st.session_state.show_create_project = False
                 st.switch_page("pages/1_project_home.py")
             st.rerun()
