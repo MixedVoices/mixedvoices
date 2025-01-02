@@ -444,7 +444,7 @@ async def list_step_recordings(project_name: str, version_name: str, step_id: st
         raise HTTPException(status_code=500, detail=str(e)) from e
 
 
-@app.post("/api/{project_name}/{version_name}/{provider_name}")
+@app.post("/webhook/{project_name}/{version_name}/{provider_name}")
 async def handle_webhook(
     project_name: str, version_name: str, provider_name: str, request: Request
 ):
