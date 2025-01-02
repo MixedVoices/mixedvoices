@@ -28,9 +28,11 @@ class Sidebar:
             st.page_link("pages/2_view_flow.py", label="View Call Flows")
             st.page_link("pages/4_upload_recording.py", label="Upload Calls")
 
-            st.markdown("### Evals")
+            st.markdown("### Evaluations")
             st.page_link("pages/5_evals_list.py", label="View Evaluators")
-            st.page_link("pages/8_create_evaluator_agent_prompt.py", label="Create Evaluator")
+            st.page_link(
+                "pages/8_create_evaluator_agent_prompt.py", label="Create Evaluator"
+            )
 
     def _render_project_selection(self):
         # Fetch projects
