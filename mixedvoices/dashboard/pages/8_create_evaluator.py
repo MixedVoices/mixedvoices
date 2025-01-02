@@ -217,7 +217,9 @@ def create_evaluator_page():
             st.rerun()
 
         metrics_manager = MetricsManager(api_client, st.session_state.current_project)
-        selected_metrics = metrics_manager.render(selection_mode=True)
+        selected_metrics = metrics_manager.render(
+            selection_mode=True, creation_mode=False
+        )
 
         if st.button("Next"):
             if not selected_metrics:

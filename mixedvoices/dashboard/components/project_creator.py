@@ -11,7 +11,7 @@ def render_project_creator(api_client):
 
     # Use metrics manager for metric selection
     metrics_manager = MetricsManager(api_client)
-    selected_metrics = metrics_manager.render(selection_mode=True)
+    selected_metrics = metrics_manager.render(selection_mode=True, creation_mode=True)
 
     if st.button("Create Project"):
         if project_name and selected_metrics:

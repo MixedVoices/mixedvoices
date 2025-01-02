@@ -19,7 +19,7 @@ def metrics_page():
     st.title("Metrics")
 
     metrics_manager = MetricsManager(api_client, st.session_state.current_project)
-    metrics_manager.render()
+    metrics_manager.render(selection_mode=False, creation_mode=True)
 
 
 if __name__ == "__main__":

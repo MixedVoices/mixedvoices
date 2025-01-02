@@ -20,7 +20,11 @@ class MetricsManager:
         if is_selectable:
             cols = st.columns([1, 30])
             with cols[0]:
-                if st.checkbox("", key=f"{prefix}_{metric['name']}"):
+                if st.checkbox(
+                    "Selection checkbox",
+                    key=f"{prefix}_{metric['name']}",
+                    label_visibility="collapsed",
+                ):
                     selected_metric = metric
         else:
             cols = st.columns([1])
@@ -65,14 +69,29 @@ class MetricsManager:
         cols = st.columns([1, 4])
         with cols[0]:
             if st.button("Save", key=f"save_{metric['name']}"):
-                self.api_client.post_data(
-                    f"projects/{self.project_id}/metrics/{metric['name']}",
-                    {
-                        "definition": new_definition,
-                        "scoring": new_scoring,
-                        "include_prompt": new_include_prompt,
-                    },
-                )
+                if self.project_id:
+                    # Update through API for project metrics
+                    self.api_client.post_data(
+                        f"projects/{self.project_id}/metrics/{metric['name']}",
+                        {
+                            "definition": new_definition,
+                            "scoring": new_scoring,
+                            "include_prompt": new_include_prompt,
+                        },
+                    )
+                else:
+                    # Update in memory for custom metrics
+                    for idx, m in enumerate(st.session_state.custom_metrics):
+                        if m["name"] == metric["name"]:
+                            st.session_state.custom_metrics[idx].update(
+                                {
+                                    "definition": new_definition,
+                                    "scoring": new_scoring,
+                                    "include_prompt": new_include_prompt,
+                                }
+                            )
+                            break
+
                 st.session_state.is_editing[f"edit_{metric['name']}"] = False
                 st.rerun()
         with cols[1]:
@@ -119,21 +138,76 @@ class MetricsManager:
                 st.error("Please provide both name and definition")
             return None
 
-    def render(self, selection_mode: bool = False) -> Optional[List[Dict]]:
+    def render(
+        self, selection_mode: bool = True, creation_mode: bool = True
+    ) -> Optional[List[Dict]]:
+        if not selection_mode and not creation_mode:
+            raise ValueError(
+                "At least one of selection_mode or creation_mode must be True"
+            )
         selected_metrics = []
 
-        if not self.project_id:
-            if "custom_metrics" not in st.session_state:
-                st.session_state.custom_metrics = []
+        # For creation-only or selection-only modes, project_id is required
+        if (creation_mode != selection_mode) and not self.project_id:
+            raise ValueError(
+                "Project ID is required for creation-only or selection-only modes"
+            )
 
+        # Initialize custom metrics in session state if working in memory
+        if not self.project_id and "custom_metrics" not in st.session_state:
+            st.session_state.custom_metrics = []
+
+        # Handle creation mode
+        if creation_mode:
             new_metric = self._render_add_metric_form("new_")
             if new_metric:
-                st.session_state.custom_metrics.append(new_metric)
-                st.rerun()
+                if self.project_id:
+                    # Add through API for project metrics
+                    existing_metrics = self.api_client.fetch_data(
+                        f"projects/{self.project_id}/metrics"
+                    ).get("metrics", [])
+
+                    if any(m["name"] == new_metric["name"] for m in existing_metrics):
+                        st.error("A metric with this name already exists")
+                    else:
+                        response = self.api_client.post_data(
+                            f"projects/{self.project_id}/metrics", new_metric
+                        )
+                        if response.get("message"):
+                            st.success("Metric added successfully!")
+                            st.rerun()
+                else:
+                    # Add to memory for custom metrics
+                    if any(
+                        m["name"] == new_metric["name"]
+                        for m in st.session_state.custom_metrics
+                    ):
+                        st.error("A metric with this name already exists")
+                    else:
+                        st.session_state.custom_metrics.append(new_metric)
+                        st.rerun()
 
             st.divider()
-            st.markdown("### Available Metrics")
 
+        st.markdown("### Available Metrics")
+
+        # Show metrics based on mode and project_id
+        if self.project_id:
+            # Project mode: fetch and display project metrics
+            project_metrics = self.api_client.fetch_data(
+                f"projects/{self.project_id}/metrics"
+            ).get("metrics", [])
+            for metric in project_metrics:
+                selected = self._render_metric_row(
+                    metric,
+                    "project",
+                    is_selectable=selection_mode,
+                    is_editable=creation_mode,
+                )
+                if selected:
+                    selected_metrics.append(selected)
+        else:
+            # Memory mode: show default metrics and custom metrics
             default_metrics = self.api_client.fetch_data("default_metrics").get(
                 "metrics", []
             )
@@ -141,7 +215,7 @@ class MetricsManager:
                 st.markdown("#### Default Metrics")
                 for metric in default_metrics:
                     selected = self._render_metric_row(
-                        metric, "default", is_selectable=True
+                        metric, "default", is_selectable=selection_mode
                     )
                     if selected:
                         selected_metrics.append(selected)
@@ -150,44 +224,21 @@ class MetricsManager:
                 st.markdown("#### Custom Metrics")
                 for metric in st.session_state.custom_metrics:
                     selected = self._render_metric_row(
-                        metric, "custom", is_selectable=True
+                        metric,
+                        "custom",
+                        is_selectable=selection_mode,
+                        is_editable=creation_mode,
                     )
                     if selected:
                         selected_metrics.append(selected)
 
+        # Validate no duplicate metric names if in selection mode
+        if selection_mode:
             metric_names = [m["name"] for m in selected_metrics]
             if len(metric_names) != len(set(metric_names)):
                 st.error(
-                    "You have multipe metrics with the same name which isn't allowed"
+                    "You have multiple metrics with the same name which isn't allowed"
                 )
                 return None
-
-        else:
-            new_metric = self._render_add_metric_form("project_")
-            if new_metric:
-                existing_names = [
-                    m["name"]
-                    for m in self.api_client.fetch_data(
-                        f"projects/{self.project_id}/metrics"
-                    ).get("metrics", [])
-                ]
-
-                if new_metric["name"] in existing_names:
-                    st.error("A metric with this name already exists")
-                else:
-                    response = self.api_client.post_data(
-                        f"projects/{self.project_id}/metrics", new_metric
-                    )
-                    if response.get("message"):
-                        st.success("Metric added successfully!")
-                        st.rerun()
-
-            project_metrics = self.api_client.fetch_data(
-                f"projects/{self.project_id}/metrics"
-            ).get("metrics", [])
-
-            st.write("### Current Metrics")
-            for metric in project_metrics:
-                self._render_metric_row(metric, "project", is_editable=True)
 
         return selected_metrics if selection_mode else None
