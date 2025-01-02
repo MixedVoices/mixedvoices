@@ -7,7 +7,7 @@ import librosa
 import numpy as np
 import soundfile as sf
 
-from mixedvoices import constants
+from mixedvoices import models
 from mixedvoices.core.step import Step
 from mixedvoices.processors.call_metrics import get_call_metrics
 from mixedvoices.processors.llm_metrics import generate_scores
@@ -60,14 +60,14 @@ def get_transcript_and_duration(audio_path, output_folder, user_channel="left"):
     if len(y.shape) != 2 or y.shape[0] != 2:
         raise ValueError("Input must be a stereo audio file")
 
-    if constants.TRANSCRIPTION_PROVIDER == "openai":
+    if models.TRANSCRIPTION_MODEL == "openai/whisper-1":
         user_audio_path, agent_audio_path = separate_channels(
             y, sr, output_folder, user_channel
         )
         combined_transcript, user_words, agent_words = transcribe_and_combine_openai(
             user_audio_path, agent_audio_path
         )
-    elif constants.TRANSCRIPTION_PROVIDER == "deepgram":
+    elif models.TRANSCRIPTION_MODEL == "deepgram/nova-2":
         combined_transcript, user_words, agent_words = transcribe_and_combine_deepgram(
             audio_path, user_channel
         )

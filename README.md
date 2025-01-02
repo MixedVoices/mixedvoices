@@ -80,7 +80,7 @@ evaluator.run(mv.BlandAgent, agent_starts=True, auth_token="", pathway_id="", st
 ## Using Dashboard
 Launch the interactive dashboard from the Command Line:
 ```bash
-mixedvoices
+mixedvoices dashboard
 ```
 
 ## Development Setup
