@@ -20,6 +20,9 @@ def evals_list_page():
     st.info(
         "💡 Evaluators are reusable collections of tests and metrics to test model performance."
     )
+    st.info(
+        "Load in python using project.load_evaluator(eval_id)", icon=":material/developer_guide:"
+    )
 
     evaluator_viewer = EvaluatorViewer(api_client)
 

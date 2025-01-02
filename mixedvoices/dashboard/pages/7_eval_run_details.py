@@ -50,25 +50,26 @@ def eval_run_details_page():
     sidebar = Sidebar(api_client)
     sidebar.render()
 
-    st.title("Evaluator Run")
+    # Fetch run details
+    run_details = api_client.fetch_data(
+        f"projects/{st.session_state.current_project}/evals/{st.session_state.selected_eval_id}/runs/{st.session_state.selected_run_id}"
+    )
+
+    version = run_details.get("version", "N/A")
+    st.title(f"Evaluator Run for version: {version}")
 
     # Back button
     if st.button("Back to Evaluator Details", icon=":material/arrow_back:"):
         st.session_state.selected_run_id = None
         st.switch_page("pages/6_eval_details.py")
 
-    # Fetch run details
-    run_details = api_client.fetch_data(
-        f"projects/{st.session_state.current_project}/evals/{st.session_state.selected_eval_id}/runs/{st.session_state.selected_run_id}"
-    )
-
     if not run_details or not run_details.get("agents"):
         st.error("Failed to load evaluation run details")
         return
 
-    st.subheader(f"Evaluator ID: {st.session_state.selected_eval_id}")
-    st.subheader(f"Run ID: {st.session_state.selected_run_id}")
-    st.write(f"Version: {run_details.get('version', 'N/A')}")
+    st.markdown(
+        f"#### Eval ID: {st.session_state.selected_eval_id} | Run ID: {st.session_state.selected_run_id}"
+    )
 
     # Display agents in a table-like format
     for idx, agent in enumerate(run_details["agents"], 1):

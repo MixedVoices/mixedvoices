@@ -43,7 +43,7 @@ def eval_details_page():
         st.session_state.selected_eval_id = None
         st.switch_page("pages/5_evals_list.py")
 
-    st.subheader(f"Evaluator ID: {st.session_state.selected_eval_id}")
+    st.markdown(f"#### Eval ID: {st.session_state.selected_eval_id}")
 
     selected_version = render_version_selector(
         api_client, st.session_state.current_project, optional=True, show_all=True
@@ -83,10 +83,11 @@ def eval_details_page():
 
     # Evaluator Runs section
     st.subheader("Evaluator Runs")
+    # st.info()
 
     eval_runs = eval_details.get("eval_runs", [])
     if not eval_runs:
-        st.info("No evaluation runs found.")
+        st.warning("No evaluator runs found.")
         return
 
     # Add column headers
