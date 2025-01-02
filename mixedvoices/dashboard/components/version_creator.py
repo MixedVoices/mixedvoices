@@ -15,12 +15,10 @@ class VersionCreator:
             st.session_state.success_criteria = ""
         if "metadata_pairs" not in st.session_state:
             st.session_state.metadata_pairs = [{"key": "", "value": ""}]
-        if "show_version_creator" not in st.session_state:
-            st.session_state.show_version_creator = False
 
     def render_version_form(self) -> None:
         """Render version creation form"""
-        with st.form("create_version_form"):
+        with st.expander("Create New Version", icon=":material/add:"):
             st.text_input("Version Name", key="new_version_name")
             st.text_area("Prompt", key="new_version_prompt")
             st.text_area("Success Criteria (Optional)", key="new_version_criteria")
@@ -44,12 +42,11 @@ class VersionCreator:
                     )
                 st.session_state.metadata_pairs[i] = {"key": key, "value": value}
 
-            if st.form_submit_button("Add Metadata Field"):
+            if st.button("Add Metadata Field"):
                 st.session_state.metadata_pairs.append({"key": "", "value": ""})
                 st.rerun()
 
-            submitted = st.form_submit_button("Create Version")
-            if submitted:
+            if st.button("Create Version"):
                 self._handle_version_creation()
 
     def _handle_version_creation(self) -> None:
@@ -80,7 +77,9 @@ class VersionCreator:
 
         if response.get("message"):
             st.success("Version created successfully!")
-            st.session_state.show_version_creator = False
+            st.session_state.version_name = ""
+            st.session_state.prompt = ""
+            st.session_state.success_criteria = ""
             st.session_state.metadata_pairs = [{"key": "", "value": ""}]
             st.rerun()
         else:

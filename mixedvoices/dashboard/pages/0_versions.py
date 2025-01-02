@@ -14,18 +14,16 @@ def project_home_page():
     sidebar = Sidebar(api_client)
     sidebar.render()
 
-    version_manager = VersionCreator(api_client, st.session_state.current_project)
+    version_creator = VersionCreator(api_client, st.session_state.current_project)
 
     st.title("Versions")
     st.info("💡 Use versions to track different iterations of your agent")
 
-    if not st.session_state.show_version_creator:
-        if st.button("Create New Version"):
-            st.session_state.show_version_creator = True
-            st.rerun()
 
-    if st.session_state.show_version_creator:
-        version_manager.render_version_form()
+    version_creator.render_version_form()
+
+    st.subheader("Versions List")
+
 
     # Fetch and display versions
     versions_data = api_client.fetch_data(
@@ -33,7 +31,7 @@ def project_home_page():
     )
     versions = versions_data.get("versions", [])
 
-    if not versions and not st.session_state.show_version_creator:
+    if not versions:
         st.info("No versions found for this project")
         return
 
