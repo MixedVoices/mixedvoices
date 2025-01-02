@@ -58,6 +58,7 @@ class MetricCreate(BaseModel):
 class MetricUpdate(BaseModel):
     definition: str
     scoring: str
+    include_prompt: bool
 
 
 class EvalCreate(BaseModel):
@@ -165,6 +166,7 @@ async def create_metric(project_name: str, metric_data: MetricCreate):
             name=metric_data.name,
             definition=metric_data.definition,
             scoring=metric_data.scoring,
+            include_prompt=metric_data.include_prompt,
         )
         project.add_metrics([metric])
         return {"message": f"Metric {metric.name} created successfully"}
@@ -184,6 +186,7 @@ async def update_metric(project_name: str, metric_name: str, metric_data: Metric
             name=metric_name,
             definition=metric_data.definition,
             scoring=metric_data.scoring,
+            include_prompt=metric_data.include_prompt,
         )
         project.update_metric(metric_object)
         return {"message": f"Metric {metric_name} updated successfully"}
