@@ -5,7 +5,7 @@ from mixedvoices.dashboard.components.metrics_manager import MetricsManager
 
 def render_project_creator(api_client):
     """Render project creation form using metrics manager"""
-    if st.button("← Back"):
+    if st.button("Back", icon=":material/arrow_back:"):
         st.session_state.show_create_project = False
         st.rerun()
     st.header("Create New Project")

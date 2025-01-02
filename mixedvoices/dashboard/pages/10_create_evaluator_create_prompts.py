@@ -263,7 +263,8 @@ def create_prompts_page():
     st.subheader("Create Test Cases")
 
     if st.button(
-        "← Back to Select Metrics",
+        "Back to Select Metrics",
+        icon=":material/arrow_back:",
         disabled=st.session_state.get("is_generating", False),
     ):
         st.switch_page("pages/9_create_evaluator_select_metrics.py")

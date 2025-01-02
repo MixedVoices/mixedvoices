@@ -39,7 +39,7 @@ def eval_details_page():
 
     # Page header and navigation
     st.title("Evaluator Details")
-    if st.button("← Back to Evaluators"):
+    if st.button("Back to Evaluators", icon=":material/arrow_back:"):
         st.session_state.selected_eval_id = None
         st.switch_page("pages/5_evals_list.py")
 

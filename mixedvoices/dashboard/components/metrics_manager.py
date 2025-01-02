@@ -41,7 +41,11 @@ class MetricsManager:
                     st.write("**Scoring:**", metric["scoring"])
                     st.write("**Include Prompt:**", metric.get("include_prompt", False))
                     if is_editable:
-                        if st.button("Edit Metric", key=f"edit_{metric['name']}"):
+                        if st.button(
+                            "Edit",
+                            key=f"edit_{metric['name']}",
+                            icon=":material/edit:",
+                        ):
                             st.session_state.is_editing = st.session_state.get(
                                 "is_editing", {}
                             )
@@ -68,7 +72,7 @@ class MetricsManager:
 
         cols = st.columns([1, 4])
         with cols[0]:
-            if st.button("Save", key=f"save_{metric['name']}"):
+            if st.button("Save", key=f"save_{metric['name']}", icon=":material/check:"):
                 if self.project_id:
                     # Update through API for project metrics
                     self.api_client.post_data(
@@ -95,13 +99,13 @@ class MetricsManager:
                 st.session_state.is_editing[f"edit_{metric['name']}"] = False
                 st.rerun()
         with cols[1]:
-            if st.button("Cancel", key=f"cancel_{metric['name']}"):
+            if st.button("Cancel", key=f"cancel_{metric['name']}", icon=":material/close:"):
                 st.session_state.is_editing[f"edit_{metric['name']}"] = False
                 st.rerun()
 
     def _render_add_metric_form(self, key_prefix: str = "") -> Optional[Dict]:
-        with st.expander("Add New Metric"):
-            col1, col2 = st.columns(2)
+        with st.expander("Add New Metric", icon=":material/add:"):
+            col1, col2, col3 = st.columns([1, 1, 4])
 
             form_key = st.session_state.get(f"{key_prefix}form_key", 0)
 
@@ -109,18 +113,19 @@ class MetricsManager:
                 metric_name = st.text_input(
                     "Metric Name", key=f"{key_prefix}metric_name_{form_key}"
                 )
+                include_prompt = st.checkbox(
+                    "Include Prompt",
+                    key=f"{key_prefix}include_prompt_{form_key}",
+                    help="If the agent prompt must be passed to judge the score",
+                )
+            with col2:
                 metric_scoring = st.selectbox(
                     "Scoring Type",
                     ["binary", "continuous"],
                     help="Binary for PASS/FAIL, Continuous for 0-10 scale",
                     key=f"{key_prefix}metric_scoring_{form_key}",
                 )
-                include_prompt = st.checkbox(
-                    "Include Prompt",
-                    key=f"{key_prefix}include_prompt_{form_key}",
-                    help="If the agent prompt must be passed to judge the score"
-                )
-            with col2:
+            with col3:
                 metric_definition = st.text_area(
                     "Definition", key=f"{key_prefix}metric_def_{form_key}", height=100
                 )

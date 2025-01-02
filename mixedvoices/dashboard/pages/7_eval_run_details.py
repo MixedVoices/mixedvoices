@@ -53,7 +53,7 @@ def eval_run_details_page():
     st.title("Evaluator Run")
 
     # Back button
-    if st.button("← Back to Evaluator Details"):
+    if st.button("Back to Evaluator Details", icon=":material/arrow_back:"):
         st.session_state.selected_run_id = None
         st.switch_page("pages/6_eval_details.py")
 
