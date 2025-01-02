@@ -46,18 +46,18 @@ def prompt_creation_dialog(api_client):
     if "show_success" not in st.session_state:
         st.session_state.show_success = False
 
-    with st.expander("Create New Prompt", expanded=True):
+    with st.expander("Create New Test Case", expanded=True):
         # Create a container for status messages
         status_container = st.empty()
 
         # Show and clear success message if needed
         if st.session_state.show_success:
-            status_container.success("Prompt generated successfully!")
+            status_container.success("Test Case(s) generated successfully!")
             st.session_state.show_success = False
 
         # Handle pending generation from previous run
         if st.session_state.is_generating and st.session_state.pending_generation:
-            status_container.info("Generating prompt...", icon="🔄")
+            status_container.info("Generating test case(s)...", icon="🔄")
 
             try:
                 generation_data = st.session_state.pending_generation
@@ -87,10 +87,12 @@ def prompt_creation_dialog(api_client):
 
         with tabs[0]:
             prompt = st.text_area(
-                "Enter your prompt", disabled=st.session_state.is_generating
+                "Enter test case", disabled=st.session_state.is_generating
             )
             if st.button(
-                "Add Plain Text Prompt", disabled=st.session_state.is_generating
+                "Add Test Case",
+                disabled=st.session_state.is_generating,
+                key="plain_text_tests",
             ):
                 if prompt:
                     st.session_state.is_generating = True
@@ -102,7 +104,9 @@ def prompt_creation_dialog(api_client):
                 "Enter the transcript", disabled=st.session_state.is_generating
             )
             if st.button(
-                "Add Transcript Prompt", disabled=st.session_state.is_generating
+                "Generate Test Case",
+                disabled=st.session_state.is_generating,
+                key="transcript_tests",
             ):
                 if transcript:
                     st.session_state.is_generating = True
@@ -124,7 +128,9 @@ def prompt_creation_dialog(api_client):
                 disabled=st.session_state.is_generating,
             )
             if st.button(
-                "Add Recording Prompt", disabled=st.session_state.is_generating
+                "Generate Test Case",
+                disabled=st.session_state.is_generating,
+                key="recording_tests",
             ):
                 if uploaded_file:
                     st.session_state.is_generating = True
@@ -145,7 +151,11 @@ def prompt_creation_dialog(api_client):
                 value=1,
                 disabled=st.session_state.is_generating,
             )
-            if st.button("Add Edge Cases", disabled=st.session_state.is_generating):
+            if st.button(
+                "Generate Test Cases",
+                disabled=st.session_state.is_generating,
+                key="edge_cases_tests",
+            ):
                 st.session_state.is_generating = True
                 st.session_state.pending_generation = {
                     "type": "edge_cases",
@@ -158,7 +168,9 @@ def prompt_creation_dialog(api_client):
                 "Enter description", disabled=st.session_state.is_generating
             )
             if st.button(
-                "Add Description Prompt", disabled=st.session_state.is_generating
+                "Generate Test Case",
+                disabled=st.session_state.is_generating,
+                key="description_tests",
             ):
                 if description:
                     st.session_state.is_generating = True
@@ -173,7 +185,7 @@ def prompt_creation_dialog(api_client):
 
 def display_prompts(prompts: List[dict], selected_prompts: List[int]):
     if not prompts:
-        st.write("No prompts created yet")
+        st.write("No test cases created yet")
         return
 
     col1, col2, col3 = st.columns([1, 20, 3])
@@ -248,7 +260,7 @@ def create_prompts_page():
     sidebar.render()
 
     st.title("Create Evaluator - Step 3")
-    st.subheader("Create Prompts")
+    st.subheader("Create Test Cases")
 
     if st.button(
         "← Back to Select Metrics",
@@ -262,14 +274,14 @@ def create_prompts_page():
         st.session_state.is_generating = False
         st.rerun()
 
-    st.subheader("Created Prompts")
+    st.subheader("Current Test Cases")
     display_prompts(st.session_state.eval_prompts, st.session_state.selected_prompts)
 
     if st.button(
         "Create Evaluator", disabled=st.session_state.get("is_generating", False)
     ):
         if not st.session_state.selected_prompts:
-            st.error("Please select at least one prompt")
+            st.error("Please select at least one test case")
             return
 
         final_prompts = []
