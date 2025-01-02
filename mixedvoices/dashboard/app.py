@@ -11,9 +11,7 @@ def main():
     """Main application"""
     # Set page config
     st.set_page_config(**DEFAULT_PAGE_CONFIG)
-
     api_client = APIClient()
-
     clear_selected_node_path()
 
     # Initialize session states
@@ -31,15 +29,30 @@ def main():
     if st.session_state.show_create_project:
         render_project_creator(api_client)
     elif not st.session_state.current_project:
-        st.title("Welcome to MixedVoices")
-        st.header("Getting Started")
-        st.markdown(
-            """
-            1. Select or create a project using the sidebar
-            2. Add versions to track changes
-            3. Upload recordings to analyze
-            """
-        )
+        # Welcome section
+        st.title("Welcome to MixedVoices Dashboard")
+
+        # Main description
+        # st.header("📊 Your Analytics Hub")
+        st.markdown("#### View your Voice Agent analytics and evaluations here")
+
+        st.info("💡 Use the sidebar to navigate between projects or create a new one!")
+
+        st.divider()
+
+        # Resources section
+        col1, col2 = st.columns(2)
+
+        with col1:
+            st.markdown("📚 [Documentation](https://mixedvoices.gitbook.io/docs)")
+            st.caption("Comprehensive guides and tutorials")
+
+        with col2:
+            st.markdown(
+                "⭐ [GitHub Repository](https://github.com/MixedVoices/mixedvoices)"
+            )
+            st.caption("Star us or contribute to the project")
+
     else:
         st.switch_page("pages/0_project_home.py")
 
