@@ -1,6 +1,7 @@
 import tempfile
 from typing import TYPE_CHECKING, List, Optional
 
+from mixedvoices import models
 from mixedvoices.core.utils import get_transcript_and_duration
 from mixedvoices.utils import get_openai_client
 
@@ -72,7 +73,6 @@ def generate_eval_prompts(
     count: int,
     user_demographic_info: Optional[str] = None,
 ):
-    model = "gpt-4o"
     start_prompt = START_PROMPT.format(agent_prompt=agent_prompt)
 
     structure_prompt = (
@@ -92,7 +92,7 @@ def generate_eval_prompts(
 
     messages.append({"role": "assistant", "content": OUTPUT_PROMPT})
     completion = client.chat.completions.create(
-        model=model,
+        model=models.EVAL_TEST_GENERATOR_MODEL,
         messages=messages,
     )
     response_text = completion.choices[0].message.content

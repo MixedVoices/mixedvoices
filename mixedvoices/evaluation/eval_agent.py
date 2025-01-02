@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING, List, Type
 
 import mixedvoices as mv
 import mixedvoices.constants as constants
+from mixedvoices import models
 from mixedvoices.evaluation.utils import history_to_transcript
 from mixedvoices.metrics.metric import Metric
 from mixedvoices.processors.llm_metrics import generate_scores
@@ -12,8 +13,6 @@ from mixedvoices.utils import get_openai_client, load_json, save_json
 
 if TYPE_CHECKING:
     from mixedvoices import BaseAgent  # pragma: no cover
-
-model = "gpt-4o"
 
 
 def has_ended_conversation(message):
@@ -86,7 +85,9 @@ class EvalAgent:
         messages = [self.get_system_prompt()] + self.history
         try:
             client = get_openai_client()
-            response = client.chat.completions.create(model=model, messages=messages)
+            response = client.chat.completions.create(
+                model=models.EVAL_AGENT_MODEL, messages=messages
+            )
             evaluator_response = response.choices[0].message.content
             self.add_eval_agent_message(evaluator_response)
             return evaluator_response, has_ended_conversation(evaluator_response)
