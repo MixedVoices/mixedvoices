@@ -17,6 +17,7 @@ def metrics_page():
     sidebar.render()
 
     st.title("Metrics")
+    st.info("💡 Metrics are tracked for every call added and for evaluations.")
 
     metrics_manager = MetricsManager(api_client, st.session_state.current_project)
     metrics_manager.render(selection_mode=False, creation_mode=True)

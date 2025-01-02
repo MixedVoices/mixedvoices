@@ -16,10 +16,8 @@ def project_home_page():
 
     version_manager = VersionCreator(api_client, st.session_state.current_project)
 
-    st.title(f"Project Home: {st.session_state.current_project}")
-
-    # Versions Section
-    st.header("Versions")
+    st.title("Versions")
+    st.info("💡 Use versions to track different iterations of your agent")
 
     if not st.session_state.show_version_creator:
         if st.button("Create New Version"):

@@ -54,7 +54,7 @@ def main():
             st.caption("Leave a star or contribute to the project")
 
     else:
-        st.switch_page("pages/0_project_home.py")
+        st.switch_page("pages/0_versions.py")
 
 
 if __name__ == "__main__":

@@ -22,8 +22,8 @@ class Sidebar:
 
             st.divider()
 
-            st.page_link("pages/0_project_home.py", label="Project Home")
-            st.page_link("pages/1_metrics_page.py", label="Project Metrics")
+            st.page_link("pages/0_versions.py", label="Versions")
+            st.page_link("pages/1_metrics.py", label="Metrics")
 
             st.markdown("### Analytics")
             st.page_link("pages/3_view_recordings.py", label="View Call Details")
@@ -60,5 +60,5 @@ class Sidebar:
             # Redirect to project home on selection
             if selected_project:
                 st.session_state.show_create_project = False
-                st.switch_page("pages/0_project_home.py")
+                st.switch_page("pages/0_versions.py")
             st.rerun()

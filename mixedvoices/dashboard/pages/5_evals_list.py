@@ -17,6 +17,9 @@ def evals_list_page():
     sidebar.render()
 
     st.title("Evaluators")
+    st.info(
+        "💡 Evaluators are reusable collections of tests and metrics to test model performance."
+    )
 
     evaluator_viewer = EvaluatorViewer(api_client)
 

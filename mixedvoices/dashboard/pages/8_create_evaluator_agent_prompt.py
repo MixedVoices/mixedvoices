@@ -22,7 +22,7 @@ def create_agent_prompt_page():
     st.subheader("Agent Prompt")
 
     st.session_state.agent_prompt = st.text_area(
-        "Enter agent prompt", st.session_state.agent_prompt, height=600
+        "Enter agent prompt", st.session_state.agent_prompt, height=500
     )
 
     if st.button("Next"):
