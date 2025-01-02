@@ -43,24 +43,44 @@ def prompt_creation_dialog(api_client):
         st.session_state.is_generating = False
     if "pending_generation" not in st.session_state:
         st.session_state.pending_generation = None
-
-    # Handle pending generation from previous run
-    if st.session_state.is_generating and st.session_state.pending_generation:
-        generation_data = st.session_state.pending_generation
-        prompts = generate_prompt(
-            api_client,
-            generation_data["data"],
-            st.session_state.agent_prompt,
-            file=generation_data.get("file"),
-        )
-        # Clear generation state
-        st.session_state.is_generating = False
-        st.session_state.pending_generation = None
-        return [
-            {"type": generation_data["type"], "content": prompt} for prompt in prompts
-        ]
+    if "show_success" not in st.session_state:
+        st.session_state.show_success = False
 
     with st.expander("Create New Prompt", expanded=True):
+        # Create a container for status messages
+        status_container = st.empty()
+
+        # Show and clear success message if needed
+        if st.session_state.show_success:
+            status_container.success("Prompt generated successfully!")
+            st.session_state.show_success = False
+
+        # Handle pending generation from previous run
+        if st.session_state.is_generating and st.session_state.pending_generation:
+            status_container.info("Generating prompt...", icon="🔄")
+
+            try:
+                generation_data = st.session_state.pending_generation
+                prompts = generate_prompt(
+                    api_client,
+                    generation_data["data"],
+                    st.session_state.agent_prompt,
+                    file=generation_data.get("file"),
+                )
+                # Clear generation state and show success
+                st.session_state.is_generating = False
+                st.session_state.pending_generation = None
+                st.session_state.show_success = True
+                return [
+                    {"type": generation_data["type"], "content": prompt}
+                    for prompt in prompts
+                ]
+            except Exception as e:
+                status_container.error(f"Generation failed: {str(e)}")
+                st.session_state.is_generating = False
+                st.session_state.pending_generation = None
+                st.rerun()
+
         tabs = st.tabs(
             ["Plain Text", "Transcript", "Recording", "Edge Cases", "Description"]
         )
@@ -74,6 +94,7 @@ def prompt_creation_dialog(api_client):
             ):
                 if prompt:
                     st.session_state.is_generating = True
+                    st.session_state.show_success = True
                     return [{"type": "plain_text", "content": prompt}]
 
         with tabs[1]:
