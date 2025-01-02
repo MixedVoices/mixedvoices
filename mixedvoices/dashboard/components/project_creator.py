@@ -14,7 +14,7 @@ def render_project_creator(api_client):
     selected_metrics = metrics_manager.render(selection_mode=True, creation_mode=True)
 
     if st.button("Create Project"):
-        if project_name and selected_metrics:
+        if project_name:
             response = api_client.post_data(
                 "projects",
                 json_data={"metrics": selected_metrics},
@@ -23,6 +23,8 @@ def render_project_creator(api_client):
             if response.get("message"):
                 st.success("Project created successfully!")
                 st.session_state.show_create_project = False
+                st.session_state.current_project = response.get("project_id")
+                st.switch_page("pages/1_project_home.py")
                 st.rerun()
         else:
-            st.error("Please provide project name and select at least one metric")
+            st.error("Please provide a project name")

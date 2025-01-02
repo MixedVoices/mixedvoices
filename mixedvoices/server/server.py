@@ -90,7 +90,7 @@ async def create_project(name: str, metrics_data: ProjectCreate):
         metrics = [Metric(**metric) for metric in metrics_data.metrics]
         mixedvoices.create_project(name, metrics)
         logger.info(f"Project '{name}' created successfully")
-        return {"message": f"Project {name} created successfully"}
+        return {"message": f"Project {name} created successfully", "project_id": name}
     except ValueError as e:
         logger.error(f"Invalid project name '{name}': {str(e)}")
         raise HTTPException(status_code=400, detail=str(e)) from e
