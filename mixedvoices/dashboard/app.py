@@ -51,7 +51,7 @@ def main():
             st.markdown(
                 "⭐ [GitHub Repository](https://github.com/MixedVoices/mixedvoices)"
             )
-            st.caption("Star us or contribute to the project")
+            st.caption("Leave a star or contribute to the project")
 
     else:
         st.switch_page("pages/0_project_home.py")
