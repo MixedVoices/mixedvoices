@@ -23,6 +23,8 @@ def select_metrics_page():
     st.title("Create Evaluator - Step 2")
     st.subheader("Select Metrics")
 
+    st.info("💡 Choose metrics to evaluate agent on. You can only choose from project metrics. Switch to Metrics page to add more.")
+
     if st.button("Back to Agent Prompt", icon=":material/arrow_back:"):
         st.switch_page("pages/8_create_evaluator_agent_prompt.py")
 
