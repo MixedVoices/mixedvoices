@@ -29,56 +29,22 @@ class Evaluator:
         eval_id: str,
         project_id: str,
         metric_names: List[str],
-        eval_prompts: List[str],
+        test_cases: List[str],
         created_at: Optional[int] = None,
         eval_runs: Optional[dict[str, EvalRun]] = None,
     ):
         self.eval_id = eval_id
         self.project_id = project_id
-        self.metric_names = metric_names
-        self.eval_prompts = eval_prompts
-        self.created_at = created_at or int(time.time())
-        self.eval_runs = eval_runs or {}
-        self.save()
+        self._metric_names = metric_names
+        self._test_cases = test_cases
+        self._created_at = created_at or int(time.time())
+        self._eval_runs = eval_runs or {}
+        self._save()
 
     @property
-    def path(self):
-        return get_info_path(self.project_id, self.eval_id)
-
-    def save(self):
-        os.makedirs(os.path.dirname(self.path), exist_ok=True)
-        d = {
-            "metric_names": self.metric_names,
-            "eval_prompts": self.eval_prompts,
-            "created_at": self.created_at,
-            "eval_run_ids": list(self.eval_runs.keys()),
-            "eval_run_version_ids": [run.version_id for run in self.eval_runs.values()],
-        }
-        save_json(d, self.path)
-
-    @classmethod
-    def load(cls, project_id, eval_id):
-        load_path = get_info_path(project_id, eval_id)
-        try:
-            d = load_json(load_path)
-        except FileNotFoundError:
-            return
-
-        eval_run_ids = d.pop("eval_run_ids")
-        eval_run_version_ids = d.pop("eval_run_version_ids")
-        eval_runs = {
-            run_id: EvalRun.load(project_id, version_id, eval_id, run_id)
-            for run_id, version_id in zip(eval_run_ids, eval_run_version_ids)
-        }
-        d.update(
-            {
-                "project_id": project_id,
-                "eval_id": eval_id,
-                "eval_runs": eval_runs,
-            }
-        )
-
-        return cls(**d)
+    def metric_names(self) -> List[str]:
+        """List of metric names to be evaluated"""
+        return self._metric_names
 
     def run(
         self,
@@ -102,18 +68,59 @@ class Evaluator:
         run_id = uuid4().hex
         project = mv.load_project(self.project_id)
         version_id = version.version_id
-        if version_id not in project.versions:
+        if version_id not in project.version_names:
             raise ValueError("Evaluator can only be run on a version of the project")
-        prompt = version.prompt
+        prompt = version._prompt
         run = EvalRun(
             run_id,
             self.project_id,
             version_id,
             self.eval_id,
             prompt,
-            self.metric_names,
-            self.eval_prompts,
+            self._metric_names,
+            self._test_cases,
         )
-        self.eval_runs[run_id] = run
-        self.save()
+        self._eval_runs[run_id] = run
+        self._save()
         run.run(agent_class, agent_starts, **kwargs)
+
+    @property
+    def _path(self):
+        return get_info_path(self.project_id, self.eval_id)
+
+    def _save(self):
+        os.makedirs(os.path.dirname(self._path), exist_ok=True)
+        d = {
+            "metric_names": self._metric_names,
+            "test_cases": self._test_cases,
+            "created_at": self._created_at,
+            "eval_run_ids": list(self._eval_runs.keys()),
+            "eval_run_version_ids": [
+                run.version_id for run in self._eval_runs.values()
+            ],
+        }
+        save_json(d, self._path)
+
+    @classmethod
+    def _load(cls, project_id, eval_id):
+        load_path = get_info_path(project_id, eval_id)
+        try:
+            d = load_json(load_path)
+        except FileNotFoundError:
+            return
+
+        eval_run_ids = d.pop("eval_run_ids")
+        eval_run_version_ids = d.pop("eval_run_version_ids")
+        eval_runs = {
+            run_id: EvalRun.load(project_id, version_id, eval_id, run_id)
+            for run_id, version_id in zip(eval_run_ids, eval_run_version_ids)
+        }
+        d.update(
+            {
+                "project_id": project_id,
+                "eval_id": eval_id,
+                "eval_runs": eval_runs,
+            }
+        )
+
+        return cls(**d)

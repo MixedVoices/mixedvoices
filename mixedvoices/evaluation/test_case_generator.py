@@ -145,7 +145,7 @@ def generate_test_cases_from_version(
     count_per_path=2,
     user_demographic_info: Optional[str] = None,
 ):
-    paths = version.get_paths()
+    paths = version._get_paths()
     return generate_test_cases_from_paths(
         agent_prompt, paths, count_per_path, user_demographic_info
     )
@@ -157,7 +157,7 @@ def generate_test_cases_from_project(
     count_per_path=2,
     user_demographic_info: Optional[str] = None,
 ):
-    paths = project.get_paths()
+    paths = project._get_paths()
     return generate_test_cases_from_paths(
         agent_prompt, paths, count_per_path, user_demographic_info
     )
@@ -275,7 +275,7 @@ class TestCaseGenerator:
             version (Version): Version object
             cases_per_path (int, optional): Number of test cases to generate for each path. Defaults to 1.
         """
-        self.check_generation()
+        self._check_generation()
         self.versions.append(version)
         self.version_cases_per_path = cases_per_path
         return self
@@ -287,7 +287,7 @@ class TestCaseGenerator:
             project (Project): Project object
             cases_per_path (int, optional): Number of test cases to generate for each path. Defaults to 1.
         """
-        self.check_generation()
+        self._check_generation()
         self.projects.append(project)
         self.project_cases_per_path = cases_per_path
         return self
@@ -298,7 +298,7 @@ class TestCaseGenerator:
         Args:
             descriptions (List[str]): List of descriptions
         """
-        self.check_generation()
+        self._check_generation()
         self.descriptions.extend(descriptions)
         return self
 
@@ -308,13 +308,13 @@ class TestCaseGenerator:
         Args:
             count (int): Number of test cases to add
         """
-        self.check_generation()
+        self._check_generation()
         self.edge_cases_count += count
         return self
 
     def generate(self):
         """Generate test cases from all the given inputs"""
-        self.check_generation("generate")
+        self._check_generation("generate")
 
         test_cases = []
         if self.recordings:
@@ -385,7 +385,7 @@ class TestCaseGenerator:
         self.test_cases = test_cases
         return test_cases
 
-    def check_generation(self, operation="add"):
+    def _check_generation(self, operation="add"):
         if self.test_cases:
             raise ValueError(
                 f"Can not {operation}. Test cases have already been generated. "

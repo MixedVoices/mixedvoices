@@ -31,7 +31,7 @@ def load_project(project_name: str):
     """Load an existing project"""
     if project_name not in os.listdir(constants.PROJECTS_FOLDER):
         raise ValueError(f"Project {project_name} does not exist")
-    return Project.load(project_name)
+    return Project._load(project_name)
 
 
 def check_metrics_while_adding(
@@ -62,12 +62,23 @@ class Project:
         _metrics: Optional[Dict[str, Metric]] = None,
     ):
         self.project_id = project_id
-        self.success_criteria = success_criteria
+        self._success_criteria = success_criteria
         self._metrics: Dict[str, Metric] = _metrics or {}
-        self.evals: Dict[str, Evaluator] = evals or {}
-        os.makedirs(os.path.join(self.project_folder, "versions"), exist_ok=True)
+        self._evals: Dict[str, Evaluator] = evals or {}
+        os.makedirs(os.path.join(self._project_folder, "versions"), exist_ok=True)
         if metrics:
             self.add_metrics(metrics)
+
+    @property
+    def name(self) -> str:
+        """Get the name of the project"""
+        return self.project_id
+
+    # Metric methods
+    @property
+    def metrics(self) -> List[Metric]:
+        """Get all metrics in the project"""
+        return list(self._metrics.values())
 
     def add_metrics(self, metrics: List[Metric]) -> None:
         """
@@ -76,7 +87,7 @@ class Project:
         metrics = check_metrics_while_adding(metrics, self._metrics)
         for metric in metrics:
             self._metrics[metric.name] = metric
-        self.save()
+        self._save()
 
     def update_metric(self, metric: Metric) -> None:
         """
@@ -90,7 +101,7 @@ class Project:
                 f"Metric with name '{metric.name}' does not exist in project"
             )
         self._metrics[metric.name] = metric
-        self.save()
+        self._save()
 
     def get_metric(self, metric_name: str) -> Metric:
         """
@@ -135,79 +146,41 @@ class Project:
                 f"Metric with name '{metric_name}' does not exist in project"
             )
         del self._metrics[metric_name]
-        self.save()
-
-    def list_metrics(self) -> List[Metric]:
-        """Get all metrics as a list."""
-        return list(self._metrics.values())
+        self._save()
 
     def list_metric_names(self) -> List[str]:
         """Get all metric names."""
         return list(self._metrics.keys())
 
+    # Success Criteria Methods
+    @property
+    def success_criteria(self):
+        """Get the success criteria of the project"""
+        return self._success_criteria
+
     def update_success_criteria(self, success_criteria: Optional[str]) -> None:
-        self.success_criteria = success_criteria
-        self.save()
+        """Update the success criteria of the project
 
-    @property
-    def project_folder(self):
-        return os.path.join(constants.PROJECTS_FOLDER, self.project_id)
+        Args:
+            success_criteria (Optional[str]): The new success criteria. If it is None, the success criteria will be removed
+        """
+        self._success_criteria = success_criteria
+        self._save()
 
+    # Version methods
     @property
-    def versions(self):
-        all_files = os.listdir(os.path.join(self.project_folder, "versions"))
+    def version_names(self):
+        """Get all version names in the project"""
+        all_files = os.listdir(os.path.join(self._project_folder, "versions"))
         return [
             f
             for f in all_files
-            if os.path.isdir(os.path.join(self.project_folder, "versions", f))
+            if os.path.isdir(os.path.join(self._project_folder, "versions", f))
         ]
-
-    @property
-    def path(self):
-        return get_info_path(self.project_id)
-
-    def save(self):
-        metrics = {k: v.to_dict() for k, v in self._metrics.items()}
-        d = {
-            "success_criteria": self.success_criteria,
-            "eval_ids": list(self.evals.keys()),
-            "metrics": metrics,
-        }
-        save_json(d, self.path)
-
-    @classmethod
-    def load(cls, project_id):
-        try:
-            load_path = get_info_path(project_id)
-            d = load_json(load_path)
-            metrics = d.pop("metrics")
-            metrics = {
-                k: Metric(
-                    name=k,
-                    definition=v["definition"],
-                    scoring=v["scoring"],
-                    include_prompt=v["include_prompt"],
-                )
-                for k, v in metrics.items()
-            }
-            eval_ids = d.pop("eval_ids")
-            evals = {
-                eval_id: Evaluator.load(project_id, eval_id) for eval_id in eval_ids
-            }
-            success_criteria = d.get("success_criteria", None)
-            evals = {k: v for k, v in evals.items() if v}
-            return cls(
-                project_id,
-                success_criteria=success_criteria,
-                evals=evals,
-                _metrics=metrics,
-            )
-        except FileNotFoundError:
-            return cls(project_id)
 
     def create_version(
         self,
-        version_id: str,
+        version_name: str,
         prompt: str,
         metadata: Optional[Dict[str, Any]] = None,
     ):
@@ -215,40 +188,32 @@ class Project:
         Create a new version in the project
 
         Args:
-            version_id (str): Name of the version
+            version_name (str): Name of the version
             prompt (str): Prompt used by the voice agent
             metadata (Optional[Dict[str, Any]]): Metadata to be associated with the version. Defaults to None.
         """  # noqa E501
-        validate_name(version_id, "version_id")
-        if version_id in self.versions:
-            raise ValueError(f"Version {version_id} already exists")
-        version_folder = os.path.join(self.project_folder, "versions", version_id)
+        validate_name(version_name, "version_name")
+        if version_name in self.version_names:
+            raise ValueError(f"Version {version_name} already exists")
+        version_folder = os.path.join(self._project_folder, "versions", version_name)
         os.makedirs(version_folder)
         os.makedirs(os.path.join(version_folder, "recordings"))
         os.makedirs(os.path.join(version_folder, "steps"))
-        version = Version(version_id, self.project_id, prompt, metadata)
-        version.save()
+        version = Version(version_name, self.project_id, prompt, metadata)
+        version._save()
         return version
 
-    def load_version(self, version_id: str):
-        if version_id not in self.versions:
-            raise ValueError(f"Version {version_id} does not exist")
-        return Version.load(self.project_id, version_id)
+    def load_version(self, version_name: str) -> Version:
+        """Load a version from the project
 
-    def get_paths(self):
-        paths = []
-        for version_id in self.versions:
-            version = self.load_version(version_id)
-            paths.extend(version.get_paths())
-        return paths
+        Args:
+            version_name (str): ID of the version to load
+        """
+        if version_name not in self.version_names:
+            raise ValueError(f"Version {version_name} does not exist")
+        return Version._load(self.project_id, version_name)
 
-    def get_step_names(self):
-        step_names = []
-        for version_id in self.versions:
-            version = self.load_version(version_id)
-            step_names.extend(version.get_step_names())
-        return step_names
-
+    # Evaluator methods
     def create_evaluator(
         self, test_cases: List[str], metric_names: Optional[List[str]] = None
     ) -> Evaluator:
@@ -275,8 +240,8 @@ class Project:
             test_cases,
         )
 
-        self.evals[eval_id] = cur_eval
-        self.save()
+        self._evals[eval_id] = cur_eval
+        self._save()
         return cur_eval
 
     def load_evaluator(self, eval_id: str) -> Evaluator:
@@ -289,6 +254,71 @@ class Project:
         Returns:
             Evaluator: The loaded evaluator
         """
-        if eval_id not in self.evals:
+        if eval_id not in self._evals:
             raise ValueError(f"Eval {eval_id} does not exist")
-        return self.evals[eval_id]
+        return self._evals[eval_id]
+
+    def list_evaluators(self) -> List[Evaluator]:
+        return list(self._evals.values())
+
+    # Internal Use Methods
+    @property
+    def _project_folder(self) -> str:
+        return os.path.join(constants.PROJECTS_FOLDER, self.project_id)
+
+    @property
+    def _path(self) -> str:
+        return get_info_path(self.project_id)
+
+    def _get_paths(self) -> List[str]:
+        paths = []
+        for version_id in self.version_names:
+            version = self.load_version(version_id)
+            paths.extend(version._get_paths())
+        return paths
+
+    def _get_step_names(self) -> List[str]:
+        step_names = set()
+        for version_id in self.version_names:
+            version = self.load_version(version_id)
+            step_names.union(version._get_step_names())
+        return list(step_names)
+
+    def _save(self):
+        metrics = {k: v.to_dict() for k, v in self._metrics.items()}
+        d = {
+            "success_criteria": self._success_criteria,
+            "eval_ids": list(self._evals.keys()),
+            "metrics": metrics,
+        }
+        save_json(d, self._path)
+
+    @classmethod
+    def _load(cls, project_id):
+        try:
+            load_path = get_info_path(project_id)
+            d = load_json(load_path)
+            metrics = d.pop("metrics")
+            metrics = {
+                k: Metric(
+                    name=k,
+                    definition=v["definition"],
+                    scoring=v["scoring"],
+                    include_prompt=v["include_prompt"],
+                )
+                for k, v in metrics.items()
+            }
+            eval_ids = d.pop("eval_ids")
+            evals = {
+                eval_id: Evaluator._load(project_id, eval_id) for eval_id in eval_ids
+            }
+            success_criteria = d.get("success_criteria", None)
+            evals = {k: v for k, v in evals.items() if v}
+            return cls(
+                project_id,
+                success_criteria=success_criteria,
+                evals=evals,
+                _metrics=metrics,
+            )
+        except FileNotFoundError:
+            return cls(project_id)

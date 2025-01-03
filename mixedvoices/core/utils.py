@@ -78,7 +78,7 @@ def create_steps_from_names(
     step_names: List[str], version: "Version", recording: "Recording"
 ) -> List[Step]:
     all_steps: List[Step] = []
-    step_options = version.starting_steps
+    step_options = version._starting_steps
     previous_step = None
     for i, step_name in enumerate(step_names):
         is_final_step = i == len(step_names) - 1
@@ -106,18 +106,20 @@ def create_steps_from_names(
 def process_recording(recording: "Recording", version: "Version", user_channel="left"):
     try:
         audio_path = recording.audio_path
-        output_folder = os.path.join(version.recordings_path, recording.recording_id)
+        output_folder = os.path.join(version._recordings_path, recording.recording_id)
         combined_transcript, user_words, agent_words, duration = (
             get_transcript_and_duration(audio_path, output_folder, user_channel)
         )
         recording.combined_transcript = (
             recording.combined_transcript or combined_transcript
         )
-        if version.project.success_criteria and recording.is_successful is None:
-            response = get_success(combined_transcript, version.project.success_criteria)
+        if version._project._success_criteria and recording.is_successful is None:
+            response = get_success(
+                combined_transcript, version._project._success_criteria
+            )
             recording.is_successful = response["success"]
             recording.success_explanation = response["explanation"]
-        existing_step_names = version.get_project_step_names()
+        existing_step_names = version._project._get_step_names()
         step_names = script_to_step_names(combined_transcript, existing_step_names)
         all_steps = create_steps_from_names(step_names, version, recording)
         recording.step_ids = [step.step_id for step in all_steps]
@@ -126,7 +128,7 @@ def process_recording(recording: "Recording", version: "Version", user_channel="
             combined_transcript
         )
         recording.llm_metrics = generate_scores(
-            combined_transcript, version.prompt, version.get_project_metrics()
+            combined_transcript, version._prompt, version._project.metrics
         )
         recording.call_metrics = get_call_metrics(
             audio_path, user_words, agent_words, duration, user_channel

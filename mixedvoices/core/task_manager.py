@@ -159,7 +159,7 @@ class TaskManager:
                 combined_transcript=recording_data["combined_transcript"],
             )
 
-            version = Version.load(
+            version = Version._load(
                 project_id=version_data["project_id"],
                 version_id=version_data["version_id"],
             )

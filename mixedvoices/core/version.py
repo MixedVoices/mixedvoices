@@ -46,72 +46,33 @@ class Version:
     ):
         self.version_id = version_id
         self.project_id = project_id
-        self.prompt = prompt
-        self.metadata = metadata
-        self.load_recordings()
-        self.load_steps()
-        self.create_flowchart()
+        self._prompt = prompt
+        self._metadata = metadata
+        self._load_recordings()
+        self._load_steps()
+        self._create_flowchart()
         self._all_step_names = None
-        self._project = None
+        self._cached_project = None
 
     @property
-    def project(self):
-        if self._project is None:
-            self._project = mixedvoices.load_project(self.project_id)
-        return self._project
+    def prompt(self):
+        """Get the prompt of the version"""
+        return self._prompt
+
+    def update_prompt(self, prompt: str):
+        """Update the prompt of the version"""
+        self._prompt = prompt
+        self._save()
 
     @property
-    def path(self):
-        return get_info_path(self.project_id, self.version_id)
+    def metadata(self):
+        """Get the metadata of the version"""
+        return self._metadata
 
-    @property
-    def recordings_path(self):
-        return os.path.join(os.path.dirname(self.path), "recordings")
-
-    @property
-    def steps_path(self):
-        return os.path.join(os.path.dirname(self.path), "steps")
-
-    def load_recordings(self):
-        self.recordings: Dict[str, Recording] = {}
-        recording_files = os.listdir(self.recordings_path)
-        for recording_file in recording_files:
-            try:
-                filename = os.path.basename(recording_file)
-                recording_id = os.path.splitext(filename)[0]
-                self.recordings[recording_id] = Recording.load(
-                    self.project_id, self.version_id, recording_id
-                )
-            except Exception as e:
-                print(f"Error loading recording {recording_file}: {e}")
-
-    def load_steps(self):
-        self.steps: Dict[str, Step] = {}
-        step_files = os.listdir(self.steps_path)
-        for step_file in step_files:
-            filename = os.path.basename(step_file)
-            step_id = os.path.splitext(filename)[0]
-            self.steps[step_id] = Step.load(self.project_id, self.version_id, step_id)
-
-    @property
-    def starting_steps(self):
-        return [step for step in self.steps.values() if step.previous_step_id is None]
-
-    def create_flowchart(self):
-        for starting_step in self.starting_steps:
-            self.recursively_assign_steps(starting_step)
-
-    def recursively_assign_steps(self, step: Step):
-        step.next_steps = [
-            self.steps[next_step_id] for next_step_id in step.next_step_ids
-        ]
-        step.previous_step = (
-            self.steps[step.previous_step_id]
-            if step.previous_step_id is not None
-            else None
-        )
-        for next_step in step.next_steps:
-            self.recursively_assign_steps(next_step)
+    def update_metadata(self, metadata: Dict[str, Any]):
+        """Update the metadata of the version"""
+        self._metadata = metadata
+        self._save()
 
     def add_recording(
         self,
@@ -138,7 +99,7 @@ class Version:
               This prevents summary from being generated during analysis.
             metadata (Optional[Dict[str, Any]]): Metadata to be associated with the recording. Defaults to None.
         """  # noqa E501
-        if self.project.success_criteria and is_successful is not None:
+        if self._project._success_criteria and is_successful is not None:
             warn(
                 "is_successful specified for a project with success criteria set. Overriding automatic success classification.",
                 UserWarning,
@@ -157,7 +118,7 @@ class Version:
         if extension not in [".mp3", ".wav"]:
             raise ValueError(f"Audio path {audio_path} is not an mp3 or wav file")
 
-        output_folder = os.path.join(self.recordings_path, recording_id)
+        output_folder = os.path.join(self._recordings_path, recording_id)
         output_audio_path = os.path.join(output_folder, file_name)
         os.makedirs(output_folder)
         os.system(f"cp {audio_path} {output_audio_path}")
@@ -185,17 +146,15 @@ class Version:
                 user_channel=user_channel,
             )
 
-        return recording
-
-    def save(self):
+    def _save(self):
         d = {
-            "prompt": self.prompt,
-            "metadata": self.metadata,
+            "prompt": self._prompt,
+            "metadata": self._metadata,
         }
-        save_json(d, self.path)
+        save_json(d, self._path)
 
     @classmethod
-    def load(cls, project_id, version_id):
+    def _load(cls, project_id, version_id):
         load_path = get_info_path(project_id, version_id)
         d = load_json(load_path)
         prompt = d["prompt"]
@@ -207,7 +166,66 @@ class Version:
             metadata,
         )
 
-    def get_paths(self):
+    @property
+    def _project(self):
+        if self._cached_project is None:
+            self._cached_project = mixedvoices.load_project(self.project_id)
+        return self._cached_project
+
+    @property
+    def _path(self):
+        return get_info_path(self.project_id, self.version_id)
+
+    @property
+    def _recordings_path(self):
+        return os.path.join(os.path.dirname(self._path), "recordings")
+
+    @property
+    def _steps_path(self):
+        return os.path.join(os.path.dirname(self._path), "steps")
+
+    def _load_recordings(self):
+        self.recordings: Dict[str, Recording] = {}
+        recording_files = os.listdir(self._recordings_path)
+        for recording_file in recording_files:
+            try:
+                filename = os.path.basename(recording_file)
+                recording_id = os.path.splitext(filename)[0]
+                self.recordings[recording_id] = Recording.load(
+                    self.project_id, self.version_id, recording_id
+                )
+            except Exception as e:
+                print(f"Error loading recording {recording_file}: {e}")
+
+    def _load_steps(self):
+        self.steps: Dict[str, Step] = {}
+        step_files = os.listdir(self._steps_path)
+        for step_file in step_files:
+            filename = os.path.basename(step_file)
+            step_id = os.path.splitext(filename)[0]
+            self.steps[step_id] = Step.load(self.project_id, self.version_id, step_id)
+
+    @property
+    def _starting_steps(self):
+        return [step for step in self.steps.values() if step.previous_step_id is None]
+
+    def _create_flowchart(self):
+        for starting_step in self._starting_steps:
+            self._recursively_assign_steps(starting_step)
+
+    def _recursively_assign_steps(self, step: Step):
+        step.next_steps = [
+            self.steps[next_step_id] for next_step_id in step.next_step_ids
+        ]
+        step.previous_step = (
+            self.steps[step.previous_step_id]
+            if step.previous_step_id is not None
+            else None
+        )
+        for next_step in step.next_steps:
+            self._recursively_assign_steps(next_step)
+
+    def _get_paths(self) -> List[str]:
         """
         Returns all possible paths through the conversation flow using DFS.
         Each path is a list of Step objects representing a complete conversation path.
@@ -217,21 +235,10 @@ class Version:
         """
 
         all_paths = []
-        for start_step in self.starting_steps:
+        for start_step in self._starting_steps:
             dfs(start_step, [], all_paths)
 
         return all_paths
 
-    def get_failure_reasons(self):
-        # TODO implement
-        return []
-
-    def get_step_names(self):
+    def _get_step_names(self) -> List[str]:
         return list({step.name for step in self.steps.values()})
-
-    def get_project_step_names(self):
-        # TODO optimize
-        return self.project.get_step_names()
-
-    def get_project_metrics(self):
-        return self.project.list_metrics()

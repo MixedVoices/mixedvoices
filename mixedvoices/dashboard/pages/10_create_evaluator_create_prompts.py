@@ -273,8 +273,8 @@ def create_prompts_page():
         st.switch_page("pages/9_create_evaluator_select_metrics.py")
         return
 
-    if "eval_prompts" not in st.session_state:
-        st.session_state.eval_prompts = []
+    if "test_cases" not in st.session_state:
+        st.session_state.test_cases = []
     if "selected_prompts" not in st.session_state:
         st.session_state.selected_prompts = []
 
@@ -298,12 +298,12 @@ def create_prompts_page():
 
     prompt_data = prompt_creation_dialog(api_client)
     if prompt_data:
-        st.session_state.eval_prompts.extend(prompt_data)
+        st.session_state.test_cases.extend(prompt_data)
         st.session_state.is_generating = False
         st.rerun()
 
     st.subheader("Current Test Cases")
-    display_prompts(st.session_state.eval_prompts, st.session_state.selected_prompts)
+    display_prompts(st.session_state.test_cases, st.session_state.selected_prompts)
 
     if st.button(
         "Create Evaluator", disabled=st.session_state.get("is_generating", False)
@@ -314,18 +314,18 @@ def create_prompts_page():
 
         final_prompts = []
         for idx in st.session_state.selected_prompts:
-            final_prompts.append(st.session_state.eval_prompts[idx]["content"])
+            final_prompts.append(st.session_state.test_cases[idx]["content"])
 
         metric_names = [metric["name"] for metric in st.session_state.selected_metrics]
         response = api_client.post_data(
             f"projects/{st.session_state.current_project}/evals",
-            {"eval_prompts": final_prompts, "metric_names": metric_names},
+            {"test_cases": final_prompts, "metric_names": metric_names},
         )
 
         if response.get("eval_id"):
             st.success("Evaluator created successfully!")
             # Clear session state
-            del st.session_state.eval_prompts
+            del st.session_state.test_cases
             del st.session_state.selected_prompts
             del st.session_state.agent_prompt
             del st.session_state.selected_metrics

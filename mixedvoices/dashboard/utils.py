@@ -129,7 +129,6 @@ def clear_session_state():
         "current_project",
         "current_version",
         "custom_metrics",
-        "eval_prompts",
         "form_key",
         "flow_nodes",
         "is_editing",
@@ -150,6 +149,7 @@ def clear_session_state():
         "show_success_success_criteria",
         "show_prompts",
         "show_metrics",
+        "test_cases",
         "user_demographic_info",
     ]
 

@@ -61,7 +61,7 @@ class MetricUpdate(BaseModel):
 
 
 class EvalCreate(BaseModel):
-    eval_prompts: List[str]
+    test_cases: List[str]
     metric_names: List[str]
 
 
@@ -108,13 +108,13 @@ async def list_versions(project_name: str):
     try:
         project = mixedvoices.load_project(project_name)
         versions_data = []
-        for version_id in project.versions:
+        for version_id in project.version_names:
             version = project.load_version(version_id)
             versions_data.append(
                 {
                     "name": version_id,
-                    "prompt": version.prompt,
-                    "metadata": version.metadata,
+                    "prompt": version._prompt,
+                    "metadata": version._metadata,
                     "recording_count": len(version.recordings),
                 }
             )
@@ -137,8 +137,8 @@ async def get_version(project_name: str, version_name: str):
         version = project.load_version(version_name)
         return {
             "name": version_name,
-            "prompt": version.prompt,
-            "metadata": version.metadata,
+            "prompt": version._prompt,
+            "metadata": version._metadata,
             "recording_count": len(version.recordings),
         }
     except ValueError as e:
@@ -170,7 +170,7 @@ async def list_metrics(project_name: str):
     """List all metrics for a project"""
     try:
         project = mixedvoices.load_project(project_name)
-        metrics = project.list_metrics()
+        metrics = project.metrics
         metrics = [metric.to_dict() for metric in metrics]
         return {"metrics": metrics}
     except ValueError as e:
@@ -258,7 +258,7 @@ async def get_success_criteria(project_name: str):
     """Get the success criteria for a version"""
     try:
         project = mixedvoices.load_project(project_name)
-        return {"success_criteria": project.success_criteria}
+        return {"success_criteria": project._success_criteria}
     except Exception as e:
         logger.error(
             f"Error getting success criteria for project '{project_name}': {str(e)}",
@@ -412,16 +412,15 @@ async def add_recording(
             with open(temp_path, "wb") as buffer:
                 shutil.copyfileobj(file.file, buffer)
 
-            recording = version.add_recording(
+            version.add_recording(
                 str(temp_path),
                 blocking=False,
                 is_successful=is_successful,
                 user_channel=user_channel,
             )
-            logger.info(f"Recording is being processed: {recording.recording_id}")
+            logger.info("Recording is being processed:")
             return {
                 "message": "Recording is being processed",
-                "recording_id": recording.recording_id,
             }
     except ValueError as e:
         logger.error(f"Invalid recording data: {str(e)}")
@@ -524,7 +523,7 @@ async def handle_webhook(
                             detail="Failed to download audio file",
                         )
 
-            recording = version.add_recording(
+            version.add_recording(
                 str(temp_path),
                 blocking=True,
                 is_successful=is_successful,
@@ -532,11 +531,10 @@ async def handle_webhook(
                 summary=summary,
                 transcript=transcript,
             )
-            logger.info(f"Recording processed successfully: {recording.recording_id}")
+            logger.info("Recording processed successfully")
 
             return {
                 "message": "Webhook processed and recording added successfully",
-                "recording_id": recording.recording_id,
             }
 
         finally:
@@ -556,14 +554,14 @@ async def handle_webhook(
 async def list_evals(project_name: str):
     try:
         project = mixedvoices.load_project(project_name)
-        evals = project.evals
+        evals = project._evals
         eval_data = [
             {
                 "eval_id": eval_id,
-                "created_at": cur_eval.created_at,
-                "num_prompts": len(cur_eval.eval_prompts),
-                "num_eval_runs": len(cur_eval.eval_runs),
-                "metric_names": cur_eval.metric_names,
+                "created_at": cur_eval._created_at,
+                "num_prompts": len(cur_eval._test_cases),
+                "num_eval_runs": len(cur_eval._eval_runs),
+                "metric_names": cur_eval._metric_names,
             }
             for eval_id, cur_eval in evals.items()
         ]
@@ -581,7 +579,7 @@ async def create_eval(project_name: str, eval_data: EvalCreate):
     try:
         project = mixedvoices.load_project(project_name)
         current_eval = project.create_evaluator(
-            eval_data.eval_prompts, eval_data.metric_names
+            eval_data.test_cases, eval_data.metric_names
         )
         return {"eval_id": current_eval.eval_id}
     except ValueError as e:
@@ -596,11 +594,11 @@ async def create_eval(project_name: str, eval_data: EvalCreate):
 async def get_eval_details(project_name: str, eval_id: str):
     try:
         project = mixedvoices.load_project(project_name)
-        current_eval = project.evals.get(eval_id, None)
+        current_eval = project._evals.get(eval_id, None)
         if current_eval is None:
             raise ValueError(f"Eval {eval_id} not found in project {project_name}")
-        prompts = current_eval.eval_prompts
-        eval_runs = current_eval.eval_runs
+        prompts = current_eval._test_cases
+        eval_runs = current_eval._eval_runs
 
         eval_run_data = [
             {
@@ -612,7 +610,7 @@ async def get_eval_details(project_name: str, eval_id: str):
         ]
 
         metrics_data = [
-            {"name": metric_name} for metric_name in current_eval.metric_names
+            {"name": metric_name} for metric_name in current_eval._metric_names
         ]
         return {
             "metrics": metrics_data,
@@ -633,15 +631,15 @@ async def get_eval_details(project_name: str, eval_id: str):
 async def get_version_eval_details(project_name: str, eval_id: str, version_name: str):
     try:
         project = mixedvoices.load_project(project_name)
-        if version_name not in project.versions:
+        if version_name not in project.version_names:
             raise ValueError(
                 f"Version {version_name} not found in project {project_name}"
             )
-        current_eval = project.evals.get(eval_id, None)
+        current_eval = project._evals.get(eval_id, None)
         if current_eval is None:
             raise ValueError(f"Eval {eval_id} not found in project {project_name}")
-        prompts = current_eval.eval_prompts
-        eval_runs = current_eval.eval_runs
+        prompts = current_eval._test_cases
+        eval_runs = current_eval._eval_runs
 
         eval_run_data = [
             {
@@ -653,7 +651,7 @@ async def get_version_eval_details(project_name: str, eval_id: str, version_name
             if eval_run.version_id == version_name
         ]
         metrics_data = [
-            {"name": metric_name} for metric_name in current_eval.metric_names
+            {"name": metric_name} for metric_name in current_eval._metric_names
         ]
 
         return {
@@ -675,15 +673,15 @@ async def get_version_eval_details(project_name: str, eval_id: str, version_name
 async def get_eval_run_details(project_name: str, eval_id: str, run_id: str):
     try:
         project = mixedvoices.load_project(project_name)
-        current_eval = project.evals.get(eval_id, None)
+        current_eval = project._evals.get(eval_id, None)
         if current_eval is None:
             raise ValueError(f"Eval {eval_id} not found in project {project_name}")
-        eval_run = current_eval.eval_runs.get(run_id, None)
+        eval_run = current_eval._eval_runs.get(run_id, None)
 
         agents = eval_run.eval_agents
         agent_data = [
             {
-                "prompt": agent.eval_prompt,
+                "prompt": agent.test_case,
                 "started": agent.started,
                 "ended": agent.ended,
                 "transcript": agent.transcript,
@@ -717,9 +715,9 @@ async def generate_prompt(
 ):
     try:
         temp_dir = None
-        eval_prompt_generator = TestCaseGenerator(agent_prompt, user_demographic_info)
+        test_case_generator = TestCaseGenerator(agent_prompt, user_demographic_info)
         if transcript:
-            eval_prompt_generator.add_from_transcripts([transcript])
+            test_case_generator.add_from_transcripts([transcript])
         elif file:
             temp_dir = tempfile.TemporaryDirectory()
             temp_dir_str = temp_dir.name
@@ -727,12 +725,12 @@ async def generate_prompt(
             with open(temp_path, "wb") as buffer:
                 shutil.copyfileobj(file.file, buffer)
 
-            eval_prompt_generator.add_from_recordings([temp_path], user_channel)
+            test_case_generator.add_from_recordings([temp_path], user_channel)
         elif description:
-            eval_prompt_generator.add_from_descriptions([description])
+            test_case_generator.add_from_descriptions([description])
         elif edge_case_count:
-            eval_prompt_generator.add_edge_cases(edge_case_count)
-        prompts = eval_prompt_generator.generate()
+            test_case_generator.add_edge_cases(edge_case_count)
+        prompts = test_case_generator.generate()
         return {"prompts": prompts}
     except Exception as e:
         logger.error(f"Error generating prompt: {str(e)}", exc_info=True)

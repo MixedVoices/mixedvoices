@@ -34,7 +34,7 @@ class EvalRun:
         eval_id: str,
         prompt: str,
         metric_names: List[str],
-        eval_prompts: List[str],
+        test_cases: List[str],
         created_at: Optional[int] = None,
         eval_agents: Optional[List[EvalAgent]] = None,
     ):
@@ -45,7 +45,7 @@ class EvalRun:
 
         self.prompt = prompt
         self.metric_names = metric_names
-        self.eval_prompts = eval_prompts
+        self.test_cases = test_cases
         self.created_at = created_at or int(time.time())
         self.eval_agents = eval_agents or [
             EvalAgent(
@@ -55,10 +55,10 @@ class EvalRun:
                 eval_id,
                 run_id,
                 prompt,
-                eval_prompt,
+                test_case,
                 metric_names,
             )
-            for eval_prompt in self.eval_prompts
+            for test_case in self.test_cases
         ]
         self.save()
 
@@ -73,7 +73,7 @@ class EvalRun:
         d = {
             "prompt": self.prompt,
             "metric_names": self.metric_names,
-            "eval_prompts": self.eval_prompts,
+            "test_cases": self.test_cases,
             "created_at": self.created_at,
             "eval_agent_ids": [a.agent_id for a in self.eval_agents],
         }

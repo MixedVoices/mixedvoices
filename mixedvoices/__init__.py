@@ -4,7 +4,7 @@ import sys
 from mixedvoices import constants, metrics, models
 from mixedvoices.core.project import create_project, load_project
 from mixedvoices.evaluation.agents.base_agent import BaseAgent
-from mixedvoices.evaluation.eval_prompt_generator import TestCaseGenerator
+from mixedvoices.evaluation.test_case_generator import TestCaseGenerator
 
 os.makedirs(constants.PROJECTS_FOLDER, exist_ok=True)
 os.makedirs(constants.TASKS_FOLDER, exist_ok=True)

@@ -46,7 +46,7 @@ class EvalAgent:
         eval_id,
         run_id,
         prompt,
-        eval_prompt,
+        test_case,
         metric_names,
         history=None,
         started=False,
@@ -64,7 +64,7 @@ class EvalAgent:
         self.run_id = run_id
 
         self.prompt = prompt
-        self.eval_prompt = eval_prompt
+        self.test_case = test_case
         self.metric_names = metric_names
         self.history = history or []
         self.started = started
@@ -79,7 +79,10 @@ class EvalAgent:
     @property
     def metrics_and_success_criteria(self) -> Tuple[List[Metric], Optional[str]]:
         project = mv.load_project(self.project_id)
-        return project.get_metrics_by_names(self.metric_names), project.success_criteria
+        return (
+            project.get_metrics_by_names(self.metric_names),
+            project._success_criteria,
+        )
 
     def respond(self, input):
         if not self.started:
@@ -142,7 +145,7 @@ class EvalAgent:
             "content": f"You are a testing agent making a voice call. "
             f"\nHave a conversation. Take a single turn at a time."
             f"\nDon't make sounds or any other subtext, only say words in conversation"
-            f"\nThis is your persona:{self.eval_prompt}"
+            f"\nThis is your persona:{self.test_case}"
             "\nWhen conversation is complete, with final response return HANGUP to end."
             "\nEg: Have a good day. HANGUP"
             f"\nDate/time: {datetime_str}."
@@ -159,7 +162,7 @@ class EvalAgent:
         os.makedirs(os.path.dirname(self.path), exist_ok=True)
         d = {
             "prompt": self.prompt,
-            "eval_prompt": self.eval_prompt,
+            "test_case": self.test_case,
             "metric_names": self.metric_names,
             "history": self.history,
             "started": self.started,
