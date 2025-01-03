@@ -8,6 +8,38 @@ class MetricsManager:
         self.api_client = api_client
         self.project_id = project_id
 
+    def _get_all_metrics(self) -> List[Dict]:
+        """Helper method to get all available metrics"""
+        all_metrics = []
+        if self.project_id:
+            project_metrics = self.api_client.fetch_data(
+                f"projects/{self.project_id}/metrics"
+            ).get("metrics", [])
+            all_metrics.extend((m, "project") for m in project_metrics)
+        else:
+            default_metrics = self.api_client.fetch_data("default_metrics").get(
+                "metrics", []
+            )
+            all_metrics.extend((m, "default") for m in default_metrics)
+            if "custom_metrics" in st.session_state:
+                all_metrics.extend(
+                    (m, "custom") for m in st.session_state.custom_metrics
+                )
+        return all_metrics
+
+    def _handle_select_all_change(self):
+        """Handle select all checkbox state change"""
+        all_metrics = self._get_all_metrics()
+        for metric, prefix in all_metrics:
+            st.session_state[f"{prefix}_{metric['name']}"] = (
+                st.session_state.select_all_metrics
+            )
+
+    def _handle_individual_change(self, checkbox_key: str):
+        """Handle individual checkbox state change"""
+        if not st.session_state[checkbox_key]:
+            st.session_state.select_all_metrics = False
+
     def _render_metric_row(
         self,
         metric: Dict,
@@ -19,11 +51,19 @@ class MetricsManager:
 
         if is_selectable:
             cols = st.columns([1, 30])
+            checkbox_key = f"{prefix}_{metric['name']}"
+
+            # Initialize checkbox state if not present
+            if checkbox_key not in st.session_state:
+                st.session_state[checkbox_key] = False
+
             with cols[0]:
                 if st.checkbox(
                     "Selection checkbox",
-                    key=f"{prefix}_{metric['name']}",
+                    key=checkbox_key,
                     label_visibility="collapsed",
+                    on_change=self._handle_individual_change,
+                    args=(checkbox_key,),
                 ):
                     selected_metric = metric
         else:
@@ -196,6 +236,17 @@ class MetricsManager:
                         st.session_state.custom_metrics.append(new_metric)
                         st.rerun()
 
+        # Add Select All checkbox if in selection mode
+        if selection_mode:
+            # Initialize select_all state if not present
+            if "select_all_metrics" not in st.session_state:
+                st.session_state.select_all_metrics = False
+
+            st.checkbox(
+                "Select All Metrics",
+                key="select_all_metrics",
+                on_change=self._handle_select_all_change,
+            )
 
         # Show metrics based on mode and project_id
         if self.project_id:
@@ -214,7 +265,6 @@ class MetricsManager:
                 if selected:
                     selected_metrics.append(selected)
         else:
-            # Memory mode: show default metrics and custom metrics
             default_metrics = self.api_client.fetch_data("default_metrics").get(
                 "metrics", []
             )
@@ -238,6 +288,16 @@ class MetricsManager:
                     )
                     if selected:
                         selected_metrics.append(selected)
+
+        # Check for fully selected state and update select_all accordingly
+        if selection_mode:
+            all_metrics = self._get_all_metrics()
+            all_selected = all(
+                st.session_state.get(f"{prefix}_{metric['name']}", False)
+                for metric, prefix in all_metrics
+            )
+            if all_selected and not st.session_state.select_all_metrics:
+                st.session_state.select_all_metrics = True
 
         # Validate no duplicate metric names if in selection mode
         if selection_mode:
