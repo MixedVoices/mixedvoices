@@ -2,8 +2,8 @@ import streamlit as st
 
 from mixedvoices.dashboard.api.client import APIClient
 from mixedvoices.dashboard.api.endpoints import (
+    get_project_success_criteria_endpoint,
     get_version_recordings_endpoint,
-    get_version_success_criteria_endpoint,
 )
 
 
@@ -13,13 +13,11 @@ class UploadForm:
         self.project_id = project_id
         self.version = version
         self.success_criteria = self.api_client.fetch_data(
-            get_version_success_criteria_endpoint(self.project_id, self.version)
+            get_project_success_criteria_endpoint(self.project_id)
         )["success_criteria"]
 
     def render(self) -> None:
         """Render upload form"""
-        st.subheader("Upload Recording")
-
         # Initialize states if not exists
         if "is_uploading" not in st.session_state:
             st.session_state.is_uploading = False
@@ -46,7 +44,7 @@ class UploadForm:
             accept_multiple_files=False,
         )
         call_status_str = (
-            "Call Status (will override auto success criteria if set):"
+            "Call Status (will override auto success criteria):"
             if self.success_criteria
             else "Call Status:"
         )

@@ -13,7 +13,7 @@ def check_transcript(transcript):
 
 
 @needs_openai_key
-@patch("mixedvoices.constants.TRANSCRIPTION_PROVIDER", "openai")
+@patch("mixedvoices.models.TRANSCRIPTION_MODEL", "openai/whisper-1")
 def test_openai_transcriber(tmp_path):
     with pytest.raises(ValueError):
         get_transcript_and_duration("tests/assets/call2.wav", tmp_path, "top")
@@ -29,7 +29,7 @@ def test_openai_transcriber(tmp_path):
 
 
 @needs_deepgram_key
-@patch("mixedvoices.constants.TRANSCRIPTION_PROVIDER", "deepgram")
+@patch("mixedvoices.models.TRANSCRIPTION_MODEL", "deepgram/nova-2")
 def test_deepgram_transcriber(tmp_path):
     transcript, _, _, duration = get_transcript_and_duration(
         "tests/assets/call2.wav", tmp_path

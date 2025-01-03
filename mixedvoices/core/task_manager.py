@@ -66,7 +66,7 @@ class TaskManager:
         self.monitor_thread = None
         self.is_processing = False
 
-        self.tasks_root = os.path.join(constants.ALL_PROJECTS_FOLDER, "_tasks")
+        self.tasks_root = os.path.join(constants.PROJECTS_FOLDER, "_tasks")
         self.create_folders()
 
         self._load_pending_tasks()
@@ -159,7 +159,7 @@ class TaskManager:
                 combined_transcript=recording_data["combined_transcript"],
             )
 
-            version = Version.load(
+            version = Version._load(
                 project_id=version_data["project_id"],
                 version_id=version_data["version_id"],
             )
@@ -318,3 +318,6 @@ class TaskManager:
     def get_pending_task_count(self) -> int:
         """Get the number of pending and in-progress tasks."""
         return self.task_queue.unfinished_tasks
+
+
+TASK_MANAGER = TaskManager()

@@ -7,7 +7,7 @@ client = TestClient(app)
 # TODO: Add test for vapi
 
 
-def test_create_and_list_project(temp_project_folder):
+def test_create_and_list_project(mock_base_folder):
     # Create project
     response = client.post("/api/projects", params={"name": "test_project"})
     assert response.status_code == 200
@@ -27,7 +27,7 @@ def test_create_and_list_project(temp_project_folder):
     assert response.json() == {"projects": ["test_project"]}
 
 
-def test_create_and_list_version(temp_project_folder):
+def test_create_and_list_version(mock_base_folder):
     # Create project first
     client.post("/api/projects", params={"name": "test_project"})
 
@@ -62,7 +62,7 @@ def test_create_and_list_version(temp_project_folder):
     assert versions[0]["recording_count"] == 0
 
 
-def test_create_and_list_recording(temp_project_folder, mock_process_recording):
+def test_create_and_list_recording(mock_base_folder, mock_process_recording):
     # Create project and version first
     client.post("/api/projects", params={"name": "test_project"})
     version_data = {"name": "v1", "prompt": "Testing prompt"}

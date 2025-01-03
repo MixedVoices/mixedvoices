@@ -9,7 +9,7 @@ from mixedvoices.dashboard.config import DASHBOARD_PORT
 
 def run_dashboard(port: int = DASHBOARD_PORT):
     """Run the Streamlit dashboard"""
-    dashboard_path = Path(__file__).parent / "Home.py"
+    dashboard_path = Path(__file__).parent / "app.py"
     sys.argv = [
         "streamlit",
         "run",
