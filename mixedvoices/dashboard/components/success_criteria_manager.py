@@ -33,7 +33,7 @@ class SuccessCriteriaManager:
 
     def render(self) -> None:
         """Renders the success criteria section"""
-        st.markdown("#### Current Success Criteria")
+        st.markdown("#### Current Value")
 
         if "is_editing_success_criteria" not in st.session_state:
             st.session_state.is_editing_success_criteria = False

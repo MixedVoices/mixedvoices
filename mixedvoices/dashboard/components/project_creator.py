@@ -10,20 +10,20 @@ def render_project_creator(api_client):
         st.rerun()
     st.header("Create New Project")
 
-    project_name = st.text_input("Project Name")
+    st.markdown("### Project Name")
+    project_name = st.text_input("Project Name", label_visibility="collapsed")
 
     st.divider()
 
-    st.subheader("Success Criteria")
-    success_criteria = st.text_area(
-        "Enter success criteria",
+    st.markdown(
+        "### Success Criteria",
         help="This will be used to automatically determine if a call is successful or not.",
-        height=200,
     )
+    success_criteria = st.text_area("Enter success criteria", height=200)
     st.divider()
 
-    st.subheader(
-        "Select Metrics",
+    st.markdown(
+        "### Select Metrics",
         help="These will be analyzed for all calls added. Can be added/updated later if needed.",
     )
 

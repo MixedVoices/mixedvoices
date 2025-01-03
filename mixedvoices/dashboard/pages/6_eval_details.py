@@ -82,7 +82,7 @@ def eval_details_page():
         st.session_state.show_prompts = False
 
     # Evaluator Runs section
-    st.subheader("Evaluator Runs")
+    st.markdown(f"#### Evaluator Runs")
 
     eval_runs = eval_details.get("eval_runs", [])
     if not eval_runs:
