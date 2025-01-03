@@ -130,6 +130,30 @@ async def list_versions(project_name: str):
         raise HTTPException(status_code=500, detail=str(e)) from e
 
 
+@app.get("/api/projects/{project_name}/versions/{version_name}")
+async def get_version(project_name: str, version_name: str):
+    try:
+        project = mixedvoices.load_project(project_name)
+        version = project.load_version(version_name)
+        return {
+            "name": version_name,
+            "prompt": version.prompt,
+            "metadata": version.metadata,
+            "recording_count": len(version.recordings),
+        }
+    except ValueError as e:
+        logger.error(
+            f"Project '{project_name}' or version '{version_name}' not found: {str(e)}"
+        )
+        raise HTTPException(status_code=404, detail=str(e)) from e
+    except Exception as e:
+        logger.error(
+            f"Error getting version '{version_name}' for project '{project_name}': {str(e)}",
+            exc_info=True,
+        )
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
 @app.get("/api/default_metrics")
 async def list_default_metrics():
     try:

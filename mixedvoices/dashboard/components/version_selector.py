@@ -46,6 +46,7 @@ def render_version_selector(
         version_options,
         index=current_index,
         placeholder="Select a version",
+        label_visibility="collapsed",
     )
 
     # Handle "All Versions" selection
