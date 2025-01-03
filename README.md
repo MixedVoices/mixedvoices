@@ -29,17 +29,21 @@ pip install mixedvoices
 ### Using Python API to analyze recordings
 ```python
 import mixedvoices as mv
-project = mv.create_project("receptionist") # Create a new project
+from mixedvoices.metrics import Metric, empathy
+
+custom_metric = Metric(name="...", definition="...", scoring="binary")
+my_metrics = [empathy, custom_metric]
+project = mv.create_project("receptionist", metrics=my_metrics) # Create a new project
 project = mv.load_project("receptionist") # or load existing project
 
-version = project.create_version("v1", prompt="You are a ...") # Create a version
-version = project.load_version("v1") # or load existing version
+v1 = project.create_version("v1", prompt="You are a ...") # Create a version
+v1 = project.load_version("v1") # or load existing version
 
 # Analyze call, this is blocking, takes a few seconds
-version.add_recording("path/to/call.wav") 
+v1.add_recording("path/to/call.wav") 
 
 # non blocking mode in a separate thread, instantaneous
-version.add_recording("path/to/call.wav", blocking=False) 
+v1.add_recording("path/to/call.wav", blocking=False) 
 
 ```
 
@@ -61,26 +65,34 @@ class ReceptionAgent(mv.BaseAgent):
         has_conversation_ended = check_conversation_ended(response)
         return response, has_conversation_ended
 
-
 project = mv.load_project("receptionist")
-version = project.load_version("v1")
-evaluator = version.create_evaluator()  # can specify which metrics to measure
-evaluator.run(ReceptionAgent, agent_starts=False, model="gpt-4-turbo", temperature=0.9)
+v1 = project.load_version("v1")
+
+# Generate test cases
+test_generator = mv.TestCaseGenerator(v1.prompt)
+test_generator.add_from_descriptions(["..."]).add_edge_cases(5).add_from_recordings(["call1.wav"]
+test_cases = test_generator.generate()
+
+evaluator = project.create_evaluator(test_cases)
+evaluator.run(v1, ReceptionAgent, agent_starts=False, model="gpt-4-turbo", temperature=0.9)
 ```
 
 ### Evaluate Bland AI Agent
 ```python
-import mixedvoices as mv
-project = mv.load_project("receptionist")
-version = project.load_version("v1")
-evaluator = version.create_evaluator()
-evaluator.run(mv.BlandAgent, agent_starts=True, auth_token="", pathway_id="", start_node_id="") 
+# same as above, except instead of defining custom agent, can directly use mv.BlandAgent
+evaluator.run(v1, mv.BlandAgent, agent_starts=True, auth_token="", pathway_id="", start_node_id="") 
 ```
 
 ## Using Dashboard
 Launch the interactive dashboard from the Command Line:
 ```bash
 mixedvoices dashboard
+```
+
+### Choosing Models
+You can configure the models being used for different tasks from the Command Line
+```bash
+mixedvoices config
 ```
 
 ## Development Setup
