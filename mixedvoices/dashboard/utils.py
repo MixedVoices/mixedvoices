@@ -139,7 +139,6 @@ def clear_session_state():
         "metadata_pairs",
         "new_form_key",
         "pending_generation",
-        "prompt_source",
         "select_all_metrics",
         "selected_eval_id",
         "selected_node_id",

@@ -20,8 +20,6 @@ def create_agent_prompt_page():
         st.session_state.agent_prompt = ""
     if "user_demographic_info" not in st.session_state:
         st.session_state.user_demographic_info = ""
-    if "prompt_source" not in st.session_state:
-        st.session_state.prompt_source = "version"  # Default tab
 
     st.title("Create Evaluator - Step 1")
     st.info(
@@ -30,40 +28,25 @@ def create_agent_prompt_page():
 
     st.subheader("Agent Prompt")
     # Create tabs for prompt selection
-    tab_version, tab_custom = st.tabs(["Select from Version", "Custom Prompt"])
-
-    with tab_version:
-        selected_version = render_version_selector(
-            api_client, st.session_state.current_project, optional=False
+    selected_version = render_version_selector(
+        api_client, st.session_state.current_project, optional=False
+    )
+    if selected_version:
+        version_data = api_client.fetch_data(
+            f"projects/{st.session_state.current_project}/versions/{selected_version}"
         )
-        if selected_version:
-            version_data = api_client.fetch_data(
-                f"projects/{st.session_state.current_project}/versions/{selected_version}"
-            )
-            st.session_state.agent_prompt = version_data.get("prompt", "")
-            st.text_area(
-                "Version Prompt (Read-only)",
-                value=st.session_state.agent_prompt,
-                height=300,
-                disabled=True,
-                label_visibility="collapsed",
-            )
+        st.session_state.agent_prompt = version_data.get("prompt", "")
+    else:
+        st.session_state.agent_prompt = ""
+    st.text_area(
+        "Version Prompt (Read-only)",
+        value=st.session_state.agent_prompt,
+        height=300,
+        disabled=True,
+        label_visibility="collapsed",
+    )
 
-    with tab_custom:
-        st.session_state.agent_prompt = st.text_area(
-            "Enter agent prompt",
-            value=(
-                ""
-                if st.session_state.prompt_source != "custom"
-                else st.session_state.agent_prompt
-            ),
-            height=300,
-            label_visibility="collapsed",
-        )
-        if st.session_state.agent_prompt:
-            st.session_state.prompt_source = "custom"
-
-    st.subheader("User Demographic Info (Optional)")
+    st.subheader("User Demographic (Optional)")
     st.info("💡 If provided, all test cases created will belong to this demographic")
     st.session_state.user_demographic_info = st.text_area(
         "Enter user demographic info (Optional)",
