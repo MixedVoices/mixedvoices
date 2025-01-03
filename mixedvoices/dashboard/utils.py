@@ -118,3 +118,33 @@ def apply_nav_styles():
         "none" if has_project else "block",  # tooltip display
     )
     st.markdown(nav_style, unsafe_allow_html=True)
+
+
+def clear_session_state():
+    keys = [
+        "agent_prompt",
+        "current_project",
+        "current_version",
+        "custom_metrics",
+        "eval_prompts",
+        "form_key",
+        "flow_nodes",
+        "is_editing",
+        "is_generating",
+        "is_uploading",
+        "metadata_pairs",
+        "new_form_key",
+        "pending_generation",
+        "selected_eval_id",
+        "selected_node_id",
+        "selected_path",
+        "selected_metrics",
+        "selected_prompts",
+        "show_create_project",
+        "show_success",
+        "show_prompts",
+        "show_metrics",
+    ]
+
+    for key in keys:
+        st.session_state.pop(key, None)

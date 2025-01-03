@@ -1,5 +1,7 @@
 import streamlit as st
 
+from mixedvoices.dashboard.utils import clear_session_state
+
 
 class Sidebar:
     def __init__(self, api_client):
@@ -55,10 +57,11 @@ class Sidebar:
         )
 
         if selected_project != st.session_state.current_project:
+            clear_session_state()
             st.session_state.current_project = selected_project
             st.session_state.current_version = None
-            # Redirect to project home on selection
             if selected_project:
-                st.session_state.show_create_project = False
                 st.switch_page("pages/0_versions.py")
+            else:
+                st.switch_page("app.py")
             st.rerun()
