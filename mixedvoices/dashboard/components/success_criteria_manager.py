@@ -23,7 +23,7 @@ class SuccessCriteriaManager:
                     {"success_criteria": new_criteria},
                 )
                 if response.get("message"):
-                    st.session_state.success_message = "Success criteria updated!"
+                    st.session_state.show_success_success_criteria = True
                     st.session_state.is_editing_success_criteria = False
                     st.rerun()
         with cols[1]:
@@ -39,9 +39,9 @@ class SuccessCriteriaManager:
             st.session_state.is_editing_success_criteria = False
 
         # Show success message if exists and clear it
-        if "success_message" in st.session_state:
-            st.success(st.session_state.success_message)
-            del st.session_state.success_message
+        if st.session_state.get("show_success_success_criteria", False):
+            st.success("Success criteria updated!")
+            st.session_state.show_success_success_criteria = False
 
         success_criteria = self.api_client.fetch_data(
             f"projects/{self.project_id}/success_criteria"

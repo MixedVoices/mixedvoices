@@ -133,6 +133,7 @@ def clear_session_state():
         "form_key",
         "flow_nodes",
         "is_editing",
+        "is_editing_success_criteria",
         "is_generating",
         "is_uploading",
         "metadata_pairs",
@@ -145,6 +146,7 @@ def clear_session_state():
         "selected_prompts",
         "show_create_project",
         "show_success",
+        "show_success_success_criteria",
         "show_prompts",
         "show_metrics",
     ]

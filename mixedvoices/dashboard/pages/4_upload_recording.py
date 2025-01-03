@@ -4,6 +4,7 @@ from mixedvoices.dashboard.api.client import APIClient
 from mixedvoices.dashboard.components.sidebar import Sidebar
 from mixedvoices.dashboard.components.upload_form import UploadForm
 from mixedvoices.dashboard.components.version_selector import render_version_selector
+from mixedvoices.dashboard.utils import clear_selected_node_path
 
 
 def upload_recording_page():
@@ -12,6 +13,7 @@ def upload_recording_page():
         return
 
     api_client = APIClient()
+    clear_selected_node_path()
     sidebar = Sidebar(api_client)
     sidebar.render()
 
