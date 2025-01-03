@@ -39,11 +39,10 @@ def eval_details_page():
 
     # Page header and navigation
     st.title("Evaluator Details")
+    st.markdown(f"#### Eval ID: {st.session_state.selected_eval_id}")
     if st.button("Back to Evaluators", icon=":material/arrow_back:"):
         st.session_state.selected_eval_id = None
         st.switch_page("pages/5_evals_list.py")
-
-    st.markdown(f"#### Eval ID: {st.session_state.selected_eval_id}")
 
     selected_version = render_version_selector(
         api_client, st.session_state.current_project, optional=True, show_all=True
@@ -82,7 +81,7 @@ def eval_details_page():
         st.session_state.show_prompts = False
 
     # Evaluator Runs section
-    st.markdown(f"#### Evaluator Runs")
+    st.markdown("#### Evaluator Runs")
 
     eval_runs = eval_details.get("eval_runs", [])
     if not eval_runs:

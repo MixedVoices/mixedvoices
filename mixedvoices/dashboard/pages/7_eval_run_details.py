@@ -58,6 +58,10 @@ def eval_run_details_page():
     version = run_details.get("version", "N/A")
     st.title(f"Evaluator Run for version: {version}")
 
+    st.markdown(
+        f"#### Eval ID: {st.session_state.selected_eval_id} | Run ID: {st.session_state.selected_run_id}"
+    )
+
     # Back button
     if st.button("Back to Evaluator Details", icon=":material/arrow_back:"):
         st.session_state.selected_run_id = None
@@ -66,10 +70,6 @@ def eval_run_details_page():
     if not run_details or not run_details.get("agents"):
         st.error("Failed to load evaluation run details")
         return
-
-    st.markdown(
-        f"#### Eval ID: {st.session_state.selected_eval_id} | Run ID: {st.session_state.selected_run_id}"
-    )
 
     # Display agents in a table-like format
     for idx, agent in enumerate(run_details["agents"], 1):
