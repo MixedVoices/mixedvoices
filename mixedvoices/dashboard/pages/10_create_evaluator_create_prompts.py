@@ -8,11 +8,15 @@ from mixedvoices.dashboard.utils import clear_selected_node_path
 
 
 def generate_prompt(
-    api_client, prompt_data: dict, agent_prompt: str, file=None
+    api_client,
+    prompt_data: dict,
+    agent_prompt: str,
+    user_demographic_info: str = None,
+    file=None,
 ) -> List[str]:
     generation_data = {
         "agent_prompt": agent_prompt,
-        "user_demographic_info": None,
+        "user_demographic_info": user_demographic_info,
         "transcript": None,
         "user_channel": None,
         "description": None,
@@ -65,6 +69,7 @@ def prompt_creation_dialog(api_client):
                     api_client,
                     generation_data["data"],
                     st.session_state.agent_prompt,
+                    st.session_state.user_demographic_info,
                     file=generation_data.get("file"),
                 )
                 # Clear generation state and show success

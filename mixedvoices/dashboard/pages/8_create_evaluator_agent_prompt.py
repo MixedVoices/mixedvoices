@@ -18,11 +18,20 @@ def create_agent_prompt_page():
     if "agent_prompt" not in st.session_state:
         st.session_state.agent_prompt = ""
 
+    if "user_demographic_info" not in st.session_state:
+        st.session_state.user_demographic_info = ""
+
     st.title("Create Evaluator - Step 1")
     st.subheader("Agent Prompt")
 
     st.session_state.agent_prompt = st.text_area(
-        "Enter agent prompt", st.session_state.agent_prompt, height=500
+        "Enter agent prompt", st.session_state.agent_prompt, height=300
+    )
+
+    st.session_state.user_demographic_info = st.text_area(
+        "Enter user demographic info (Optional)",
+        st.session_state.user_demographic_info,
+        height=200
     )
 
     if st.button("Next"):

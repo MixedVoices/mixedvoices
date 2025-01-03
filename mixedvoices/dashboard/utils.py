@@ -149,6 +149,7 @@ def clear_session_state():
         "show_success_success_criteria",
         "show_prompts",
         "show_metrics",
+        "user_demographic_info",
     ]
 
     for key in keys:
