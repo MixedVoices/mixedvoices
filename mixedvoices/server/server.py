@@ -688,6 +688,8 @@ async def get_eval_run_details(project_name: str, eval_id: str, run_id: str):
                 "ended": agent.ended,
                 "transcript": agent.transcript,
                 "scores": agent.scores,
+                "is_successful": agent.is_successful,
+                "success_explanation": agent.success_explanation,
                 "error": agent.error,
             }
             for agent in agents

@@ -74,11 +74,11 @@ def eval_run_details_page():
     # Display agents in a table-like format
     for idx, agent in enumerate(run_details["agents"], 1):
         with st.expander(f"Test {idx}", expanded=True):
-            preview_cols = st.columns([3, 2])
+            preview_cols = st.columns([3, 2, 2])
 
             with preview_cols[0]:
                 if agent.get("prompt"):
-                    st.markdown("**Prompt:**")
+                    st.markdown("**Prompt**")
                     st.text_area(
                         "Prompt",
                         agent["prompt"],
@@ -88,8 +88,20 @@ def eval_run_details_page():
                     )
 
             with preview_cols[1]:
+                is_successful = agent.get("is_successful")
+                success_explanation = agent.get("success_explanation")
+                st.markdown("**Success**")
+                if is_successful is None:
+                    st.write("N/A")
+                    if success_explanation:
+                        st.markdown("**Explanation:**")
+                        st.write(success_explanation)
+                else:
+                    st.write("✅" if is_successful else "❌")
+
+            with preview_cols[2]:
                 if agent.get("scores"):
-                    st.markdown("**LLM Metrics:**")
+                    st.markdown("**LLM Metrics**")
                     llm_metrics_dict = agent["scores"]
                     display_llm_metrics_preview(llm_metrics_dict)
 

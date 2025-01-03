@@ -1,7 +1,7 @@
 import os
 import random
 from datetime import datetime
-from typing import TYPE_CHECKING, List, Type
+from typing import TYPE_CHECKING, List, Optional, Tuple, Type
 
 import mixedvoices as mv
 import mixedvoices.constants as constants
@@ -9,6 +9,7 @@ from mixedvoices import models
 from mixedvoices.evaluation.utils import history_to_transcript
 from mixedvoices.metrics.metric import Metric
 from mixedvoices.processors.llm_metrics import generate_scores
+from mixedvoices.processors.success import get_success
 from mixedvoices.utils import get_openai_client, load_json, save_json
 
 if TYPE_CHECKING:
@@ -52,6 +53,8 @@ class EvalAgent:
         ended=False,
         transcript=None,
         scores=None,
+        is_successful=None,
+        success_explanation=None,
         error=None,
     ):
         self.agent_id = agent_id
@@ -68,13 +71,15 @@ class EvalAgent:
         self.ended = ended
         self.transcript = transcript or None
         self.scores = scores or None
+        self.is_successful = is_successful
+        self.success_explanation = success_explanation
         self.error = error or None
         self.save()
 
     @property
-    def metrics(self) -> List[Metric]:
+    def metrics_and_success_criteria(self) -> Tuple[List[Metric], Optional[str]]:
         project = mv.load_project(self.project_id)
-        return project.get_metrics_by_names(self.metric_names)
+        return project.get_metrics_by_names(self.metric_names), project.success_criteria
 
     def respond(self, input):
         if not self.started:
@@ -105,12 +110,24 @@ class EvalAgent:
     def handle_conversation_end(self):
         self.ended = True
         self.transcript = history_to_transcript(self.history)
+        metrics, success_criteria = self.metrics_and_success_criteria
         try:
-            self.scores = generate_scores(self.transcript, self.prompt, self.metrics)
+            self.scores = generate_scores(
+                self.transcript, self.prompt, metrics, success_criteria
+            )
             print(self.scores)
             self.save()
         except Exception as e:
             self.handle_exception(e, "Metric Calculation")
+
+        if success_criteria:
+            try:
+                response = get_success(self.transcript, success_criteria)
+                self.is_successful = response["success"]
+                self.success_explanation = response["explanation"]
+                self.save()
+            except Exception as e:
+                self.handle_exception(e, "Success Criteria")
 
     def handle_exception(self, e, source):
         self.error = f"Error Source: {source} \nError: {str(e)}"
@@ -148,6 +165,8 @@ class EvalAgent:
             "started": self.started,
             "ended": self.ended,
             "transcript": self.transcript,
+            "is_successful": self.is_successful,
+            "success_explanation": self.success_explanation,
             "scores": self.scores,
             "error": self.error,
         }
