@@ -6,8 +6,8 @@ def get_project_versions_endpoint(project_id: str) -> str:
     return f"projects/{project_id}/versions"
 
 
-def get_version_success_criteria_endpoint(project_id: str, version: str) -> str:
-    return f"projects/{project_id}/versions/{version}/success_criteria"
+def get_project_success_criteria_endpoint(project_id: str) -> str:
+    return f"projects/{project_id}/success_criteria"
 
 
 def get_version_flow_endpoint(project_id: str, version: str) -> str:

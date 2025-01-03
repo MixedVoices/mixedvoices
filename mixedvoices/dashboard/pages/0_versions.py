@@ -47,16 +47,6 @@ def project_home_page():
                 label_visibility="collapsed",
                 key=f"prompt_{i}",
             )
-            if version.get("success_criteria"):
-                st.write("Success Criteria:")
-                st.text_area(
-                    "Success Criteria",
-                    version["success_criteria"],
-                    height=200,
-                    disabled=True,
-                    label_visibility="collapsed",
-                    key=f"success_criteria_{i}",
-                )
             if version.get("metadata"):
                 st.write("Metadata:")
                 st.json(version["metadata"])

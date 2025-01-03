@@ -42,13 +42,11 @@ class Version:
         version_id: str,
         project_id: str,
         prompt: str,
-        success_criteria: Optional[str] = None,
         metadata: Optional[Dict[str, Any]] = None,
     ):
         self.version_id = version_id
         self.project_id = project_id
         self.prompt = prompt
-        self.success_criteria = success_criteria
         self.metadata = metadata
         self.load_recordings()
         self.load_steps()
@@ -132,7 +130,7 @@ class Version:
             audio_path (str): Path to the audio file, should be a stereo recording with user and agent on separate channels
             user_channel (str): Audio channel of the user, either "left" or "right". Defaults to "left".
             is_successful (Optional[bool]): If the recording is successful or not Defaults to None.
-              This will override the automatic successs classification if version has success criteria
+              This will override the automatic successs classification if project has success criteria
             blocking (bool): If True, block until recording is processed, otherwise adds to queue and processes in the background. Defaults to True.
             transcript (Optional[str]): Transcript of the recording, this overrides the transcript generated during analysis. Defaults to None.
               This doesn't stop the transcription, as that generates more granular transcript with timestamps.
@@ -140,9 +138,9 @@ class Version:
               This prevents summary from being generated during analysis.
             metadata (Optional[Dict[str, Any]]): Metadata to be associated with the recording. Defaults to None.
         """  # noqa E501
-        if self.success_criteria and is_successful is not None:
+        if self.project.success_criteria and is_successful is not None:
             warn(
-                "is_successful specified for a version with success criteria set. Overriding automatic success classification.",
+                "is_successful specified for a project with success criteria set. Overriding automatic success classification.",
                 UserWarning,
                 stacklevel=2,
             )
@@ -192,7 +190,6 @@ class Version:
     def save(self):
         d = {
             "prompt": self.prompt,
-            "success_criteria": self.success_criteria,
             "metadata": self.metadata,
         }
         save_json(d, self.path)
@@ -202,13 +199,11 @@ class Version:
         load_path = get_info_path(project_id, version_id)
         d = load_json(load_path)
         prompt = d["prompt"]
-        success_criteria = d.get("success_criteria", None)
         metadata = d.get("metadata", None)
         return cls(
             version_id,
             project_id,
             prompt,
-            success_criteria,
             metadata,
         )
 

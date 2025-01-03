@@ -40,7 +40,6 @@ app.add_middleware(
 class VersionCreate(BaseModel):
     name: str
     prompt: str
-    success_criteria: Optional[str] = None
     metadata: Optional[Dict[str, Any]] = None
 
 
@@ -83,12 +82,12 @@ async def list_projects():
 
 
 @app.post("/api/projects")
-async def create_project(name: str, metrics_data: ProjectCreate):
+async def create_project(name: str, success_criteria: str, metrics_data: ProjectCreate):
     # here the dict will have name, definition and scoring (which can be binary(PASS/FAIL) or continuous (0-10))
     """Create a new project"""
     try:
         metrics = [Metric(**metric) for metric in metrics_data.metrics]
-        mixedvoices.create_project(name, metrics)
+        mixedvoices.create_project(name, metrics, success_criteria)
         logger.info(f"Project '{name}' created successfully")
         return {"message": f"Project {name} created successfully", "project_id": name}
     except ValueError as e:
@@ -112,7 +111,6 @@ async def list_versions(project_name: str):
                     "name": version_id,
                     "prompt": version.prompt,
                     "metadata": version.metadata,
-                    "success_criteria": version.success_criteria,
                     "recording_count": len(version.recordings),
                 }
             )
@@ -206,7 +204,6 @@ async def create_version(project_name: str, version_data: VersionCreate):
         project.create_version(
             version_data.name,
             prompt=version_data.prompt,
-            success_criteria=version_data.success_criteria,
             metadata=version_data.metadata,
         )
         logger.info(
@@ -228,21 +225,15 @@ async def create_version(project_name: str, version_data: VersionCreate):
         raise HTTPException(status_code=500, detail=str(e)) from e
 
 
-@app.get("/api/projects/{project_name}/versions/{version_name}/success_criteria")
-async def get_success_criteria(project_name: str, version_name: str):
+@app.get("/api/projects/{project_name}/success_criteria")
+async def get_success_criteria(project_name: str):
     """Get the success criteria for a version"""
     try:
         project = mixedvoices.load_project(project_name)
-        version = project.load_version(version_name)
-        return {"success_criteria": version.success_criteria}
-    except ValueError as e:
-        logger.error(
-            f"Version '{version_name}' not found in project '{project_name}': {str(e)}"
-        )
-        raise HTTPException(status_code=404, detail=str(e)) from e
+        return {"success_criteria": project.success_criteria}
     except Exception as e:
         logger.error(
-            f"Error getting success criteria for version '{version_name}' in project '{project_name}': {str(e)}",
+            f"Error getting success criteria for project '{project_name}': {str(e)}",
             exc_info=True,
         )
         raise HTTPException(status_code=500, detail=str(e)) from e

@@ -14,6 +14,14 @@ def render_project_creator(api_client):
 
     st.divider()
 
+    st.subheader("Success Criteria")
+    success_criteria = st.text_area(
+        "Enter success criteria",
+        help="This will be used to automatically determine if a call is successful or not.",
+        height=200,
+    )
+    st.divider()
+
     st.subheader(
         "Select Metrics",
         help="These will be analyzed for all calls added. Can be added/updated later if needed.",
@@ -28,7 +36,7 @@ def render_project_creator(api_client):
             response = api_client.post_data(
                 "projects",
                 json_data={"metrics": selected_metrics},
-                params={"name": project_name},
+                params={"name": project_name, "success_criteria": success_criteria},
             )
             if response.get("message"):
                 st.success("Project created successfully!")

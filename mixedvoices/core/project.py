@@ -9,14 +9,22 @@ from mixedvoices.metrics.metric import Metric
 from mixedvoices.utils import load_json, save_json, validate_name
 
 
-def create_project(project_name: str, metrics: List[Metric]):
-    """Create a new project"""
+def create_project(
+    project_name: str, metrics: List[Metric], success_criteria: Optional[str] = None
+):
+    """Create a new project
+
+    Args:
+        project_name (str): Name of the project
+        metrics (List[Metric]): List of metrics to be added to the project
+        success_criteria (Optional[str]): Success criteria for the version. Used to automatically determine if a recording is successful or not. Defaults to None.
+    """
     validate_name(project_name, "project_name")
     check_metrics_while_adding(metrics)
     if project_name in os.listdir(constants.PROJECTS_FOLDER):
         raise ValueError(f"Project {project_name} already exists")
     os.makedirs(os.path.join(constants.PROJECTS_FOLDER, project_name))
-    return Project(project_name, metrics)
+    return Project(project_name, metrics, success_criteria)
 
 
 def load_project(project_name: str):
@@ -54,10 +62,12 @@ class Project:
         self,
         project_id: str,
         metrics: Optional[List[Metric]] = None,
+        success_criteria: Optional[str] = None,
         evals: Optional[Dict[str, Evaluator]] = None,
         _metrics: Optional[Dict[str, Metric]] = None,
     ):
         self.project_id = project_id
+        self.success_criteria = success_criteria
         self._metrics: Dict[str, Metric] = _metrics or {}
         self.evals: Dict[str, Evaluator] = evals or {}
         os.makedirs(os.path.join(self.project_folder, "versions"), exist_ok=True)
@@ -127,6 +137,10 @@ class Project:
         """Get all metric names."""
         return list(self._metrics.keys())
 
+    def update_success_criteria(self, success_criteria: Optional[str]) -> None:
+        self.success_criteria = success_criteria
+        self.save()
+
     @property
     def project_folder(self):
         return os.path.join(constants.PROJECTS_FOLDER, self.project_id)
@@ -147,6 +161,7 @@ class Project:
     def save(self):
         metrics = {k: v.to_dict() for k, v in self._metrics.items()}
         d = {
+            "success_criteria": self.success_criteria,
             "eval_ids": list(self.evals.keys()),
             "metrics": metrics,
         }
@@ -171,8 +186,14 @@ class Project:
             evals = {
                 eval_id: Evaluator.load(project_id, eval_id) for eval_id in eval_ids
             }
+            success_criteria = d.get("success_criteria", None)
             evals = {k: v for k, v in evals.items() if v}
-            return cls(project_id, evals=evals, _metrics=metrics)
+            return cls(
+                project_id,
+                success_criteria=success_criteria,
+                evals=evals,
+                _metrics=metrics,
+            )
         except FileNotFoundError:
             return cls(project_id)
 
@@ -180,7 +201,6 @@ class Project:
         self,
         version_id: str,
         prompt: str,
-        success_criteria: Optional[str] = None,
         metadata: Optional[Dict[str, Any]] = None,
     ):
         """
@@ -189,7 +209,6 @@ class Project:
         Args:
             version_id (str): Name of the version
             prompt (str): Prompt used by the voice agent
-            success_criteria (Optional[str]): Success criteria for the version. Used to automatically determine if a recording is successful or not. Defaults to None.
             metadata (Optional[Dict[str, Any]]): Metadata to be associated with the version. Defaults to None.
         """  # noqa E501
         validate_name(version_id, "version_id")
@@ -199,9 +218,7 @@ class Project:
         os.makedirs(version_folder)
         os.makedirs(os.path.join(version_folder, "recordings"))
         os.makedirs(os.path.join(version_folder, "steps"))
-        version = Version(
-            version_id, self.project_id, prompt, success_criteria, metadata
-        )
+        version = Version(version_id, self.project_id, prompt, metadata)
         version.save()
         return version
 

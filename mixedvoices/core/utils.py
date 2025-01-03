@@ -113,8 +113,8 @@ def process_recording(recording: "Recording", version: "Version", user_channel="
         recording.combined_transcript = (
             recording.combined_transcript or combined_transcript
         )
-        if version.success_criteria and recording.is_successful is None:
-            response = get_success(combined_transcript, version.success_criteria)
+        if version.project.success_criteria and recording.is_successful is None:
+            response = get_success(combined_transcript, version.project.success_criteria)
             recording.is_successful = response["success"]
             recording.success_explanation = response["explanation"]
         existing_step_names = version.get_project_step_names()

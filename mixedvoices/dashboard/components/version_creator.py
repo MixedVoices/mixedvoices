@@ -29,10 +29,6 @@ class VersionCreator:
             st.text_area(
                 "Prompt", key=f"new_version_prompt_{st.session_state.form_key}"
             )
-            st.text_area(
-                "Success Criteria (Optional)",
-                key=f"new_version_criteria_{st.session_state.form_key}",
-            )
 
             st.subheader("Metadata (Optional)")
             for i, pair in enumerate(st.session_state.metadata_pairs):
@@ -82,10 +78,6 @@ class VersionCreator:
         payload = {
             "name": name,
             "prompt": prompt,
-            "success_criteria": st.session_state[
-                f"new_version_criteria_{st.session_state.form_key}"
-            ]
-            or None,
             "metadata": metadata or None,
         }
 
