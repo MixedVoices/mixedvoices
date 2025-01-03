@@ -26,6 +26,7 @@ class Sidebar:
 
             st.page_link("pages/0_versions.py", label="Versions")
             st.page_link("pages/1_metrics.py", label="Metrics")
+            st.page_link("pages/1_success_criteria.py", label="Success Criteria")
 
             st.markdown("### Analytics")
             st.page_link("pages/3_view_recordings.py", label="View Call Details")
