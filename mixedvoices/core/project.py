@@ -68,6 +68,8 @@ class Project:
         os.makedirs(os.path.join(self._project_folder, "versions"), exist_ok=True)
         if metrics:
             self.add_metrics(metrics)
+        else:
+            self._save()
 
     @property
     def name(self) -> str:

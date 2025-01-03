@@ -59,6 +59,17 @@ class Version:
         """Get the prompt of the version"""
         return self._prompt
 
+    @property
+    def recording_count(self):
+        return len(self._recordings)
+
+    def get_recording(self, recording_id: str):
+        if recording_id not in self._recordings:
+            raise ValueError(
+                f"Recording {recording_id} not found in version {self.version_id}"
+            )
+        return self._recordings[recording_id]
+
     def update_prompt(self, prompt: str):
         """Update the prompt of the version"""
         self._prompt = prompt
@@ -133,7 +144,7 @@ class Version:
             summary=summary,
             metadata=metadata,
         )
-        self.recordings[recording.recording_id] = recording
+        self._recordings[recording.recording_id] = recording
         recording.save()
 
         if blocking:
@@ -185,13 +196,13 @@ class Version:
         return os.path.join(os.path.dirname(self._path), "steps")
 
     def _load_recordings(self):
-        self.recordings: Dict[str, Recording] = {}
+        self._recordings: Dict[str, Recording] = {}
         recording_files = os.listdir(self._recordings_path)
         for recording_file in recording_files:
             try:
                 filename = os.path.basename(recording_file)
                 recording_id = os.path.splitext(filename)[0]
-                self.recordings[recording_id] = Recording.load(
+                self._recordings[recording_id] = Recording.load(
                     self.project_id, self.version_id, recording_id
                 )
             except Exception as e:

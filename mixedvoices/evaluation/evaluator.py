@@ -46,6 +46,13 @@ class Evaluator:
         """List of metric names to be evaluated"""
         return self._metric_names
 
+    @property
+    def test_cases(self) -> List[str]:
+        """List of test cases to be evaluated"""
+        return self._test_cases
+
+    # TODO: Expose eval runs as property for users to extract info from
+
     def run(
         self,
         version: "Version",

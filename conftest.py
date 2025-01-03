@@ -53,7 +53,9 @@ def mock_base_folder(tmp_path, monkeypatch):
 
 @pytest.fixture
 def empty_project(mock_base_folder):
-    project = mv.create_project("test_project", [])
+    project = mv.create_project(
+        "test_project", [], success_criteria="Testing success criteria"
+    )
     project.create_version("v1", prompt="Testing prompt")
     return project
 

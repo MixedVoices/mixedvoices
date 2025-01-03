@@ -113,9 +113,9 @@ async def list_versions(project_name: str):
             versions_data.append(
                 {
                     "name": version_id,
-                    "prompt": version._prompt,
-                    "metadata": version._metadata,
-                    "recording_count": len(version.recordings),
+                    "prompt": version.prompt,
+                    "metadata": version.metadata,
+                    "recording_count": version.recording_count,
                 }
             )
         return {"versions": versions_data}
@@ -137,9 +137,9 @@ async def get_version(project_name: str, version_name: str):
         version = project.load_version(version_name)
         return {
             "name": version_name,
-            "prompt": version._prompt,
-            "metadata": version._metadata,
-            "recording_count": len(version.recordings),
+            "prompt": version.prompt,
+            "metadata": version.metadata,
+            "recording_count": version.recording_count,
         }
     except ValueError as e:
         logger.error(
@@ -258,7 +258,7 @@ async def get_success_criteria(project_name: str):
     """Get the success criteria for a version"""
     try:
         project = mixedvoices.load_project(project_name)
-        return {"success_criteria": project._success_criteria}
+        return {"success_criteria": project.success_criteria}
     except Exception as e:
         logger.error(
             f"Error getting success criteria for project '{project_name}': {str(e)}",
@@ -323,11 +323,7 @@ async def get_recording_flow(project_name: str, version_name: str, recording_id:
     try:
         project = mixedvoices.load_project(project_name)
         version = project.load_version(version_name)
-        recording = version.recordings.get(recording_id, None)
-        if recording is None:
-            raise ValueError(
-                f"Recording {recording_id} not found in version {version_name}"
-            )
+        recording = version.get_recording(recording_id)
 
         steps_data = []
         for step_id in recording.step_ids:
@@ -374,7 +370,7 @@ async def list_recordings(project_name: str, version_name: str):
                 "llm_metrics": recording.llm_metrics,
                 "call_metrics": recording.call_metrics,
             }
-            for recording_id, recording in version.recordings.items()
+            for recording_id, recording in version._recordings.items()
         ]
         return {"recordings": recordings_data}
     except ValueError as e:
@@ -444,7 +440,7 @@ async def list_step_recordings(project_name: str, version_name: str, step_id: st
 
         recordings_data = []
         for recording_id in step.recording_ids:
-            recording = version.recordings[recording_id]
+            recording = version._recordings[recording_id]
             recordings_data.append(
                 {
                     "id": recording.recording_id,
@@ -554,16 +550,16 @@ async def handle_webhook(
 async def list_evals(project_name: str):
     try:
         project = mixedvoices.load_project(project_name)
-        evals = project._evals
+        evals = project.list_evaluators()
         eval_data = [
             {
-                "eval_id": eval_id,
+                "eval_id": cur_eval.eval_id,
                 "created_at": cur_eval._created_at,
-                "num_prompts": len(cur_eval._test_cases),
+                "num_prompts": len(cur_eval.test_cases),
                 "num_eval_runs": len(cur_eval._eval_runs),
-                "metric_names": cur_eval._metric_names,
+                "metric_names": cur_eval.metric_names,
             }
-            for eval_id, cur_eval in evals.items()
+            for cur_eval in evals
         ]
         return {"evals": eval_data}
     except ValueError as e:
@@ -597,7 +593,7 @@ async def get_eval_details(project_name: str, eval_id: str):
         current_eval = project._evals.get(eval_id, None)
         if current_eval is None:
             raise ValueError(f"Eval {eval_id} not found in project {project_name}")
-        prompts = current_eval._test_cases
+        prompts = current_eval.test_cases
         eval_runs = current_eval._eval_runs
 
         eval_run_data = [
@@ -610,7 +606,7 @@ async def get_eval_details(project_name: str, eval_id: str):
         ]
 
         metrics_data = [
-            {"name": metric_name} for metric_name in current_eval._metric_names
+            {"name": metric_name} for metric_name in current_eval.metric_names
         ]
         return {
             "metrics": metrics_data,
@@ -638,7 +634,7 @@ async def get_version_eval_details(project_name: str, eval_id: str, version_name
         current_eval = project._evals.get(eval_id, None)
         if current_eval is None:
             raise ValueError(f"Eval {eval_id} not found in project {project_name}")
-        prompts = current_eval._test_cases
+        prompts = current_eval.test_cases
         eval_runs = current_eval._eval_runs
 
         eval_run_data = [
@@ -651,7 +647,7 @@ async def get_version_eval_details(project_name: str, eval_id: str, version_name
             if eval_run.version_id == version_name
         ]
         metrics_data = [
-            {"name": metric_name} for metric_name in current_eval._metric_names
+            {"name": metric_name} for metric_name in current_eval.metric_names
         ]
 
         return {
