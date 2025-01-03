@@ -22,16 +22,25 @@ def create_agent_prompt_page():
         st.session_state.user_demographic_info = ""
 
     st.title("Create Evaluator - Step 1")
+    st.info(
+        "💡 Both of these fields are used to auto generate test cases. Not used for evaluation"
+    )
     st.subheader("Agent Prompt")
 
     st.session_state.agent_prompt = st.text_area(
-        "Enter agent prompt", st.session_state.agent_prompt, height=300
+        "Enter agent prompt",
+        st.session_state.agent_prompt,
+        height=300,
+        label_visibility="collapsed",
     )
 
+    st.subheader("User Demographic Info (Optional)")
+    st.info("💡 If provided, all test cases created will belong to this demographic")
     st.session_state.user_demographic_info = st.text_area(
         "Enter user demographic info (Optional)",
         st.session_state.user_demographic_info,
-        height=200
+        height=200,
+        label_visibility="collapsed",
     )
 
     if st.button("Next"):
