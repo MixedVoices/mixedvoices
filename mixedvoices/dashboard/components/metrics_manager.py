@@ -99,23 +99,25 @@ class MetricsManager:
                 st.session_state.is_editing[f"edit_{metric['name']}"] = False
                 st.rerun()
         with cols[1]:
-            if st.button("Cancel", key=f"cancel_{metric['name']}", icon=":material/close:"):
+            if st.button(
+                "Cancel", key=f"cancel_{metric['name']}", icon=":material/close:"
+            ):
                 st.session_state.is_editing[f"edit_{metric['name']}"] = False
                 st.rerun()
 
-    def _render_add_metric_form(self, key_prefix: str = "") -> Optional[Dict]:
+    def _render_add_metric_form(self) -> Optional[Dict]:
         with st.expander("Add New Metric", icon=":material/add:"):
             col1, col2, col3 = st.columns([1, 1, 4])
 
-            form_key = st.session_state.get(f"{key_prefix}form_key", 0)
+            form_key = st.session_state.get("new_form_key", 0)
 
             with col1:
                 metric_name = st.text_input(
-                    "Metric Name", key=f"{key_prefix}metric_name_{form_key}"
+                    "Metric Name", key=f"new_metric_name_{form_key}"
                 )
                 include_prompt = st.checkbox(
                     "Include Prompt",
-                    key=f"{key_prefix}include_prompt_{form_key}",
+                    key=f"new_include_prompt_{form_key}",
                     help="If the agent prompt must be passed to judge the score",
                 )
             with col2:
@@ -123,17 +125,17 @@ class MetricsManager:
                     "Scoring Type",
                     ["binary", "continuous"],
                     help="Binary for PASS/FAIL, Continuous for 0-10 scale",
-                    key=f"{key_prefix}metric_scoring_{form_key}",
+                    key=f"new_metric_scoring_{form_key}",
                 )
             with col3:
                 metric_definition = st.text_area(
-                    "Definition", key=f"{key_prefix}metric_def_{form_key}", height=100
+                    "Definition", key=f"new_metric_def_{form_key}", height=100
                 )
 
-            if st.button("Add Metric", key=f"{key_prefix}add_btn_{form_key}"):
+            if st.button("Add Metric", key=f"new_add_btn_{form_key}"):
                 if metric_name and metric_definition:
                     # Increment form key to reset fields
-                    st.session_state[f"{key_prefix}form_key"] = form_key + 1
+                    st.session_state["new_form_key"] = form_key + 1
                     return {
                         "name": metric_name,
                         "definition": metric_definition,
@@ -164,7 +166,7 @@ class MetricsManager:
 
         # Handle creation mode
         if creation_mode:
-            new_metric = self._render_add_metric_form("new_")
+            new_metric = self._render_add_metric_form()
             if new_metric:
                 if self.project_id:
                     # Add through API for project metrics
