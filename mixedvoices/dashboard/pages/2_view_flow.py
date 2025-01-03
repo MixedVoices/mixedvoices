@@ -80,7 +80,7 @@ def view_flow_page():
                 # Directly switch to recordings page
                 st.switch_page("pages/3_view_recordings.py")
     else:
-        st.info("No flow data available. Add recordings to see the flow visualization.")
+        st.warning("No flow data available. Add recordings to see the flow visualization.")
 
 
 if __name__ == "__main__":

@@ -34,7 +34,7 @@ def evals_list_page():
     if evals_data.get("evals"):
         evaluator_viewer.display_evaluator_list(evals_data["evals"])
     else:
-        st.info("No evaluations found. Create one using the Create Evaluator page.")
+        st.warning("No evaluations found. Create one using the Create Evaluator page.")
 
 
 if __name__ == "__main__":

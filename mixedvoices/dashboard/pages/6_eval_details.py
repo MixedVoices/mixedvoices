@@ -83,7 +83,6 @@ def eval_details_page():
 
     # Evaluator Runs section
     st.subheader("Evaluator Runs")
-    # st.info()
 
     eval_runs = eval_details.get("eval_runs", [])
     if not eval_runs:

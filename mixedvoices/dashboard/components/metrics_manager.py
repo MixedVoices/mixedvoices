@@ -109,7 +109,9 @@ class MetricsManager:
         with st.expander("Add New Metric", icon=":material/add:"):
             col1, col2, col3 = st.columns([1, 1, 4])
 
-            form_key = st.session_state.get("new_form_key", 0)
+            if "new_form_key" not in st.session_state:
+                st.session_state.new_form_key = 0
+            form_key = st.session_state.new_form_key
 
             with col1:
                 metric_name = st.text_input(
@@ -135,7 +137,7 @@ class MetricsManager:
             if st.button("Add Metric", key=f"new_add_btn_{form_key}"):
                 if metric_name and metric_definition:
                     # Increment form key to reset fields
-                    st.session_state["new_form_key"] = form_key + 1
+                    st.session_state.new_form_key = form_key + 1
                     return {
                         "name": metric_name,
                         "definition": metric_definition,

@@ -24,7 +24,7 @@ def render_version_selector(
 
     if not versions:
         if not optional:
-            st.info("No versions found for this project")
+            st.warning("No versions found for this project")
         return None
 
     # Prepare version options

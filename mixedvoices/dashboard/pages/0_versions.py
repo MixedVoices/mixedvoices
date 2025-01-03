@@ -19,11 +19,9 @@ def project_home_page():
     st.title("Versions")
     st.info("💡 Use versions to track different iterations of your agent")
 
-
     version_creator.render_version_form()
 
     st.subheader("Versions List")
-
 
     # Fetch and display versions
     versions_data = api_client.fetch_data(
@@ -32,10 +30,10 @@ def project_home_page():
     versions = versions_data.get("versions", [])
 
     if not versions:
-        st.info("No versions found for this project")
+        st.warning("No versions found for this project")
         return
 
-    for version in versions:
+    for i, version in enumerate(versions):
         with st.expander(
             f"{version['name']} - Recordings: {version['recording_count']}",
             expanded=False,
@@ -47,6 +45,7 @@ def project_home_page():
                 height=200,
                 disabled=True,
                 label_visibility="collapsed",
+                key=f"prompt_{i}",
             )
             if version.get("success_criteria"):
                 st.write("Success Criteria:")
@@ -56,6 +55,7 @@ def project_home_page():
                     height=200,
                     disabled=True,
                     label_visibility="collapsed",
+                    key=f"success_criteria_{i}",
                 )
             if version.get("metadata"):
                 st.write("Metadata:")

@@ -56,7 +56,7 @@ def view_recordings_page():
             display_metrics(recordings["recordings"])
             recording_viewer.display_recordings_list(recordings["recordings"])
         else:
-            st.info("No recordings found for the selected path.")
+            st.warning("No recordings found for the selected path.")
 
     else:
         # Fetch recordings
@@ -70,7 +70,7 @@ def view_recordings_page():
             display_metrics(recordings_data["recordings"])
             recording_viewer.display_recordings_list(recordings_data["recordings"])
         else:
-            st.info(
+            st.warning(
                 "No recordings found for this version."
                 " Upload recordings using the Upload tab or using Python API."
             )
