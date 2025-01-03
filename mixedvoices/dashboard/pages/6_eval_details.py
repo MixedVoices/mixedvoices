@@ -44,15 +44,32 @@ def eval_details_page():
         st.session_state.selected_eval_id = None
         st.switch_page("pages/5_evals_list.py")
 
+    all_eval_details = api_client.fetch_data(
+        f"projects/{st.session_state.current_project}/evals/{st.session_state.selected_eval_id}"
+    )
+
+    # Metrics and Prompts buttons
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("View Metrics"):
+            render_metrics_dialog(all_eval_details.get("metrics", []))
+    with col2:
+        if st.button("View Prompts"):
+            render_prompts_dialog(all_eval_details.get("prompts", []))
+
+    # Evaluator Runs section
+    st.markdown("#### Evaluator Runs")
+    st.info(
+        "💡 Different runs of the agent across the same test cases and metrics, use this to track progress."
+    )
+
     selected_version = render_version_selector(
         api_client, st.session_state.current_project, optional=True, show_all=True
     )
 
     # Fetch eval details
     if selected_version:
-        eval_details = api_client.fetch_data(
-            f"projects/{st.session_state.current_project}/evals/{st.session_state.selected_eval_id}/versions/{selected_version}"
-        )
+        eval_details = all_eval_details
     else:
         eval_details = api_client.fetch_data(
             f"projects/{st.session_state.current_project}/evals/{st.session_state.selected_eval_id}"
@@ -62,15 +79,6 @@ def eval_details_page():
         st.error("Failed to load evaluation details")
         return
 
-    # Metrics and Prompts buttons
-    col1, col2 = st.columns(2)
-    with col1:
-        if st.button("View Metrics"):
-            render_metrics_dialog(eval_details.get("metrics", []))
-    with col2:
-        if st.button("View Prompts"):
-            render_prompts_dialog(eval_details.get("prompts", []))
-
     # Show dialogs if buttons were clicked
     if getattr(st.session_state, "show_metrics", False):
         render_metrics_dialog(eval_details.get("metrics", []))
@@ -79,9 +87,6 @@ def eval_details_page():
     if getattr(st.session_state, "show_prompts", False):
         render_prompts_dialog(eval_details.get("prompts", []))
         st.session_state.show_prompts = False
-
-    # Evaluator Runs section
-    st.markdown("#### Evaluator Runs")
 
     eval_runs = eval_details.get("eval_runs", [])
     if not eval_runs:
