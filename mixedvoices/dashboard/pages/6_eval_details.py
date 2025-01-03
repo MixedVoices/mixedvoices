@@ -3,7 +3,7 @@ import streamlit as st
 from mixedvoices.dashboard.api.client import APIClient
 from mixedvoices.dashboard.components.sidebar import Sidebar
 from mixedvoices.dashboard.components.version_selector import render_version_selector
-from mixedvoices.dashboard.utils import clear_selected_node_path
+from mixedvoices.dashboard.utils import clear_selected_node_path, data_to_df_with_dates
 
 
 @st.dialog("Metrics", width="large")
@@ -89,6 +89,8 @@ def eval_details_page():
         st.warning("No evaluator runs found.")
         return
 
+    display_df = data_to_df_with_dates(eval_runs)
+
     # Add column headers
     header_col1, header_col2, header_col3 = st.columns([2, 2, 2])
     with header_col1:
@@ -99,23 +101,23 @@ def eval_details_page():
         st.write("**Version**")
 
     # Create a table for eval runs
-    for run in eval_runs:
+    for idx, row in display_df.iterrows():
         col1, col2, col3 = st.columns([2, 2, 2])
 
         with col1:
             if st.button(
-                run["run_id"],
-                key=f"view_run_{run['run_id']}",
+                row["run_id"],
+                key=f"view_run_{row['run_id']}",
                 help="Click to view run details",
             ):
-                st.session_state.selected_run_id = run["run_id"]
+                st.session_state.selected_run_id = row["run_id"]
                 st.switch_page("pages/7_eval_run_details.py")
 
         with col2:
-            st.write(run.get("created_at", "N/A"))
+            st.write(row.get("created_at", "N/A"))
 
         with col3:
-            st.write(run.get("version_id", "N/A"))
+            st.write(row.get("version_id", "N/A"))
         st.markdown(
             "<hr style='margin: 0; padding: 0; background-color: #333;"
             " height: 1px;'>",

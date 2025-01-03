@@ -1,3 +1,6 @@
+from datetime import datetime
+
+import pandas as pd
 import streamlit as st
 
 
@@ -148,3 +151,16 @@ def clear_session_state():
 
     for key in keys:
         st.session_state.pop(key, None)
+
+
+def data_to_df_with_dates(data):
+    display_df = pd.DataFrame(data)
+    local_tz = datetime.now().astimezone().tzinfo
+    display_df["created_at"] = pd.to_datetime(
+        display_df["created_at"], unit="s", utc=True
+    ).dt.tz_convert(local_tz)
+    display_df["created_at"] = display_df["created_at"].dt.strftime(
+        "%-I:%M%p %-d %b %y"
+    )
+
+    return display_df

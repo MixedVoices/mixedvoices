@@ -1,9 +1,7 @@
-from datetime import datetime
-
-import pandas as pd
 import streamlit as st
 
 from mixedvoices.dashboard.api.client import APIClient
+from mixedvoices.dashboard.utils import data_to_df_with_dates
 
 
 class EvaluatorViewer:
@@ -13,14 +11,7 @@ class EvaluatorViewer:
     def display_evaluator_list(self, evals: list) -> None:
         """Display list of recordings with details"""
         # Create DataFrame and format dates
-        display_df = pd.DataFrame(evals)
-        local_tz = datetime.now().astimezone().tzinfo
-        display_df["created_at"] = pd.to_datetime(
-            display_df["created_at"], unit="s", utc=True
-        ).dt.tz_convert(local_tz)
-        display_df["created_at"] = display_df["created_at"].dt.strftime(
-            "%-I:%M%p %-d %b %y"
-        )
+        display_df = data_to_df_with_dates(evals)
 
         # Table header
         header_cols = st.columns([3, 1.5, 1.2, 1.2, 7])
