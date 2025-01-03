@@ -13,7 +13,7 @@ class UploadForm:
         self.project_id = project_id
         self.version = version
         self.success_criteria = self.api_client.fetch_data(
-            get_project_success_criteria_endpoint(self.project_id, self.version)
+            get_project_success_criteria_endpoint(self.project_id)
         )["success_criteria"]
 
     def render(self) -> None:
