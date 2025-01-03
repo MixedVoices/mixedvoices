@@ -7,6 +7,17 @@ from typing import Literal
 
 @dataclass
 class Metric:
+    """Define a custom metric.
+
+    Args:
+        name (str): The name of the metric.
+        definition (str): The definition of the metric.
+        scoring (str): The scoring range of the metric. Can be 'binary' or 'continuous'.
+            binary for PASS/FAIL, continuous for 0-10 scale
+        include_prompt (bool, optional): Whether to include the agent prompt when evaluating the metric.
+            Example: To check for hallucination, agent prompt should be included. But for conciseness, it shouldn't. Defaults to False.
+    """
+
     name: str
     definition: str
     scoring: Literal["binary", "continuous"]

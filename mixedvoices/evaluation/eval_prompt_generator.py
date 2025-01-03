@@ -1,5 +1,5 @@
 import tempfile
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING, List, Literal, Optional
 
 from mixedvoices import models
 from mixedvoices.core.utils import get_transcript_and_duration
@@ -67,7 +67,7 @@ def get_prompt_part(count):
     )
 
 
-def generate_eval_prompts(
+def generate_test_cases(
     agent_prompt: str,
     generation_instruction: str,
     count: int,
@@ -92,7 +92,7 @@ def generate_eval_prompts(
 
     messages.append({"role": "assistant", "content": OUTPUT_PROMPT})
     completion = client.chat.completions.create(
-        model=models.EVAL_TEST_GENERATOR_MODEL,
+        model=models.TEST_CASE_GENERATOR_MODEL,
         messages=messages,
     )
     response_text = completion.choices[0].message.content
@@ -103,99 +103,93 @@ def generate_eval_prompts(
 
 
 # TODO: Use this in future
-def generate_eval_prompts_for_failure_reasons(
-    agent_prompt: str,
-    failure_reasons: List[str],
-    count: int = 2,
-    user_demographic_info: Optional[str] = None,
-):
-    eval_prompts = []
-    for failure_reason in failure_reasons:
-        part = get_prompt_part(count)
-        instruction = (
-            f"Generate {part} that try to recreate this failure: {failure_reason}"
-        )
-        eval_prompts.extend(
-            generate_eval_prompts(
-                agent_prompt, instruction, count, user_demographic_info
-            )
-        )
-    return eval_prompts
+# def generate_test_cases_for_failure_reasons(
+#     agent_prompt: str,
+#     failure_reasons: List[str],
+#     count: int = 2,
+#     user_demographic_info: Optional[str] = None,
+# ):
+#     test_cases = []
+#     for failure_reason in failure_reasons:
+#         part = get_prompt_part(count)
+#         instruction = (
+#             f"Generate {part} that try to recreate this failure: {failure_reason}"
+#         )
+#         test_cases.extend(
+#             generate_test_cases(agent_prompt, instruction, count, user_demographic_info)
+#         )
+#     return test_cases
 
 
-def generate_eval_prompts_from_paths(
+def generate_test_cases_from_paths(
     agent_prompt: str,
     paths: List[str],
     count_per_path=2,
     user_demographic_info: Optional[str] = None,
 ):
-    eval_prompts = []
+    test_cases = []
     for path in paths:
         part = get_prompt_part(count_per_path)
         instruction = f"Generate {part} that follow this path: {path}"  # noqa E501
-        eval_prompts.extend(
-            generate_eval_prompts(
+        test_cases.extend(
+            generate_test_cases(
                 agent_prompt, instruction, count_per_path, user_demographic_info
             )
         )
-    return eval_prompts
+    return test_cases
 
 
-def generate_eval_prompts_from_version(
+def generate_test_cases_from_version(
     agent_prompt: str,
     version: "Version",
     count_per_path=2,
     user_demographic_info: Optional[str] = None,
 ):
     paths = version.get_paths()
-    return generate_eval_prompts_from_paths(
+    return generate_test_cases_from_paths(
         agent_prompt, paths, count_per_path, user_demographic_info
     )
 
 
-def generate_eval_prompts_from_project(
+def generate_test_cases_from_project(
     agent_prompt: str,
     project: "Project",
     count_per_path=2,
     user_demographic_info: Optional[str] = None,
 ):
     paths = project.get_paths()
-    return generate_eval_prompts_from_paths(
+    return generate_test_cases_from_paths(
         agent_prompt, paths, count_per_path, user_demographic_info
     )
 
 
-def generate_eval_prompts_for_edge_cases(
+def generate_test_cases_for_edge_cases(
     agent_prompt: str,
     count: int = 2,
     user_demographic_info: Optional[str] = None,
 ):
     part = get_prompt_part(count)
     instruction = f"Generate {part} that simulate tricky edge cases."
-    return generate_eval_prompts(
-        agent_prompt, instruction, count, user_demographic_info
-    )
+    return generate_test_cases(agent_prompt, instruction, count, user_demographic_info)
 
 
-def generate_eval_prompts_from_transcripts(
+def generate_test_cases_from_transcripts(
     agent_prompt: str,
     transcripts: List[str],
     count: int = 1,
     user_demographic_info: Optional[str] = None,
 ):
-    eval_prompts = []
+    test_cases = []
     for transcript in transcripts:
         part = get_prompt_part(count)
         instruction = f"Generate {part} that try to recreate this transcript: {transcript}. You will simulate the USER."  # noqa E501
-        eval_prompts.extend(
-            generate_eval_prompts(
-                agent_prompt, instruction, count, user_demographic_info
-            )
+        test_cases.extend(
+            generate_test_cases(agent_prompt, instruction, count, user_demographic_info)
         )
-    return eval_prompts
+    return test_cases
 
 
-def generate_eval_prompts_from_recording(
+def generate_test_cases_from_recording(
     agent_prompt: str,
     recording_paths: List[str],
     user_channels: List[str],
@@ -207,30 +201,36 @@ def generate_eval_prompts_from_recording(
             out = get_transcript_and_duration(path, temp_dir, user_channel)
             transcripts.append(out[0])
 
-    return generate_eval_prompts_from_transcripts(
+    return generate_test_cases_from_transcripts(
         agent_prompt, transcripts, user_demographic_info=user_demographic_info
     )
 
 
-def generate_eval_prompts_from_descriptions(
+def generate_test_cases_from_descriptions(
     agent_prompt: str,
     descriptions: List[str],
     user_demographic_info: Optional[str] = None,
 ):
-    eval_prompts = []
+    test_cases = []
     for description in descriptions:
         part = get_prompt_part(1)
         instruction = (
             f"Generate {part} according to this description: {description}"  # noqa E501
         )
-        eval_prompts.extend(
-            generate_eval_prompts(agent_prompt, instruction, 1, user_demographic_info)
+        test_cases.extend(
+            generate_test_cases(agent_prompt, instruction, 1, user_demographic_info)
         )
-    return eval_prompts
+    return test_cases
 
 
-class EvalPromptGenerator:
-    def __init__(self, prompt, user_demographic_info: Optional[str] = None):
+class TestCaseGenerator:
+    def __init__(self, prompt: str, user_demographic_info: Optional[str] = None):
+        """Generate test cases for evaluation based on the prompt and user demographic info
+
+        Args:
+            prompt (str): The prompt of the agent to generate test for
+            user_demographic_info (Optional[str]): The user demographic info. Include things like age group, country, accents etc
+        """
         self.prompt = prompt
         self.user_demographic_info = user_demographic_info
         self.transcripts = []
@@ -242,54 +242,84 @@ class EvalPromptGenerator:
         self.project_cases_per_path = 1
         self.descriptions = []
         self.edge_cases_count = 0
-        self.eval_prompts = []
+        self.test_cases = []
 
     def add_from_transcripts(self, transcripts: List[str]):
+        """Add test cases from transcripts. 1 test case will be generated for each transcript
+
+        Args:
+            transcripts (List[str]): List of transcripts. Transcript should have labels for each utterance . Use 'user:', 'bot:' labels"
+        """
         self.transcripts.extend(transcripts)
         return self
 
-    def add_from_recordings(self, recording_paths: List[str], user_channel=None):
+    def add_from_recordings(
+        self,
+        recording_paths: List[str],
+        user_channel: Literal["left", "right"] = "left",
+    ):
+        """Add test cases from recordings. 1 test case will be generated for each recording
+
+        Args:
+            recording_paths (List[str]): List of recording paths. Use stereo recordings with user and bot on different channels.
+            user_channel (str, optional): Channel of the user in the recording. Can be "left" or "right". Defaults to "left".
+        """
         self.recordings.extend(recording_paths)
         self.user_channels.extend([user_channel] * len(recording_paths))
         return self
 
-    def add_from_version(self, version: "Version", cases_per_path=1):
+    def add_from_version(self, version: "Version", cases_per_path: int = 1):
+        """Add test cases from a version. 1 test case will be generated for each path in the version
+
+        Args:
+            version (Version): Version object
+            cases_per_path (int, optional): Number of test cases to generate for each path. Defaults to 1.
+        """
+        self.check_generation()
         self.versions.append(version)
         self.version_cases_per_path = cases_per_path
         return self
 
-    def add_from_project(self, project: "Project", cases_per_path=1):
+    def add_from_project(self, project: "Project", cases_per_path: int = 1):
+        """Add test cases from a project. 1 test case will be generated for each path in the project
+
+        Args:
+            project (Project): Project object
+            cases_per_path (int, optional): Number of test cases to generate for each path. Defaults to 1.
+        """
+        self.check_generation()
         self.projects.append(project)
         self.project_cases_per_path = cases_per_path
         return self
 
     def add_from_descriptions(self, descriptions: List[str]):
+        """Add test cases from rough descriptions. 1 test case will be generated for each description
+
+        Args:
+            descriptions (List[str]): List of descriptions
+        """
+        self.check_generation()
         self.descriptions.extend(descriptions)
         return self
 
     def add_edge_cases(self, count: int):
+        """Create test cases for edge cases where bot might fail or behave unexpectedly
+
+        Args:
+            count (int): Number of test cases to add
+        """
+        self.check_generation()
         self.edge_cases_count += count
         return self
 
     def generate(self):
-        if self.eval_prompts:
-            raise ValueError(
-                "Eval prompts have already been generated. You can access them using .eval_prompts"
-            )
+        """Generate test cases from all the given inputs"""
+        self.check_generation("generate")
 
-        eval_prompts = []
-        if self.transcripts:
-            eval_prompts.extend(
-                generate_eval_prompts_from_transcripts(
-                    self.prompt,
-                    self.transcripts,
-                    user_demographic_info=self.user_demographic_info,
-                )
-            )
-
+        test_cases = []
         if self.recordings:
-            eval_prompts.extend(
-                generate_eval_prompts_from_recording(
+            test_cases.extend(
+                generate_test_cases_from_recording(
                     self.prompt,
                     self.recordings,
                     self.user_channels,
@@ -297,9 +327,36 @@ class EvalPromptGenerator:
                 )
             )
 
+        if self.transcripts:
+            test_cases.extend(
+                generate_test_cases_from_transcripts(
+                    self.prompt,
+                    self.transcripts,
+                    user_demographic_info=self.user_demographic_info,
+                )
+            )
+
+        if self.descriptions:
+            test_cases.extend(
+                generate_test_cases_from_descriptions(
+                    self.prompt,
+                    self.descriptions,
+                    user_demographic_info=self.user_demographic_info,
+                )
+            )
+
+        if self.edge_cases_count:
+            test_cases.extend(
+                generate_test_cases_for_edge_cases(
+                    self.prompt,
+                    self.edge_cases_count,
+                    user_demographic_info=self.user_demographic_info,
+                )
+            )
+
         for version in self.versions:
-            eval_prompts.extend(
-                generate_eval_prompts_from_version(
+            test_cases.extend(
+                generate_test_cases_from_version(
                     self.prompt,
                     version,
                     self.version_cases_per_path,
@@ -308,8 +365,8 @@ class EvalPromptGenerator:
             )
 
         for project in self.projects:
-            eval_prompts.extend(
-                generate_eval_prompts_from_project(
+            test_cases.extend(
+                generate_test_cases_from_project(
                     self.prompt,
                     project,
                     self.project_cases_per_path,
@@ -317,22 +374,21 @@ class EvalPromptGenerator:
                 )
             )
 
-        if self.descriptions:
-            eval_prompts.extend(
-                generate_eval_prompts_from_descriptions(
-                    self.prompt,
-                    self.descriptions,
-                    user_demographic_info=self.user_demographic_info,
-                )
+        if not test_cases:
+            raise ValueError(
+                "No test cases generated. "
+                "Use one or more of these methods before calling generate: "
+                "add_from_transcripts, add_from_recordings, add_from_version, "
+                "add_from_project, add_from_descriptions, add_edge_cases"
             )
 
-        if self.edge_cases_count:
-            eval_prompts.extend(
-                generate_eval_prompts_for_edge_cases(
-                    self.prompt,
-                    self.edge_cases_count,
-                    user_demographic_info=self.user_demographic_info,
-                )
-            )
+        self.test_cases = test_cases
+        return test_cases
 
-        return eval_prompts
+    def check_generation(self, operation="add"):
+        if self.test_cases:
+            raise ValueError(
+                f"Can not {operation}. Test cases have already been generated. "
+                "You can access them using .test_cases. "
+                "Use a new TestCaseGenerator object to generate more test cases."
+            )

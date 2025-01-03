@@ -1,5 +1,5 @@
 import os
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional
 from uuid import uuid4
 
 import mixedvoices.constants as constants
@@ -37,13 +37,8 @@ def load_project(project_name: str):
 def check_metrics_while_adding(
     metrics: List[Metric], existing_metrics: Optional[Dict[str, Metric]] = None
 ) -> List[Metric]:
-    if not isinstance(metrics, list):
-        metrics = [metrics]
-
     if not all(isinstance(metric, Metric) for metric in metrics):
-        raise TypeError(
-            "Metrics must be a list of Metric objects or a single Metric object"
-        )
+        raise TypeError("Metrics must be a list of Metric objects")
     if existing_metrics:
         for metric in metrics:
             if metric.name in existing_metrics:
@@ -74,10 +69,9 @@ class Project:
         if metrics:
             self.add_metrics(metrics)
 
-    def add_metrics(self, metrics: Union[Metric, List[Metric]]) -> None:
+    def add_metrics(self, metrics: List[Metric]) -> None:
         """
         Add a new metrics to the project.
-        Raises ValueError if metric with same name already exists.
         """
         metrics = check_metrics_while_adding(metrics, self._metrics)
         for metric in metrics:
@@ -87,7 +81,9 @@ class Project:
     def update_metric(self, metric: Metric) -> None:
         """
         Update an existing metric.
-        Raises KeyError if metric doesn't exist.
+
+        Args:
+            metric (Metric): The metric to update
         """
         if metric.name not in self._metrics:
             raise KeyError(
@@ -99,7 +95,12 @@ class Project:
     def get_metric(self, metric_name: str) -> Metric:
         """
         Get a metric by name.
-        Raises KeyError if metric doesn't exist.
+
+        Args:
+            metric_name (str): The name of the metric to get
+
+        Returns:
+            Metric: The metric
         """
         if metric_name not in self._metrics:
             raise KeyError(
@@ -110,7 +111,12 @@ class Project:
     def get_metrics_by_names(self, metric_names: List[str]) -> List[Metric]:
         """
         Get multiple metrics by their names.
-        Raises KeyError if any metric doesn't exist.
+
+        Args:
+            metric_names (List[str]): The names of the metrics to get
+
+        Returns:
+            List[Metric]: The metrics
         """
         missing = [name for name in metric_names if name not in self._metrics]
         if missing:
@@ -120,7 +126,9 @@ class Project:
     def remove_metric(self, metric_name: str) -> None:
         """
         Remove a metric by name.
-        Raises KeyError if metric doesn't exist.
+
+        Args:
+            metric_name (str): The name of the metric to remove
         """
         if metric_name not in self._metrics:
             raise KeyError(
@@ -242,13 +250,13 @@ class Project:
         return step_names
 
     def create_evaluator(
-        self, eval_prompts: List[str], metric_names: Optional[List[str]] = None
+        self, test_cases: List[str], metric_names: Optional[List[str]] = None
     ) -> Evaluator:
         """
         Create a new evaluator for the project
 
         Args:
-            eval_prompts (List[str]): List of evaluation prompts, each acts as a separate test case
+            test_cases (List[str]): List of test cases to evaluate the agent on.
             metrics (Optional[List[str]]): List of metric names to be evaluated, or None to use all project metrics.
 
         Returns:
@@ -264,14 +272,23 @@ class Project:
             eval_id,
             self.project_id,
             metric_names,
-            eval_prompts,
+            test_cases,
         )
 
         self.evals[eval_id] = cur_eval
         self.save()
         return cur_eval
 
-    def load_evaluator(self, eval_id: str):
+    def load_evaluator(self, eval_id: str) -> Evaluator:
+        """
+        Load an evaluator from the project
+
+        Args:
+            eval_id (str): ID of the evaluator to load
+
+        Returns:
+            Evaluator: The loaded evaluator
+        """
         if eval_id not in self.evals:
             raise ValueError(f"Eval {eval_id} does not exist")
         return self.evals[eval_id]

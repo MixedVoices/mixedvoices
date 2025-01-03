@@ -12,7 +12,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 import mixedvoices
-from mixedvoices import EvalPromptGenerator, constants
+from mixedvoices import TestCaseGenerator, constants
 from mixedvoices.metrics.metric import Metric
 from mixedvoices.server.utils import process_vapi_webhook
 
@@ -717,7 +717,7 @@ async def generate_prompt(
 ):
     try:
         temp_dir = None
-        eval_prompt_generator = EvalPromptGenerator(agent_prompt, user_demographic_info)
+        eval_prompt_generator = TestCaseGenerator(agent_prompt, user_demographic_info)
         if transcript:
             eval_prompt_generator.add_from_transcripts([transcript])
         elif file:

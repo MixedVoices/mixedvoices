@@ -18,7 +18,7 @@ DEFAULT_CONFIG = {
     "SUMMARY_MODEL": "gpt-4o",
     "STEPS_MODEL": "gpt-4o",
     "EVAL_AGENT_MODEL": "gpt-4o",
-    "EVAL_TEST_GENERATOR_MODEL": "gpt-4o",
+    "TEST_CASE_GENERATOR_MODEL": "gpt-4o",
 }
 
 CONFIG_PATH = os.path.join(MIXEDVOICES_FOLDER, "config.json")

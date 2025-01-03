@@ -109,7 +109,7 @@ def prompt_creation_dialog(api_client):
 
         with tabs[1]:
             st.info(
-                "💡 Generate a test case from a call transcript. Transcript should have labels for each utterance . Use user:, bot: labels"
+                "💡 Generate a test case from a call transcript. Transcript should have labels for each utterance . Use 'user:', 'bot:' labels"
             )
             transcript = st.text_area(
                 "Enter the transcript", disabled=st.session_state.is_generating
@@ -160,7 +160,7 @@ def prompt_creation_dialog(api_client):
 
         with tabs[3]:
             st.info(
-                "💡 Generate test cases for edge cases which might lead to issues with your bot."
+                "💡 Generate test cases for edge cases where bot might fail or behave unexpectedly"
             )
             count = st.number_input(
                 "Number of edge cases",
