@@ -91,6 +91,9 @@ def prompt_creation_dialog(api_client):
         )
 
         with tabs[0]:
+            st.info(
+                "💡 Define the exact test case. Include things like name, age, personality traits, call objective, call path"
+            )
             prompt = st.text_area(
                 "Enter test case", disabled=st.session_state.is_generating
             )
@@ -108,6 +111,9 @@ def prompt_creation_dialog(api_client):
             transcript = st.text_area(
                 "Enter the transcript", disabled=st.session_state.is_generating
             )
+            st.info(
+                "💡 Generate a test case from a call transcript. Transcript should have labels for each utterance . Use user:, bot: labels"
+            )
             if st.button(
                 "Generate Test Case",
                 disabled=st.session_state.is_generating,
@@ -122,6 +128,9 @@ def prompt_creation_dialog(api_client):
                     st.rerun()
 
         with tabs[2]:
+            st.info(
+                "💡 Generate a test case from an existing call. Use a stereo recording with user and bot on different channels."
+            )
             uploaded_file = st.file_uploader(
                 "Upload recording file",
                 type=["wav", "mp3"],
@@ -150,6 +159,9 @@ def prompt_creation_dialog(api_client):
                     st.rerun()
 
         with tabs[3]:
+            st.info(
+                "💡 Generate test cases for edge cases which might lead to issues with your bot."
+            )
             count = st.number_input(
                 "Number of edge cases",
                 min_value=1,
@@ -169,6 +181,7 @@ def prompt_creation_dialog(api_client):
                 st.rerun()
 
         with tabs[4]:
+            st.info("💡 Generate a test case based on a rough description.")
             description = st.text_area(
                 "Enter description", disabled=st.session_state.is_generating
             )
