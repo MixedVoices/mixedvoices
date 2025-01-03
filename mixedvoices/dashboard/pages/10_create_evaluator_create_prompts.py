@@ -279,6 +279,9 @@ def create_prompts_page():
 
     st.title("Create Evaluator - Step 3")
     st.subheader("Create Test Cases")
+    st.info(
+        "💡 Test cases are LLM generated except in 'Plain Text' where raw input is used. Agent Prompt and User Demographic Info (if provided) are used in generation."
+    )
 
     if st.button(
         "Back to Select Metrics",
