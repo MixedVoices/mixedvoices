@@ -26,7 +26,7 @@ def upload_recording_page():
     if not selected_version:
         return
 
-    # Reuse the UploadForm component
+    st.info("💡 Same can be done through the api using version.add_recording()")
     upload_form = UploadForm(
         api_client, st.session_state.current_project, selected_version
     )
