@@ -108,11 +108,11 @@ def prompt_creation_dialog(api_client):
                     return [{"type": "plain_text", "content": prompt}]
 
         with tabs[1]:
-            transcript = st.text_area(
-                "Enter the transcript", disabled=st.session_state.is_generating
-            )
             st.info(
                 "💡 Generate a test case from a call transcript. Transcript should have labels for each utterance . Use user:, bot: labels"
+            )
+            transcript = st.text_area(
+                "Enter the transcript", disabled=st.session_state.is_generating
             )
             if st.button(
                 "Generate Test Case",
