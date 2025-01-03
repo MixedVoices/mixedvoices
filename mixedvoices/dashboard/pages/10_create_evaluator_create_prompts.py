@@ -206,6 +206,12 @@ def display_prompts(prompts: List[dict], selected_prompts: List[int]):
         st.write("No test cases created yet")
         return
 
+    if prompts:  # Only show clear button if there are prompts
+        if st.button("Clear All Test Cases", type="secondary", key="clear_all_prompts"):
+            prompts.clear()
+            selected_prompts.clear()
+            st.rerun()
+
     col1, col2, col3 = st.columns([1, 20, 3])
     with col1:
         st.write("Select")
