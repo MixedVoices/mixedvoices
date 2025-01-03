@@ -86,7 +86,7 @@ async def list_projects():
 
 
 @app.post("/api/projects")
-async def create_project(name: str, success_criteria: str, metrics_data: ProjectCreate):
+async def create_project(name: str, success_criteria: Optional[str], metrics_data: ProjectCreate):
     # here the dict will have name, definition and scoring (which can be binary(PASS/FAIL) or continuous (0-10))
     """Create a new project"""
     try:
