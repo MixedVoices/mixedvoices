@@ -21,7 +21,7 @@ def check_keys():
     missing_keys = [key for key in required_keys if key not in os.environ]
     if missing_keys:
         raise ValueError(
-            f"Missing required environment variables: {', '.join(missing_keys)}"
+            f"Missing required environment variables: {', '.join(missing_keys)}. \nThese keys reflect models being used currently. You can change the models by running 'mixedvoices config'."
         )
 
 
