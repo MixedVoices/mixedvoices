@@ -65,6 +65,10 @@ class EvalCreate(BaseModel):
     metric_names: List[str]
 
 
+class SuccessCriteria(BaseModel):
+    success_criteria: str
+
+
 # API Routes
 @app.get("/api/projects")
 async def list_projects():
@@ -234,6 +238,21 @@ async def get_success_criteria(project_name: str):
     except Exception as e:
         logger.error(
             f"Error getting success criteria for project '{project_name}': {str(e)}",
+            exc_info=True,
+        )
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+@app.post("/api/projects/{project_name}/success_criteria")
+async def update_success_criteria(project_name: str, success_criteria: SuccessCriteria):
+    """Update the success criteria for a version"""
+    try:
+        project = mixedvoices.load_project(project_name)
+        project.update_success_criteria(success_criteria.success_criteria)
+        return {"message": "Success criteria updated successfully"}
+    except Exception as e:
+        logger.error(
+            f"Error updating success criteria for project '{project_name}': {str(e)}",
             exc_info=True,
         )
         raise HTTPException(status_code=500, detail=str(e)) from e
