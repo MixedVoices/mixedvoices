@@ -1,5 +1,7 @@
 import streamlit as st
 
+from mixedvoices.dashboard.api.endpoints import project_success_criteria_ep
+
 
 class SuccessCriteriaManager:
     def __init__(self, api_client, project_id: str):
@@ -44,7 +46,7 @@ class SuccessCriteriaManager:
             st.session_state.show_success_success_criteria = False
 
         success_criteria = self.api_client.fetch_data(
-            f"projects/{self.project_id}/success_criteria"
+            project_success_criteria_ep(self.project_id)
         ).get("success_criteria", "")
 
         if st.session_state.is_editing_success_criteria:

@@ -35,7 +35,7 @@ def render_project_creator(api_client):
         if project_name:
             response = api_client.post_data(
                 "projects",
-                json_data={"metrics": selected_metrics},
+                json={"metrics": selected_metrics},
                 params={"name": project_name, "success_criteria": success_criteria},
             )
             if response.get("message"):

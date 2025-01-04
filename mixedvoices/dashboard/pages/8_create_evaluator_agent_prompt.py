@@ -1,6 +1,7 @@
 import streamlit as st
 
 from mixedvoices.dashboard.api.client import APIClient
+from mixedvoices.dashboard.api.endpoints import version_ep
 from mixedvoices.dashboard.components.sidebar import Sidebar
 from mixedvoices.dashboard.components.version_selector import render_version_selector
 from mixedvoices.dashboard.utils import clear_selected_node_path
@@ -33,7 +34,7 @@ def create_agent_prompt_page():
     )
     if selected_version:
         version_data = api_client.fetch_data(
-            f"projects/{st.session_state.current_project}/versions/{selected_version}"
+            version_ep(st.session_state.current_project, selected_version)
         )
         st.session_state.agent_prompt = version_data.get("prompt", "")
     else:

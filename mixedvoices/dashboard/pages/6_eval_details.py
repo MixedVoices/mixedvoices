@@ -1,6 +1,7 @@
 import streamlit as st
 
 from mixedvoices.dashboard.api.client import APIClient
+from mixedvoices.dashboard.api.endpoints import eval_details_ep, version_eval_details_ep
 from mixedvoices.dashboard.components.sidebar import Sidebar
 from mixedvoices.dashboard.components.version_selector import render_version_selector
 from mixedvoices.dashboard.utils import clear_selected_node_path, data_to_df_with_dates
@@ -45,7 +46,9 @@ def eval_details_page():
         st.switch_page("pages/5_evals_list.py")
 
     all_eval_details = api_client.fetch_data(
-        f"projects/{st.session_state.current_project}/evals/{st.session_state.selected_eval_id}"
+        eval_details_ep(
+            st.session_state.current_project, st.session_state.selected_eval_id
+        )
     )
 
     # Metrics and Prompts buttons
@@ -69,11 +72,15 @@ def eval_details_page():
 
     # Fetch eval details
     if selected_version:
-        eval_details = all_eval_details
-    else:
         eval_details = api_client.fetch_data(
-            f"projects/{st.session_state.current_project}/evals/{st.session_state.selected_eval_id}"
+            version_eval_details_ep(
+                st.session_state.current_project,
+                selected_version,
+                st.session_state.selected_eval_id,
+            )
         )
+    else:
+        eval_details = all_eval_details
 
     if not eval_details:
         st.error("Failed to load evaluation details")

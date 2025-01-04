@@ -2,8 +2,8 @@ import streamlit as st
 
 from mixedvoices.dashboard.api.client import APIClient
 from mixedvoices.dashboard.api.endpoints import (
-    get_step_recordings_endpoint,
-    get_version_recordings_endpoint,
+    step_recordings_ep,
+    version_recordings_ep,
 )
 from mixedvoices.dashboard.components.recording_viewer import RecordingViewer
 from mixedvoices.dashboard.components.sidebar import Sidebar
@@ -45,7 +45,7 @@ def view_recordings_page():
     if st.session_state.get("selected_node_id"):
         # Fetch recordings for selected node
         recordings = api_client.fetch_data(
-            get_step_recordings_endpoint(
+            step_recordings_ep(
                 st.session_state.current_project,
                 st.session_state.current_version,
                 st.session_state.selected_node_id,
@@ -61,9 +61,7 @@ def view_recordings_page():
     else:
         # Fetch recordings
         recordings_data = api_client.fetch_data(
-            get_version_recordings_endpoint(
-                st.session_state.current_project, selected_version
-            )
+            version_recordings_ep(st.session_state.current_project, selected_version)
         )
 
         if recordings_data.get("recordings"):

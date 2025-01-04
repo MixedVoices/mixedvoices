@@ -2,6 +2,8 @@ from typing import Optional
 
 import streamlit as st
 
+from mixedvoices.dashboard.api.endpoints import list_versions_ep
+
 
 def render_version_selector(
     api_client, project_id: str, optional: bool = False, show_all: bool = False
@@ -19,7 +21,7 @@ def render_version_selector(
             st.warning("Please select a project first")
         return None
 
-    versions_data = api_client.fetch_data(f"projects/{project_id}/versions")
+    versions_data = api_client.fetch_data(list_versions_ep(project_id))
     versions = versions_data.get("versions", [])
 
     if not versions:

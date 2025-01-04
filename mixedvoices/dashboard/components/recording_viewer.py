@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 import streamlit as st
 
 from mixedvoices.dashboard.api.client import APIClient
-from mixedvoices.dashboard.api.endpoints import get_recording_flow_endpoint
+from mixedvoices.dashboard.api.endpoints import recording_flow_ep
 from mixedvoices.dashboard.utils import (
     data_to_df_with_dates,
     display_llm_metrics,
@@ -181,7 +181,7 @@ class RecordingViewer:
     def display_recording_flow(self, recording_id: str) -> None:
         """Display flow visualization for a recording"""
         recording_flow = self.api_client.fetch_data(
-            get_recording_flow_endpoint(self.project_id, self.version, recording_id)
+            recording_flow_ep(self.project_id, self.version, recording_id)
         )
         if recording_flow and recording_flow.get("steps"):
             flow_chart = FlowChart(recording_flow, is_recording_flow=True)

@@ -2,6 +2,7 @@ import streamlit as st
 from streamlit_plotly_events import plotly_events
 
 from mixedvoices.dashboard.api.client import APIClient
+from mixedvoices.dashboard.api.endpoints import version_flow_ep
 from mixedvoices.dashboard.components.sidebar import Sidebar
 from mixedvoices.dashboard.components.version_selector import render_version_selector
 from mixedvoices.dashboard.visualizations.flow_chart import FlowChart
@@ -42,7 +43,7 @@ def view_flow_page():
 
     # Fetch flow data
     flow_data = api_client.fetch_data(
-        f"projects/{st.session_state.current_project}/versions/{selected_version}/flow"
+        version_flow_ep(st.session_state.current_project, selected_version)
     )
 
     if flow_data.get("steps"):

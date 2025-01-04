@@ -1,5 +1,6 @@
 import streamlit as st
 
+from mixedvoices.dashboard.api.endpoints import projects_ep
 from mixedvoices.dashboard.utils import clear_session_state
 
 
@@ -41,7 +42,7 @@ class Sidebar:
 
     def _render_project_selection(self):
         # Fetch projects
-        projects_data = self.api_client.fetch_data("projects")
+        projects_data = self.api_client.fetch_data(projects_ep())
         projects = projects_data.get("projects", [])
 
         # Project selection

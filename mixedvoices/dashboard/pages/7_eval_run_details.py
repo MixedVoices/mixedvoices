@@ -3,6 +3,7 @@
 import streamlit as st
 
 from mixedvoices.dashboard.api.client import APIClient
+from mixedvoices.dashboard.api.endpoints import eval_run_details_ep
 from mixedvoices.dashboard.components.sidebar import Sidebar
 from mixedvoices.dashboard.utils import (
     clear_selected_node_path,
@@ -52,7 +53,11 @@ def eval_run_details_page():
 
     # Fetch run details
     run_details = api_client.fetch_data(
-        f"projects/{st.session_state.current_project}/evals/{st.session_state.selected_eval_id}/runs/{st.session_state.selected_run_id}"
+        eval_run_details_ep(
+            st.session_state.current_project,
+            st.session_state.selected_eval_id,
+            st.session_state.selected_run_id,
+        )
     )
 
     version = run_details.get("version", "N/A")

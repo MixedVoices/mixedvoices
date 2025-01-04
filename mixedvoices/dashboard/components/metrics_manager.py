@@ -2,6 +2,8 @@ from typing import Dict, List, Optional
 
 import streamlit as st
 
+from mixedvoices.dashboard.api.endpoints import default_metrics_ep, project_metrics_ep
+
 
 class MetricsManager:
     def __init__(self, api_client, project_id: Optional[str] = None):
@@ -13,11 +15,11 @@ class MetricsManager:
         all_metrics = []
         if self.project_id:
             project_metrics = self.api_client.fetch_data(
-                f"projects/{self.project_id}/metrics"
+                project_metrics_ep(self.project_id)
             ).get("metrics", [])
             all_metrics.extend((m, "project") for m in project_metrics)
         else:
-            default_metrics = self.api_client.fetch_data("default_metrics").get(
+            default_metrics = self.api_client.fetch_data(default_metrics_ep()).get(
                 "metrics", []
             )
             all_metrics.extend((m, "default") for m in default_metrics)
@@ -213,14 +215,14 @@ class MetricsManager:
                 if self.project_id:
                     # Add through API for project metrics
                     existing_metrics = self.api_client.fetch_data(
-                        f"projects/{self.project_id}/metrics"
+                        project_metrics_ep(self.project_id)
                     ).get("metrics", [])
 
                     if any(m["name"] == new_metric["name"] for m in existing_metrics):
                         st.error("A metric with this name already exists")
                     else:
                         response = self.api_client.post_data(
-                            f"projects/{self.project_id}/metrics", new_metric
+                            project_metrics_ep(self.project_id), new_metric
                         )
                         if response.get("message"):
                             st.success("Metric added successfully!")
@@ -253,7 +255,7 @@ class MetricsManager:
             st.markdown("#### Existing Metrics")
             # Project mode: fetch and display project metrics
             project_metrics = self.api_client.fetch_data(
-                f"projects/{self.project_id}/metrics"
+                project_metrics_ep(self.project_id)
             ).get("metrics", [])
             for metric in project_metrics:
                 selected = self._render_metric_row(
@@ -265,7 +267,7 @@ class MetricsManager:
                 if selected:
                     selected_metrics.append(selected)
         else:
-            default_metrics = self.api_client.fetch_data("default_metrics").get(
+            default_metrics = self.api_client.fetch_data(default_metrics_ep()).get(
                 "metrics", []
             )
             if default_metrics:
