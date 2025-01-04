@@ -21,7 +21,7 @@ class SuccessCriteriaManager:
         with cols[0]:
             if st.button("Save", icon=":material/check:"):
                 response = self.api_client.post_data(
-                    f"projects/{self.project_id}/success_criteria",
+                    project_success_criteria_ep(self.project_id),
                     {"success_criteria": new_criteria},
                 )
                 if response.get("message"):

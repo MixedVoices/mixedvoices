@@ -2,7 +2,11 @@ from typing import Dict, List, Optional
 
 import streamlit as st
 
-from mixedvoices.dashboard.api.endpoints import default_metrics_ep, project_metrics_ep
+from mixedvoices.dashboard.api.endpoints import (
+    default_metrics_ep,
+    metric_ep,
+    project_metrics_ep,
+)
 
 
 class MetricsManager:
@@ -118,7 +122,7 @@ class MetricsManager:
                 if self.project_id:
                     # Update through API for project metrics
                     self.api_client.post_data(
-                        f"projects/{self.project_id}/metrics/{metric['name']}",
+                        metric_ep(self.project_id, metric["name"]),
                         {
                             "definition": new_definition,
                             "scoring": new_scoring,

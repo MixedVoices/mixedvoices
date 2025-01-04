@@ -1,5 +1,7 @@
 import streamlit as st
 
+from mixedvoices.dashboard.api.endpoints import project_versions_ep
+
 
 class VersionCreator:
     def __init__(self, api_client, project_id: str):
@@ -82,7 +84,7 @@ class VersionCreator:
         }
 
         response = self.api_client.post_data(
-            f"projects/{self.project_id}/versions", payload
+            project_versions_ep(self.project_id), payload
         )
 
         if response.get("message"):

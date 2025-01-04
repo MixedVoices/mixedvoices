@@ -1,7 +1,7 @@
 import streamlit as st
 
 from mixedvoices.dashboard.api.client import APIClient
-from mixedvoices.dashboard.api.endpoints import list_evals_ep
+from mixedvoices.dashboard.api.endpoints import evals_ep
 from mixedvoices.dashboard.components.evaluator_viewer import EvaluatorViewer
 from mixedvoices.dashboard.components.sidebar import Sidebar
 from mixedvoices.dashboard.utils import clear_selected_node_path
@@ -22,15 +22,14 @@ def evals_list_page():
         "💡 Evaluators are reusable collections of tests and metrics to test model performance."
     )
     st.info(
-        "Load in python using project.load_evaluator(eval_id)", icon=":material/developer_guide:"
+        "Load in python using project.load_evaluator(eval_id)",
+        icon=":material/developer_guide:",
     )
 
     evaluator_viewer = EvaluatorViewer(api_client)
 
     # Fetch evaluations
-    evals_data = api_client.fetch_data(
-        list_evals_ep(st.session_state.current_project)
-    )
+    evals_data = api_client.fetch_data(evals_ep(st.session_state.current_project))
 
     if evals_data.get("evals"):
         evaluator_viewer.display_evaluator_list(evals_data["evals"])

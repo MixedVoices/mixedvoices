@@ -3,6 +3,7 @@ from typing import List
 import streamlit as st
 
 from mixedvoices.dashboard.api.client import APIClient
+from mixedvoices.dashboard.api.endpoints import evals_ep, prompt_generator_ep
 from mixedvoices.dashboard.components.sidebar import Sidebar
 from mixedvoices.dashboard.utils import clear_selected_node_path
 
@@ -37,7 +38,7 @@ def generate_prompt(
 
     files = {"file": file} if file else None
     response = api_client.post_data(
-        "prompt_generator", files=files, params=generation_data
+        prompt_generator_ep(), files=files, params=generation_data
     )
     return response.get("prompts", [])
 
@@ -318,7 +319,7 @@ def create_prompts_page():
 
         metric_names = [metric["name"] for metric in st.session_state.selected_metrics]
         response = api_client.post_data(
-            f"projects/{st.session_state.current_project}/evals",
+            evals_ep(st.session_state.current_project),
             {"test_cases": final_prompts, "metric_names": metric_names},
         )
 

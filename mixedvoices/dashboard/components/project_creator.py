@@ -1,5 +1,6 @@
 import streamlit as st
 
+from mixedvoices.dashboard.api.endpoints import projects_ep
 from mixedvoices.dashboard.components.metrics_manager import MetricsManager
 
 
@@ -34,7 +35,7 @@ def render_project_creator(api_client):
     if st.button("Create Project"):
         if project_name:
             response = api_client.post_data(
-                "projects",
+                projects_ep(),
                 json={"metrics": selected_metrics},
                 params={"name": project_name, "success_criteria": success_criteria},
             )

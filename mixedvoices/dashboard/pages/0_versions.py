@@ -1,7 +1,7 @@
 import streamlit as st
 
 from mixedvoices.dashboard.api.client import APIClient
-from mixedvoices.dashboard.api.endpoints import list_versions_ep
+from mixedvoices.dashboard.api.endpoints import project_versions_ep
 from mixedvoices.dashboard.components.sidebar import Sidebar
 from mixedvoices.dashboard.components.version_creator import VersionCreator
 from mixedvoices.dashboard.utils import clear_selected_node_path
@@ -28,7 +28,7 @@ def project_home_page():
 
     # Fetch and display versions
     versions_data = api_client.fetch_data(
-        list_versions_ep(st.session_state.current_project)
+        project_versions_ep(st.session_state.current_project)
     )
     versions = versions_data.get("versions", [])
 

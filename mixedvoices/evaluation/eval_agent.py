@@ -36,7 +36,7 @@ def get_info_path(project_id, version_id, eval_id, run_id, agent_id):
     )
 
 
-# TODO: Better logging and better model management throughout
+# TODO: Better logging
 class EvalAgent:
     def __init__(
         self,
