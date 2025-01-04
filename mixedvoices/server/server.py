@@ -738,5 +738,4 @@ async def generate_prompt(
 
 def run_server(port: int = 7760):
     """Run the FastAPI server"""
-    logger.info(f"Starting server on port {port}")
-    uvicorn.run(app, host="0.0.0.0", port=port)
+    uvicorn.run(app, host="0.0.0.0", port=port, log_level="error")

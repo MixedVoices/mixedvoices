@@ -1,3 +1,4 @@
+import contextlib
 import sys
 from pathlib import Path
 
@@ -9,17 +10,18 @@ from mixedvoices.dashboard.config import DASHBOARD_PORT
 
 def run_dashboard(port: int = DASHBOARD_PORT):
     """Run the Streamlit dashboard"""
-    dashboard_path = Path(__file__).parent / "app.py"
-    sys.argv = [
-        "streamlit",
-        "run",
-        str(dashboard_path),
-        "--server.port",
-        str(port),
-        "--server.address",
-        "localhost",
-    ]
-    sys.exit(stcli.main())
+    with contextlib.redirect_stdout(None):
+        dashboard_path = Path(__file__).parent / "app.py"
+        sys.argv = [
+            "streamlit",
+            "run",
+            str(dashboard_path),
+            "--server.port",
+            str(port),
+            "--server.address",
+            "localhost",
+        ]
+        sys.exit(stcli.main())
 
 
 def cli():
