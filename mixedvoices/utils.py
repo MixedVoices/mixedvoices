@@ -13,8 +13,13 @@ def get_openai_client():
 
 def validate_name(name: str, identifier: str):
     allowed_special_chars = {"-", "_"}
-    if not all(c.isalnum() or c in allowed_special_chars for c in name):
-        raise ValueError(f"{identifier} can only contain a-z, A-Z, 0-9, -, _")
+    if (
+        not all(c.isalnum() or c in allowed_special_chars for c in name)
+        or len(name) == 0
+    ):
+        raise ValueError(
+            f"{identifier} can only contain a-z, A-Z, 0-9, -, _ and must not be empty"
+        )
 
 
 def save_json(d, filename):
