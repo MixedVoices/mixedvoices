@@ -38,7 +38,7 @@ class Recording:
         call_metrics: Optional[Dict[str, Any]] = None,
         task_status: Optional[str] = None,
     ):
-        self.recording_id = recording_id
+        self._recording_id = recording_id
         self.created_at = created_at or int(time.time())
         self.audio_path = audio_path
         self.version_id = version_id
@@ -56,16 +56,20 @@ class Recording:
         self.task_status = task_status or "Processing"
 
     @property
-    def path(self):
-        return get_info_path(self.project_id, self.version_id, self.recording_id)
+    def id(self):
+        return self._recording_id
 
-    def save(self):
-        os.makedirs(os.path.dirname(self.path), exist_ok=True)
-        d = self.to_dict()
-        save_json(d, self.path)
+    @property
+    def _path(self):
+        return get_info_path(self.project_id, self.version_id, self.id)
+
+    def _save(self):
+        os.makedirs(os.path.dirname(self._path), exist_ok=True)
+        d = self._to_dict()
+        save_json(d, self._path)
 
     @classmethod
-    def load(cls, project_id, version_id, recording_id):
+    def _load(cls, project_id, version_id, recording_id):
         path = get_info_path(project_id, version_id, recording_id)
         d = load_json(path)
         d.update(
@@ -77,7 +81,7 @@ class Recording:
         )
         return cls(**d)
 
-    def to_dict(self):
+    def _to_dict(self):
         return {
             "created_at": self.created_at,
             "audio_path": self.audio_path,

@@ -12,7 +12,7 @@ def render_project_creator(api_client):
     st.header("Create New Project")
 
     st.markdown("### Project Name")
-    project_name = st.text_input("Project Name", label_visibility="collapsed")
+    project_id = st.text_input("Project Name", label_visibility="collapsed")
 
     st.divider()
 
@@ -33,11 +33,11 @@ def render_project_creator(api_client):
     selected_metrics = metrics_manager.render(selection_mode=True, creation_mode=True)
 
     if st.button("Create Project"):
-        if project_name:
+        if project_id:
             response = api_client.post_data(
                 projects_ep(),
                 json={"metrics": selected_metrics},
-                params={"name": project_name, "success_criteria": success_criteria},
+                params={"name": project_id, "success_criteria": success_criteria},
             )
             if response.get("message"):
                 st.success("Project created successfully!")

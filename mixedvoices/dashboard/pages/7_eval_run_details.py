@@ -72,12 +72,12 @@ def eval_run_details_page():
         st.session_state.selected_run_id = None
         st.switch_page("pages/6_eval_details.py")
 
-    if not run_details or not run_details.get("agents"):
+    if not run_details or not run_details.get("results"):
         st.error("Failed to load evaluation run details")
         return
 
     # Display agents in a table-like format
-    for idx, agent in enumerate(run_details["agents"], 1):
+    for idx, agent in enumerate(run_details["results"], 1):
         with st.expander(f"Test {idx}", expanded=True):
             preview_cols = st.columns([3, 2, 2])
 

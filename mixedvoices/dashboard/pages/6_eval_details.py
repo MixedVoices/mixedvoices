@@ -12,7 +12,7 @@ def render_metrics_dialog(metrics):
     """Render metrics in a dialog."""
     st.subheader("Metrics")
     for metric in metrics:
-        st.write(f"- {metric['name']}")
+        st.write(f"- {metric}")
 
 
 @st.dialog("Prompts", width="large")

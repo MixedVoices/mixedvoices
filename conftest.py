@@ -74,7 +74,7 @@ def mock_process_recording():
     def side_effect(recording: "Recording", version: "Version", user_channel):
         recording.combined_transcript = "Test transcript"
         recording.duration = 10
-        if version._project._success_criteria and recording.is_successful is None:
+        if version._project.success_criteria and recording.is_successful is None:
             recording.is_successful = True
             recording.success_explanation = "Test success explanation"
         step_names = ["Testing A", "Testing B", "Testing C"]
@@ -86,7 +86,7 @@ def mock_process_recording():
         }
         recording.call_metrics = {"wpm": 100}
         recording.task_status = "COMPLETED"
-        recording.save()
+        recording._save()
 
     with patch(
         "mixedvoices.core.utils.process_recording", side_effect=side_effect

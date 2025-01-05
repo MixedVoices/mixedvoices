@@ -25,5 +25,11 @@ def check_keys():
         )
 
 
+def list_projects():
+    if not os.path.exists(constants.PROJECTS_FOLDER):
+        return []
+    return os.listdir(constants.PROJECTS_FOLDER)
+
+
 check_keys()
 OPEN_AI_CLIENT = None

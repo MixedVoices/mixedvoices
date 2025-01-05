@@ -26,7 +26,7 @@ class VersionCreator:
         with st.expander("Create New Version", icon=":material/add:"):
             # Use form_key in input keys to force fresh renders
             st.text_input(
-                "Version Name", key=f"new_version_name_{st.session_state.form_key}"
+                "Version Name", key=f"new_version_id_{st.session_state.form_key}"
             )
             st.text_area(
                 "Prompt", key=f"new_version_prompt_{st.session_state.form_key}"
@@ -64,7 +64,7 @@ class VersionCreator:
 
     def _handle_version_creation(self) -> None:
         """Handle version creation form submission"""
-        name = st.session_state[f"new_version_name_{st.session_state.form_key}"]
+        name = st.session_state[f"new_version_id_{st.session_state.form_key}"]
         prompt = st.session_state[f"new_version_prompt_{st.session_state.form_key}"]
 
         if not name or not prompt:

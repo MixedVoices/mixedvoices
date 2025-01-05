@@ -33,13 +33,22 @@ class Evaluator:
         created_at: Optional[int] = None,
         eval_runs: Optional[dict[str, EvalRun]] = None,
     ):
-        self.eval_id = eval_id
-        self.project_id = project_id
+        self._eval_id = eval_id
+        self._project_id = project_id
         self._metric_names = metric_names
         self._test_cases = test_cases
         self._created_at = created_at or int(time.time())
         self._eval_runs = eval_runs or {}
+        self._cached_project = None
         self._save()
+
+    @property
+    def id(self):
+        return self._eval_id
+
+    @property
+    def project_id(self):
+        return self._project_id
 
     @property
     def metric_names(self) -> List[str]:
@@ -51,7 +60,30 @@ class Evaluator:
         """List of test cases to be evaluated"""
         return self._test_cases
 
-    # TODO: Expose eval runs as property for users to extract info from
+    @property
+    def info(self):
+        return {
+            "eval_id": self.id,
+            "created_at": self._created_at,
+            "num_prompts": len(self.test_cases),
+            "num_eval_runs": len(self.list_eval_runs()),
+            "metric_names": self.metric_names,
+        }
+
+    def list_eval_runs(self, version_id=Optional[str]) -> List[EvalRun]:
+        """List of eval runs"""
+        if version_id not in self._project.version_ids:
+            raise ValueError(
+                f"Version {version_id} not found in project {self.project_id}"
+            )
+        all_runs = list(self._eval_runs.values())
+        if version_id:
+            all_runs = [run for run in all_runs if run.version_id == version_id]
+        return all_runs
+
+    def load_eval_run(self, run_id: str) -> EvalRun:
+        """Load an eval run from id"""
+        return self._eval_runs[run_id]
 
     def run(
         self,
@@ -59,7 +91,7 @@ class Evaluator:
         agent_class: Type["BaseAgent"],
         agent_starts: Optional[bool],
         **kwargs,
-    ):
+    ) -> EvalRun:
         """Runs the evaluator and saves the results.
 
         Args:
@@ -73,16 +105,16 @@ class Evaluator:
         """
 
         run_id = uuid4().hex
-        project = mv.load_project(self.project_id)
-        version_id = version.version_id
-        if version_id not in project.version_names:
+        project = self._project
+        version_id = version.id
+        if version_id not in project.version_ids:
             raise ValueError("Evaluator can only be run on a version of the project")
         prompt = version._prompt
         run = EvalRun(
             run_id,
             self.project_id,
             version_id,
-            self.eval_id,
+            self.id,
             prompt,
             self._metric_names,
             self._test_cases,
@@ -90,10 +122,17 @@ class Evaluator:
         self._eval_runs[run_id] = run
         self._save()
         run.run(agent_class, agent_starts, **kwargs)
+        return run
+
+    @property
+    def _project(self):
+        if self._cached_project is None:
+            self._cached_project = mv.load_project(self.project_id)
+        return self._cached_project
 
     @property
     def _path(self):
-        return get_info_path(self.project_id, self.eval_id)
+        return get_info_path(self.project_id, self.id)
 
     def _save(self):
         os.makedirs(os.path.dirname(self._path), exist_ok=True)
@@ -119,7 +158,7 @@ class Evaluator:
         eval_run_ids = d.pop("eval_run_ids")
         eval_run_version_ids = d.pop("eval_run_version_ids")
         eval_runs = {
-            run_id: EvalRun.load(project_id, version_id, eval_id, run_id)
+            run_id: EvalRun._load(project_id, version_id, eval_id, run_id)
             for run_id, version_id in zip(eval_run_ids, eval_run_version_ids)
         }
         d.update(

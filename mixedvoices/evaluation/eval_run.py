@@ -25,6 +25,9 @@ def get_info_path(project_id, version_id, eval_id, run_id):
     )
 
 
+# TODO add resume later
+
+
 class EvalRun:
     def __init__(
         self,
@@ -32,55 +35,138 @@ class EvalRun:
         project_id: str,
         version_id: str,
         eval_id: str,
-        prompt: str,
+        agent_prompt: str,
         metric_names: List[str],
         test_cases: List[str],
         created_at: Optional[int] = None,
         eval_agents: Optional[List[EvalAgent]] = None,
+        started: bool = False,
+        ended: bool = False,
+        error: Optional[str] = None,
+        last_updated: Optional[int] = None,
     ):
-        self.run_id = run_id
-        self.project_id = project_id
-        self.version_id = version_id
-        self.eval_id = eval_id
+        self._run_id = run_id
+        self._project_id = project_id
+        self._version_id = version_id
+        self._eval_id = eval_id
 
-        self.prompt = prompt
-        self.metric_names = metric_names
-        self.test_cases = test_cases
-        self.created_at = created_at or int(time.time())
-        self.eval_agents = eval_agents or [
+        self._agent_prompt = agent_prompt
+        self._metric_names = metric_names
+        self._test_cases = test_cases
+        self._created_at = created_at or int(time.time())
+        self._eval_agents = eval_agents or [
             EvalAgent(
                 uuid4().hex,
                 project_id,
                 version_id,
                 eval_id,
                 run_id,
-                prompt,
+                agent_prompt,
                 test_case,
                 metric_names,
             )
-            for test_case in self.test_cases
+            for test_case in self._test_cases
         ]
-        self.save()
+        self._started = started
+        self._ended = ended
+        self._error = error
+        self._last_updated = last_updated
+        self._save()
 
     @property
-    def path(self):
+    def id(self):
+        return self._run_id
+
+    @property
+    def project_id(self):
+        return self._project_id
+
+    @property
+    def version_id(self):
+        return self._version_id
+
+    @property
+    def eval_id(self):
+        return self._eval_id
+
+    def run(
+        self, agent_class: Type["BaseAgent"], agent_starts: Optional[bool], **kwargs
+    ):
+        """Runs the evaluator and saves the results.
+
+        Args:
+            agent_class: The agent class to evaluate.
+            agent_starts: Whether the agent starts the conversation or not.
+                If True, the agent starts the conversation
+                If False, the evaluator starts the conversation
+                If None, random choice
+            **kwargs: Keyword arguments to pass to the agent class
+        """
+        if self._started:
+            raise ValueError(
+                "This run was already started. Create a new run to test again."
+            )
+        self._started = True
+        for eval_agent in self._eval_agents:
+            try:
+                eval_agent.evaluate(agent_class, agent_starts, **kwargs)
+            except Exception as e:
+                self._error = f"Error Source: EvalRun Run \nError: {str(e)}"
+                self._save()
+                raise RuntimeError(f"Error evaluating agent: {str(e)}") from e
+            self._save()
+        self._ended = True
+
+    def status(self):
+        """Returns the status of the run as a string"""
+        if self._error:
+            return "FAILED"
+        if not self._started:
+            return "PENDING"
+        if self._ended:
+            return "COMPLETED"
+        current_time = int(time.time())
+        if current_time - self._last_updated < 300:
+            return "IN PROGRESS"
+        return "INTERRUPTED"
+
+    @property
+    def results(self) -> List[dict]:
+        """Returns the results of the run as a list of dictionaries each representing a test case's results"""
+        return [agent.results() for agent in self._eval_agents]
+
+    @property
+    def info(self):
+        return {
+            "project_id": self.project_id,
+            "version_id": self.version_id,
+            "eval_id": self.eval_id,
+            "run_id": self.id,
+            "created_at": self._created_at,
+        }
+
+    @property
+    def _path(self):
         return get_info_path(
-            self.project_id, self.version_id, self.eval_id, self.run_id
+            self.project_id, self.version_id, self.eval_id, self.id
         )
 
-    def save(self):
-        os.makedirs(os.path.dirname(self.path), exist_ok=True)
+    def _save(self):
+        self._last_updated = int(time.time())
+        os.makedirs(os.path.dirname(self._path), exist_ok=True)
         d = {
-            "prompt": self.prompt,
-            "metric_names": self.metric_names,
-            "test_cases": self.test_cases,
-            "created_at": self.created_at,
-            "eval_agent_ids": [a.agent_id for a in self.eval_agents],
+            "prompt": self._agent_prompt,
+            "metric_names": self._metric_names,
+            "test_cases": self._test_cases,
+            "created_at": self._created_at,
+            "eval_agent_ids": [a.id for a in self._eval_agents],
+            "started": self._started,
+            "ended": self._ended,
         }
-        save_json(d, self.path)
+        save_json(d, self._path)
 
     @classmethod
-    def load(cls, project_id, version_id, eval_id, run_id):
+    def _load(cls, project_id, version_id, eval_id, run_id):
         load_path = get_info_path(project_id, version_id, eval_id, run_id)
         try:
             d = load_json(load_path)
@@ -89,7 +175,7 @@ class EvalRun:
 
         eval_agent_ids = d.pop("eval_agent_ids")
         eval_agents = [
-            EvalAgent.load(project_id, version_id, eval_id, run_id, agent_id)
+            EvalAgent._load(project_id, version_id, eval_id, run_id, agent_id)
             for agent_id in eval_agent_ids
         ]
         eval_agents = [a for a in eval_agents if a]
@@ -105,23 +191,3 @@ class EvalRun:
         )
 
         return cls(**d)
-
-    def __iter__(self):
-        yield from self.eval_agents
-
-    def run(
-        self, agent_class: Type["BaseAgent"], agent_starts: Optional[bool], **kwargs
-    ):
-        """Runs the evaluator and saves the results.
-
-        Args:
-            agent_class: The agent class to evaluate.
-            agent_starts: Whether the agent starts the conversation or not.
-                If True, the agent starts the conversation
-                If False, the evaluator starts the conversation
-                If None, random choice
-            **kwargs: Keyword arguments to pass to the agent class
-        """
-        for eval_agent in self.eval_agents:
-            eval_agent.evaluate(agent_class, agent_starts, **kwargs)
-            self.save()

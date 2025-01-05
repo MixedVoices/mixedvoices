@@ -87,7 +87,7 @@ def create_steps_from_names(
             step_index = step_option_names.index(step_name)
             step = step_options[step_index]
         else:
-            step = Step(step_name, version.version_id, version.project_id)
+            step = Step(step_name, version.id, version.project_id)
             if previous_step is not None:
                 step.previous_step_id = previous_step.step_id
                 step.previous_step = previous_step
@@ -106,7 +106,7 @@ def create_steps_from_names(
 def process_recording(recording: "Recording", version: "Version", user_channel="left"):
     try:
         audio_path = recording.audio_path
-        output_folder = os.path.join(version._recordings_path, recording.recording_id)
+        output_folder = os.path.join(version._recordings_path, recording.id)
         combined_transcript, user_words, agent_words, duration = (
             get_transcript_and_duration(audio_path, output_folder, user_channel)
         )
@@ -134,9 +134,9 @@ def process_recording(recording: "Recording", version: "Version", user_channel="
             audio_path, user_words, agent_words, duration, user_channel
         )
         recording.task_status = "COMPLETED"
-        recording.save()
+        recording._save()
 
     except Exception as e:
         recording.task_status = "FAILED"
-        recording.save()
+        recording._save()
         raise e

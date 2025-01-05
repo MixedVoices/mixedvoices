@@ -44,8 +44,8 @@ class Version:
         prompt: str,
         metadata: Optional[Dict[str, Any]] = None,
     ):
-        self.version_id = version_id
-        self.project_id = project_id
+        self._version_id = version_id
+        self._project_id = project_id
         self._prompt = prompt
         self._metadata = metadata
         self._load_recordings()
@@ -56,14 +56,14 @@ class Version:
         self._all_paths: Optional[List[str]] = None
 
     @property
-    def name(self):
+    def id(self):
         """Get the name of the version"""
-        return self.version_id
+        return self._version_id
 
     @property
-    def project_name(self):
+    def project_id(self):
         """Get the name of the project"""
-        return self._project.name
+        return self._project.id
 
     @property
     def prompt(self):
@@ -72,13 +72,21 @@ class Version:
 
     @property
     def recording_count(self):
+        """Get the number of recordings in the version"""
         return len(self._recordings)
+
+    @property
+    def info(self):
+        return {
+            "name": self.id,
+            "prompt": self.prompt,
+            "metadata": self.metadata,
+            "recording_count": self.recording_count,
+        }
 
     def get_recording(self, recording_id: str):
         if recording_id not in self._recordings:
-            raise ValueError(
-                f"Recording {recording_id} not found in version {self.version_id}"
-            )
+            raise ValueError(f"Recording {recording_id} not found in version {self.id}")
         return self._recordings[recording_id]
 
     def update_prompt(self, prompt: str):
@@ -148,15 +156,15 @@ class Version:
         recording = Recording(
             recording_id,
             output_audio_path,
-            self.version_id,
+            self.id,
             self.project_id,
             is_successful=is_successful,
             combined_transcript=transcript,
             summary=summary,
             metadata=metadata,
         )
-        self._recordings[recording.recording_id] = recording
-        recording.save()
+        self._recordings[recording_id] = recording
+        recording._save()
 
         if blocking:
             utils.process_recording(recording, self, user_channel)
@@ -196,7 +204,7 @@ class Version:
 
     @property
     def _path(self):
-        return get_info_path(self.project_id, self.version_id)
+        return get_info_path(self.project_id, self.id)
 
     @property
     def _recordings_path(self):
@@ -213,8 +221,8 @@ class Version:
             try:
                 filename = os.path.basename(recording_file)
                 recording_id = os.path.splitext(filename)[0]
-                self._recordings[recording_id] = Recording.load(
-                    self.project_id, self.version_id, recording_id
+                self._recordings[recording_id] = Recording._load(
+                    self.project_id, self.id, recording_id
                 )
             except Exception as e:
                 print(f"Error loading recording {recording_file}: {e}")
@@ -225,7 +233,7 @@ class Version:
         for step_file in step_files:
             filename = os.path.basename(step_file)
             step_id = os.path.splitext(filename)[0]
-            self.steps[step_id] = Step.load(self.project_id, self.version_id, step_id)
+            self.steps[step_id] = Step.load(self.project_id, self.id, step_id)
 
     @property
     def _starting_steps(self):

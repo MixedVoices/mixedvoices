@@ -55,7 +55,7 @@ class Step:
         return get_info_path(self.project_id, self.version_id, self.step_id)
 
     def record_usage(self, recording: "Recording", is_final_step, is_successful):
-        self.recording_ids.append(recording.recording_id)
+        self.recording_ids.append(recording.id)
         if is_final_step and not is_successful:
             self.number_of_failed_calls += 1
 

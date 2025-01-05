@@ -58,95 +58,165 @@ class EvalAgent:
         success_explanation: Optional[str] = None,
         error: Optional[str] = None,
     ):
-        self.agent_id = agent_id
-        self.project_id = project_id
-        self.version_id = version_id
-        self.eval_id = eval_id
-        self.run_id = run_id
+        self._agent_id = agent_id
+        self._project_id = project_id
+        self._version_id = version_id
+        self._eval_id = eval_id
+        self._run_id = run_id
 
-        self.prompt = prompt
-        self.test_case = test_case
-        self.metric_names = metric_names
-        self.history = history or []
-        self.started = started
-        self.ended = ended
-        self.transcript = transcript or None
-        self.scores = scores or None
-        self.is_successful = is_successful
-        self.success_explanation = success_explanation
-        self.error = error or None
-        self.save()
+        self._prompt = prompt
+        self._test_case = test_case
+        self._metric_names = metric_names
+        self._history = history or []
+        self._started = started
+        self._ended = ended
+        self._transcript = transcript or None
+        self._scores = scores or None
+        self._is_successful = is_successful
+        self._success_explanation = success_explanation
+        self._error = error or None
+        self._save()
 
     @property
-    def metrics_and_success_criteria(self) -> Tuple[List[Metric], Optional[str]]:
+    def id(self):
+        """Get id of the EvalAgent"""
+        return self._agent_id
+
+    @property
+    def project_id(self):
+        """Get the name of the Project"""
+        return self._project_id
+
+    @property
+    def version_id(self):
+        """Get the name of the Version"""
+        return self._version_id
+
+    @property
+    def eval_id(self):
+        """Get the id of the Evaluator"""
+        return self._eval_id
+
+    @property
+    def run_id(self):
+        """Get the name of the EvalRun"""
+        return self._run_id
+
+    def evaluate(self, agent_class: Type["BaseAgent"], agent_starts: bool, **kwargs):
+        """Evaluates the agent on the test case"""
+        try:
+            agent = agent_class(**kwargs)
+            if agent_starts is None:
+                agent_starts = random.choice([True, False])
+
+            if agent_starts:
+                agent_message, ended = agent.respond("")
+            else:
+                agent_message, ended = "", False
+            while 1:
+                eval_agent_message, ended = self._respond(agent_message)
+                if ended:
+                    break
+                agent_message, ended = agent.respond(eval_agent_message)
+                if ended:
+                    self._add_agent_message(agent_message)
+                    break
+
+            self._handle_conversation_end()
+        except Exception as e:
+            self._handle_exception(e, "evaluate")
+
+    def results(self):
+        """Returns the results of the agent as a dictionary"""
+        return {
+            "prompt": self._prompt,
+            "started": self._started,
+            "ended": self._ended,
+            "transcript": self._transcript,
+            "scores": self._scores,
+            "is_successful": self._is_successful,
+            "success_explanation": self._success_explanation,
+            "error": self._error,
+        }
+
+    @property
+    def status(self):
+        """Returns the status of the agent as a string"""
+        if not self._started:
+            return "PENDING"
+        if self._error:
+            return "FAILED"
+        return "COMPLETED" if self._ended else "IN PROGRESS"
+
+    def _get_metrics_and_success_criteria(self) -> Tuple[List[Metric], Optional[str]]:
         project = mv.load_project(self.project_id)
         return (
-            project.get_metrics_by_names(self.metric_names),
+            project.get_metrics_by_names(self._metric_names),
             project._success_criteria,
         )
 
-    def respond(self, input: Optional[str]):
-        if not self.started:
-            self.started = True
-            self.save()
+    def _respond(self, input: Optional[str]):
+        if not self._started:
+            self._started = True
+            self._save()
         if input:
-            self.add_agent_message(input)
-        messages = [self.get_system_prompt()] + self.history
+            self._add_agent_message(input)
+        messages = [self._get_system_prompt()] + self._history
         try:
             client = get_openai_client()
             response = client.chat.completions.create(
                 model=models.EVAL_AGENT_MODEL, messages=messages
             )
             evaluator_response = response.choices[0].message.content
-            self.add_eval_agent_message(evaluator_response)
+            self._add_eval_agent_message(evaluator_response)
             return evaluator_response, has_ended_conversation(evaluator_response)
         except Exception as e:
-            self.handle_exception(e, "Conversation")
+            self._handle_exception(e, "Conversation")
 
-    def add_agent_message(self, message: str):
-        self.history.append({"role": "user", "content": message})
+    def _add_agent_message(self, message: str):
+        self._history.append({"role": "user", "content": message})
         print(f"Agent: {message}")
 
-    def add_eval_agent_message(self, message: str):
-        self.history.append({"role": "assistant", "content": message})
+    def _add_eval_agent_message(self, message: str):
+        self._history.append({"role": "assistant", "content": message})
         print(f"Evaluator: {message}")
 
-    def handle_conversation_end(self):
-        self.ended = True
-        self.transcript = history_to_transcript(self.history)
-        metrics, success_criteria = self.metrics_and_success_criteria
+    def _handle_conversation_end(self):
+        self._ended = True
+        self._transcript = history_to_transcript(self._history)
+        metrics, success_criteria = self._get_metrics_and_success_criteria()
         try:
-            self.scores = generate_scores(
-                self.transcript, self.prompt, metrics, success_criteria
-            )
-            print(self.scores)
-            self.save()
+            self._scores = generate_scores(self._transcript, self._prompt, metrics)
+            print(self._scores)
+            self._save()
         except Exception as e:
-            self.handle_exception(e, "Metric Calculation")
+            self._handle_exception(e, "Metric Calculation")
 
         if success_criteria:
             try:
-                response = get_success(self.transcript, success_criteria)
-                self.is_successful = response["success"]
-                self.success_explanation = response["explanation"]
-                self.save()
+                response = get_success(self._transcript, success_criteria)
+                self._is_successful = response["success"]
+                self._success_explanation = response["explanation"]
+                self._save()
             except Exception as e:
-                self.handle_exception(e, "Success Criteria")
+                self._handle_exception(e, "Success Criteria")
 
-    def handle_exception(self, e, source):
-        self.error = f"Error Source: {source} \nError: {str(e)}"
-        self.ended = True
-        self.transcript = self.transcript or history_to_transcript(self.history)
-        self.save()
+    def _handle_exception(self, e, source):
+        self._error = f"Error Source: EvalAgent {source} \nError: {str(e)}"
+        self._ended = True
+        self._transcript = self._transcript or history_to_transcript(self._history)
+        self._save()
+        if source == "evaluate":
+            raise e
 
-    def get_system_prompt(self):
+    def _get_system_prompt(self):
         datetime_str = datetime.now().strftime("%I%p, %a, %d %b").lower().lstrip("0")
         return {
             "role": "system",
             "content": f"You are a testing agent making a voice call. "
             f"\nHave a conversation. Take a single turn at a time."
             f"\nDon't make sounds or any other subtext, only say words in conversation"
-            f"\nThis is your persona:{self.test_case}"
+            f"\nThis is your persona:{self._test_case}"
             "\nWhen conversation is complete, with final response return HANGUP to end."
             "\nEg: Have a good day. HANGUP"
             f"\nDate/time: {datetime_str}."
@@ -154,30 +224,34 @@ class EvalAgent:
         }
 
     @property
-    def path(self):
+    def _path(self):
         return get_info_path(
-            self.project_id, self.version_id, self.eval_id, self.run_id, self.agent_id
+            self.project_id,
+            self.version_id,
+            self.eval_id,
+            self.run_id,
+            self.id,
         )
 
-    def save(self):
-        os.makedirs(os.path.dirname(self.path), exist_ok=True)
+    def _save(self):
+        os.makedirs(os.path.dirname(self._path), exist_ok=True)
         d = {
-            "prompt": self.prompt,
-            "test_case": self.test_case,
-            "metric_names": self.metric_names,
-            "history": self.history,
-            "started": self.started,
-            "ended": self.ended,
-            "transcript": self.transcript,
-            "is_successful": self.is_successful,
-            "success_explanation": self.success_explanation,
-            "scores": self.scores,
-            "error": self.error,
+            "prompt": self._prompt,
+            "test_case": self._test_case,
+            "metric_names": self._metric_names,
+            "history": self._history,
+            "started": self._started,
+            "ended": self._ended,
+            "transcript": self._transcript,
+            "is_successful": self._is_successful,
+            "success_explanation": self._success_explanation,
+            "scores": self._scores,
+            "error": self._error,
         }
-        save_json(d, self.path)
+        save_json(d, self._path)
 
     @classmethod
-    def load(cls, project_id, version_id, eval_id, run_id, agent_id):
+    def _load(cls, project_id, version_id, eval_id, run_id, agent_id):
         load_path = get_info_path(project_id, version_id, eval_id, run_id, agent_id)
         try:
             d = load_json(load_path)
@@ -194,23 +268,3 @@ class EvalAgent:
             }
         )
         return cls(**d)
-
-    def evaluate(self, agent_class: Type["BaseAgent"], agent_starts: bool, **kwargs):
-        agent = agent_class(**kwargs)
-        if agent_starts is None:
-            agent_starts = random.choice([True, False])
-
-        if agent_starts:
-            agent_message, ended = agent.respond("")
-        else:
-            agent_message, ended = "", False
-        while 1:
-            eval_agent_message, ended = self.respond(agent_message)
-            if ended:
-                break
-            agent_message, ended = agent.respond(eval_agent_message)
-            if ended:
-                self.add_agent_message(agent_message)
-                break
-
-        self.handle_conversation_end()

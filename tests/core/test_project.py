@@ -5,13 +5,13 @@ import mixedvoices as mv
 
 def test_project(empty_project):
     project = empty_project
-    assert "v1" in project.version_names
+    assert "v1" in project.version_ids
 
     with pytest.raises(ValueError):
         mv.create_project("test_project", [])
 
     project = mv.load_project("test_project")
-    assert "v1" in project.version_names
+    assert "v1" in project.version_ids
 
     with pytest.raises(ValueError):
         mv.load_project("test_nonexistent_project")

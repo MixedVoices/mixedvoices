@@ -438,7 +438,7 @@ class TestCaseGenerator:
                 self.versions, self.versions_paths, self.version_cases_per_path
             ):
                 progress.set_description(
-                    f"Generating from {version.project_name}/{version.name}'s Paths"
+                    f"Generating from {version.project_id}/{version.id}'s paths"
                 )
                 test_cases.extend(
                     generate_test_cases_from_paths(
@@ -453,7 +453,7 @@ class TestCaseGenerator:
             for project, project_paths, cases_per_path in zip(
                 self.projects, self.projects_paths, self.project_cases_per_path
             ):
-                progress.set_description(f"Generating from {project.name}'s paths")
+                progress.set_description(f"Generating from {project.id}'s paths")
                 test_cases.extend(
                     generate_test_cases_from_paths(
                         self.prompt,

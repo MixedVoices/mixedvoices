@@ -10,28 +10,28 @@ from mixedvoices.utils import load_json, save_json, validate_name
 
 
 def create_project(
-    project_name: str, metrics: List[Metric], success_criteria: Optional[str] = None
+    project_id: str, metrics: List[Metric], success_criteria: Optional[str] = None
 ):
     """Create a new project
 
     Args:
-        project_name (str): Name of the project
+        project_id (str): Name of the project
         metrics (List[Metric]): List of metrics to be added to the project
         success_criteria (Optional[str]): Success criteria for the version. Used to automatically determine if a recording is successful or not. Defaults to None.
     """
-    validate_name(project_name, "project_name")
+    validate_name(project_id, "project_id")
     check_metrics_while_adding(metrics)
-    if project_name in os.listdir(constants.PROJECTS_FOLDER):
-        raise ValueError(f"Project {project_name} already exists")
-    os.makedirs(os.path.join(constants.PROJECTS_FOLDER, project_name))
-    return Project(project_name, metrics, success_criteria)
+    if project_id in os.listdir(constants.PROJECTS_FOLDER):
+        raise ValueError(f"Project {project_id} already exists")
+    os.makedirs(os.path.join(constants.PROJECTS_FOLDER, project_id))
+    return Project(project_id, metrics, success_criteria)
 
 
-def load_project(project_name: str):
+def load_project(project_id: str):
     """Load an existing project"""
-    if project_name not in os.listdir(constants.PROJECTS_FOLDER):
-        raise ValueError(f"Project {project_name} does not exist")
-    return Project._load(project_name)
+    if project_id not in os.listdir(constants.PROJECTS_FOLDER):
+        raise ValueError(f"Project {project_id} does not exist")
+    return Project._load(project_id)
 
 
 def check_metrics_while_adding(
@@ -61,7 +61,7 @@ class Project:
         evals: Optional[Dict[str, Evaluator]] = None,
         _metrics: Optional[Dict[str, Metric]] = None,
     ):
-        self.project_id = project_id
+        self._project_id = project_id
         self._success_criteria = success_criteria
         self._metrics: Dict[str, Metric] = _metrics or {}
         self._evals: Dict[str, Evaluator] = evals or {}
@@ -72,9 +72,9 @@ class Project:
             self._save()
 
     @property
-    def name(self) -> str:
+    def id(self) -> str:
         """Get the name of the project"""
-        return self.project_id
+        return self._project_id
 
     # Metric methods
     @property
@@ -171,7 +171,7 @@ class Project:
 
     # Version methods
     @property
-    def version_names(self):
+    def version_ids(self):
         """Get all version names in the project"""
         all_files = os.listdir(os.path.join(self._project_folder, "versions"))
         return [
@@ -182,7 +182,7 @@ class Project:
 
     def create_version(
         self,
-        version_name: str,
+        version_id: str,
         prompt: str,
         metadata: Optional[Dict[str, Any]] = None,
     ):
@@ -190,30 +190,30 @@ class Project:
         Create a new version in the project
 
         Args:
-            version_name (str): Name of the version
+            version_id (str): Name of the version
             prompt (str): Prompt used by the voice agent
             metadata (Optional[Dict[str, Any]]): Metadata to be associated with the version. Defaults to None.
         """  # noqa E501
-        validate_name(version_name, "version_name")
-        if version_name in self.version_names:
-            raise ValueError(f"Version {version_name} already exists")
-        version_folder = os.path.join(self._project_folder, "versions", version_name)
+        validate_name(version_id, "version_id")
+        if version_id in self.version_ids:
+            raise ValueError(f"Version {version_id} already exists")
+        version_folder = os.path.join(self._project_folder, "versions", version_id)
         os.makedirs(version_folder)
         os.makedirs(os.path.join(version_folder, "recordings"))
         os.makedirs(os.path.join(version_folder, "steps"))
-        version = Version(version_name, self.project_id, prompt, metadata)
+        version = Version(version_id, self.id, prompt, metadata)
         version._save()
         return version
 
-    def load_version(self, version_name: str) -> Version:
+    def load_version(self, version_id: str) -> Version:
         """Load a version from the project
 
         Args:
-            version_name (str): ID of the version to load
+            version_id (str): ID of the version to load
         """
-        if version_name not in self.version_names:
-            raise ValueError(f"Version {version_name} does not exist")
-        return Version._load(self.project_id, version_name)
+        if version_id not in self.version_ids:
+            raise ValueError(f"Version {version_id} does not exist")
+        return Version._load(self.id, version_id)
 
     # Evaluator methods
     def create_evaluator(
@@ -237,7 +237,7 @@ class Project:
         eval_id = uuid4().hex
         cur_eval = Evaluator(
             eval_id,
-            self.project_id,
+            self.id,
             metric_names,
             test_cases,
         )
@@ -257,7 +257,7 @@ class Project:
             Evaluator: The loaded evaluator
         """
         if eval_id not in self._evals:
-            raise ValueError(f"Eval {eval_id} does not exist")
+            raise ValueError(f"Evaluator {eval_id} does not exist")
         return self._evals[eval_id]
 
     def list_evaluators(self) -> List[Evaluator]:
@@ -266,22 +266,22 @@ class Project:
     # Internal Use Methods
     @property
     def _project_folder(self) -> str:
-        return os.path.join(constants.PROJECTS_FOLDER, self.project_id)
+        return os.path.join(constants.PROJECTS_FOLDER, self.id)
 
     @property
     def _path(self) -> str:
-        return get_info_path(self.project_id)
+        return get_info_path(self.id)
 
     def _get_paths(self) -> List[str]:
         paths = []
-        for version_id in self.version_names:
+        for version_id in self.version_ids:
             version = self.load_version(version_id)
             paths.extend(version._get_paths())
         return paths
 
     def _get_step_names(self) -> List[str]:
         step_names = set()
-        for version_id in self.version_names:
+        for version_id in self.version_ids:
             version = self.load_version(version_id)
             step_names.union(version._get_step_names())
         return list(step_names)
