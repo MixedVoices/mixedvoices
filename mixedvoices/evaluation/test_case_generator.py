@@ -369,7 +369,7 @@ class TestCaseGenerator:
             ]
         )
 
-    def generate(self, verbose=True):
+    def generate(self, show_progress=True):
         """Generate test cases from all the given inputs"""
         self._check_generation("generate")
 
@@ -384,7 +384,7 @@ class TestCaseGenerator:
 
         try:
 
-            if verbose:
+            if show_progress:
                 print(f"Generating test cases. Total cases: {num_cases}")
                 progress = tqdm(total=num_cases)
                 progress.set_description("Generating test cases")
@@ -467,7 +467,7 @@ class TestCaseGenerator:
             self.test_cases = test_cases
             return test_cases
         finally:
-            if verbose:
+            if show_progress:
                 progress.close()
 
     def _check_generation(self, operation="add"):
