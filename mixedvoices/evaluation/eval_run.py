@@ -147,15 +147,13 @@ class EvalRun:
 
     @property
     def _path(self):
-        return get_info_path(
-            self.project_id, self.version_id, self.eval_id, self.id
-        )
+        return get_info_path(self.project_id, self.version_id, self.eval_id, self.id)
 
     def _save(self):
         self._last_updated = int(time.time())
         os.makedirs(os.path.dirname(self._path), exist_ok=True)
         d = {
-            "prompt": self._agent_prompt,
+            "agent_prompt": self._agent_prompt,
             "metric_names": self._metric_names,
             "test_cases": self._test_cases,
             "created_at": self._created_at,

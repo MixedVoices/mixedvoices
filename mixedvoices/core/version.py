@@ -63,7 +63,7 @@ class Version:
     @property
     def project_id(self):
         """Get the name of the project"""
-        return self._project.id
+        return self._project_id
 
     @property
     def prompt(self):

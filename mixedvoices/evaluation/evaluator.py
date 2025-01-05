@@ -70,9 +70,9 @@ class Evaluator:
             "metric_names": self.metric_names,
         }
 
-    def list_eval_runs(self, version_id=Optional[str]) -> List[EvalRun]:
+    def list_eval_runs(self, version_id: Optional[str] = None) -> List[EvalRun]:
         """List of eval runs"""
-        if version_id not in self._project.version_ids:
+        if version_id and version_id not in self._project.version_ids:
             raise ValueError(
                 f"Version {version_id} not found in project {self.project_id}"
             )

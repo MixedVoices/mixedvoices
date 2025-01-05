@@ -46,7 +46,7 @@ class EvalAgent:
         version_id: str,
         eval_id: str,
         run_id: str,
-        prompt: str,
+        agent_prompt: str,
         test_case: str,
         metric_names: List[str],
         history: Optional[List[dict]] = None,
@@ -64,7 +64,7 @@ class EvalAgent:
         self._eval_id = eval_id
         self._run_id = run_id
 
-        self._prompt = prompt
+        self._agent_prompt = agent_prompt
         self._test_case = test_case
         self._metric_names = metric_names
         self._history = history or []
@@ -129,7 +129,7 @@ class EvalAgent:
     def results(self):
         """Returns the results of the agent as a dictionary"""
         return {
-            "prompt": self._prompt,
+            "prompt": self._agent_prompt,
             "started": self._started,
             "ended": self._ended,
             "transcript": self._transcript,
@@ -186,7 +186,9 @@ class EvalAgent:
         self._transcript = history_to_transcript(self._history)
         metrics, success_criteria = self._get_metrics_and_success_criteria()
         try:
-            self._scores = generate_scores(self._transcript, self._prompt, metrics)
+            self._scores = generate_scores(
+                self._transcript, self._agent_prompt, metrics
+            )
             print(self._scores)
             self._save()
         except Exception as e:
@@ -236,7 +238,7 @@ class EvalAgent:
     def _save(self):
         os.makedirs(os.path.dirname(self._path), exist_ok=True)
         d = {
-            "prompt": self._prompt,
+            "agent_prompt": self._agent_prompt,
             "test_case": self._test_case,
             "metric_names": self._metric_names,
             "history": self._history,

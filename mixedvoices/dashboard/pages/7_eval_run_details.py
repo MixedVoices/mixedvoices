@@ -90,6 +90,7 @@ def eval_run_details_page():
                         height=200,
                         disabled=True,
                         label_visibility="collapsed",
+                        key=f"prompt_{idx}",
                     )
 
             with preview_cols[1]:
