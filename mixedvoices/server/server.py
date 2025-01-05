@@ -92,7 +92,6 @@ async def create_project(name: str, success_criteria: Optional[str], metrics_dat
     try:
         metrics = [Metric(**metric) for metric in metrics_data.metrics]
         mixedvoices.create_project(name, metrics, success_criteria)
-        logger.info(f"Project '{name}' created successfully")
         return {"message": f"Project {name} created successfully", "project_id": name}
     except ValueError as e:
         logger.error(f"Invalid project name '{name}': {str(e)}")
@@ -233,9 +232,6 @@ async def create_version(project_name: str, version_data: VersionCreate):
             version_data.name,
             prompt=version_data.prompt,
             metadata=version_data.metadata,
-        )
-        logger.info(
-            f"Version '{version_data.name}' created successfully in project '{project_name}'"
         )
         return {"message": f"Version {version_data.name} created successfully"}
     except ValueError as e:
@@ -395,9 +391,6 @@ async def add_recording(
     is_successful: Optional[bool] = None,
 ):
     """Add a new recording to a version"""
-    logger.info(
-        f"Adding recording to version '{version_name}' in project '{project_name}'"
-    )
     logger.debug(f"is_successful: {is_successful}")
 
     try:
@@ -414,7 +407,6 @@ async def add_recording(
                 is_successful=is_successful,
                 user_channel=user_channel,
             )
-            logger.info("Recording is being processed:")
             return {
                 "message": "Recording is being processed",
             }
@@ -478,10 +470,6 @@ async def handle_webhook(
     project_name: str, version_name: str, provider_name: str, request: Request
 ):
     """Handle incoming webhook, download the recording, and add it to the version"""
-    logger.info(
-        f"Received webhook for provider '{provider_name}' - project: '{project_name}', version: '{version_name}'"
-    )
-
     try:
         webhook_data = await request.json()
         logger.debug(f"Webhook data received: {webhook_data}")
@@ -507,9 +495,6 @@ async def handle_webhook(
                     if response.status == 200:
                         with open(temp_path, "wb") as f:
                             f.write(await response.read())
-                            logger.info(
-                                f"Audio file downloaded successfully: {call_id}.wav"
-                            )
                     else:
                         logger.error(
                             f"Failed to download audio file: {response.status}"
@@ -527,7 +512,6 @@ async def handle_webhook(
                 summary=summary,
                 transcript=transcript,
             )
-            logger.info("Recording processed successfully")
 
             return {
                 "message": "Webhook processed and recording added successfully",
