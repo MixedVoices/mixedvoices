@@ -3,6 +3,8 @@ import time
 from typing import TYPE_CHECKING, List, Optional, Type
 from uuid import uuid4
 
+from tqdm import tqdm
+
 import mixedvoices.constants as constants
 from mixedvoices.evaluation.eval_agent import EvalAgent
 from mixedvoices.utils import load_json, save_json
@@ -38,6 +40,8 @@ class EvalRun:
         agent_prompt: str,
         metric_names: List[str],
         test_cases: List[str],
+        show_progress: bool = True,
+        verbose: bool = True,
         created_at: Optional[int] = None,
         eval_agents: Optional[List[EvalAgent]] = None,
         started: bool = False,
@@ -53,6 +57,7 @@ class EvalRun:
         self._agent_prompt = agent_prompt
         self._metric_names = metric_names
         self._test_cases = test_cases
+        self._show_progress = show_progress
         self._created_at = created_at or int(time.time())
         self._eval_agents = eval_agents or [
             EvalAgent(
@@ -64,6 +69,7 @@ class EvalRun:
                 agent_prompt,
                 test_case,
                 metric_names,
+                verbose,
             )
             for test_case in self._test_cases
         ]
@@ -90,13 +96,16 @@ class EvalRun:
         return self._eval_id
 
     def run(
-        self, agent_class: Type["BaseAgent"], agent_starts: Optional[bool], **kwargs
+        self,
+        agent_class: Type["BaseAgent"],
+        agent_starts: Optional[bool],
+        **kwargs,
     ):
         """Runs the evaluator and saves the results.
 
         Args:
-            agent_class: The agent class to evaluate.
-            agent_starts: Whether the agent starts the conversation or not.
+            agent_class (Type[BaseAgent]): The agent class to evaluate
+            agent_starts (Optional[bool]): Whether the agent starts the conversation or not.
                 If True, the agent starts the conversation
                 If False, the evaluator starts the conversation
                 If None, random choice
@@ -106,10 +115,16 @@ class EvalRun:
             raise ValueError(
                 "This run was already started. Create a new run to test again."
             )
+
+        if self._show_progress:
+            progress = tqdm(total=len(self._test_cases))
+            progress.set_description("Evaluating Test Cases")
         self._started = True
-        for eval_agent in self._eval_agents:
+        for i, eval_agent in enumerate(self._eval_agents):
             try:
-                eval_agent.evaluate(agent_class, agent_starts, **kwargs)
+                eval_agent.evaluate(agent_class, agent_starts, i + 1, **kwargs)
+                if self._show_progress:
+                    progress.update(1)
             except Exception as e:
                 self._error = f"Error Source: EvalRun Run \nError: {str(e)}"
                 self._save()

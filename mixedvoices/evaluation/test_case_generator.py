@@ -385,7 +385,6 @@ class TestCaseGenerator:
         try:
 
             if show_progress:
-                print(f"Generating test cases. Total cases: {num_cases}")
                 progress = tqdm(total=num_cases)
                 progress.set_description("Generating test cases")
             else:

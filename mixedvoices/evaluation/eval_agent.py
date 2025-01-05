@@ -49,6 +49,7 @@ class EvalAgent:
         agent_prompt: str,
         test_case: str,
         metric_names: List[str],
+        verbose: bool = True,
         history: Optional[List[dict]] = None,
         started: bool = False,
         ended: bool = False,
@@ -67,6 +68,7 @@ class EvalAgent:
         self._agent_prompt = agent_prompt
         self._test_case = test_case
         self._metric_names = metric_names
+        self._verbose = verbose
         self._history = history or []
         self._started = started
         self._ended = ended
@@ -76,6 +78,18 @@ class EvalAgent:
         self._success_explanation = success_explanation
         self._error = error or None
         self._save()
+
+    def _print_header(self, title, test_case_num):
+        print("\n\n")
+        print("=" * 100)
+        print(f" Test Case #{test_case_num}: {title} ".center(100, "="))
+        print("=" * 100)
+        print("\n")
+
+    def _print_section(self, title):
+        print("\n" + "-" * 40)
+        print(f" {title} ")
+        print("-" * 40)
 
     @property
     def id(self):
@@ -102,8 +116,20 @@ class EvalAgent:
         """Get the name of the EvalRun"""
         return self._run_id
 
-    def evaluate(self, agent_class: Type["BaseAgent"], agent_starts: bool, **kwargs):
+    def evaluate(
+        self,
+        agent_class: Type["BaseAgent"],
+        agent_starts: bool,
+        test_case_num: int,
+        **kwargs,
+    ):
         """Evaluates the agent on the test case"""
+        if self._verbose:
+            self._print_header("Evaluation", test_case_num)
+            self._print_section("Test Case Details")
+            print(f"Description: {self._test_case}\n")
+            self._print_section("Conversation")
+
         try:
             agent = agent_class(**kwargs)
             if agent_starts is None:
@@ -113,6 +139,7 @@ class EvalAgent:
                 agent_message, ended = agent.respond("")
             else:
                 agent_message, ended = "", False
+
             while 1:
                 eval_agent_message, ended = self._respond(agent_message)
                 if ended:
@@ -175,11 +202,13 @@ class EvalAgent:
 
     def _add_agent_message(self, message: str):
         self._history.append({"role": "user", "content": message})
-        print(f"Agent: {message}")
+        if self._verbose:
+            print(f"\nAgent    : {message}")
 
     def _add_eval_agent_message(self, message: str):
         self._history.append({"role": "assistant", "content": message})
-        print(f"Evaluator: {message}")
+        if self._verbose:
+            print(f"\nEvaluator: {message}")
 
     def _handle_conversation_end(self):
         self._ended = True
@@ -189,7 +218,13 @@ class EvalAgent:
             self._scores = generate_scores(
                 self._transcript, self._agent_prompt, metrics
             )
-            print(self._scores)
+            if self._verbose:
+                self._print_section("Evaluation Scores")
+                for metric_name, score_dict in self._scores.items():
+                    print(f"\n{metric_name.title()}:")
+                    print(f"Score      : {score_dict['score']}")
+                    print(f"Explanation: {score_dict['explanation']}")
+
             self._save()
         except Exception as e:
             self._handle_exception(e, "Metric Calculation")
@@ -199,6 +234,10 @@ class EvalAgent:
                 response = get_success(self._transcript, success_criteria)
                 self._is_successful = response["success"]
                 self._success_explanation = response["explanation"]
+                if self._verbose:
+                    self._print_section("Success Criteria")
+                    print(f"\nSuccess    : {self._is_successful}")
+                    print(f"Explanation: {self._success_explanation}")
                 self._save()
             except Exception as e:
                 self._handle_exception(e, "Success Criteria")
