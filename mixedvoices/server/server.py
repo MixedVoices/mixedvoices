@@ -90,6 +90,9 @@ async def create_project(
     except ValueError as e:
         logger.error(f"Invalid project name '{name}': {str(e)}")
         raise HTTPException(status_code=400, detail=str(e)) from e
+    except FileExistsError as e:
+        logger.error(f"Project '{name}' already exists: {str(e)}")
+        raise HTTPException(status_code=409, detail=str(e)) from e
     except Exception as e:
         logger.error(f"Error creating project '{name}': {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e)) from e
@@ -105,7 +108,7 @@ async def list_versions(project_id: str):
             version = project.load_version(version_id)
             versions_data.append(version.info)
         return {"versions": versions_data}
-    except ValueError as e:
+    except KeyError as e:
         logger.error(f"Project '{project_id}' not found: {str(e)}")
         raise HTTPException(status_code=404, detail=str(e)) from e
     except Exception as e:
@@ -122,7 +125,7 @@ async def get_version(project_id: str, version_id: str):
         project = mixedvoices.load_project(project_id)
         version = project.load_version(version_id)
         return version.info
-    except ValueError as e:
+    except KeyError as e:
         logger.error(
             f"Project '{project_id}' or version '{version_id}' not found: {str(e)}"
         )
@@ -152,7 +155,7 @@ async def list_metrics(project_id: str):
     try:
         project = mixedvoices.load_project(project_id)
         return {"metrics": [metric.to_dict() for metric in project.metrics]}
-    except ValueError as e:
+    except KeyError as e:
         logger.error(f"Project '{project_id}' not found: {str(e)}")
         raise HTTPException(status_code=404, detail=str(e)) from e
     except Exception as e:
@@ -175,9 +178,16 @@ async def create_metric(project_id: str, metric_data: MetricCreate):
         )
         project.add_metrics([metric])
         return {"message": f"Metric {metric.name} created successfully"}
-    except ValueError as e:
-        logger.error(f"Invalid metric data: {str(e)}")
-        raise HTTPException(status_code=400, detail=str(e)) from e
+    except KeyError as e:
+        logger.error(f"Project '{project_id}' not found: {str(e)}")
+        raise HTTPException(status_code=404, detail=str(e)) from e
+    except FileExistsError as e:
+        logger.error(
+            f"Metric with name '{metric_data.name}' already exists in project '{project_id}': {str(e)}"
+        )
+        raise HTTPException(
+            status_code=409, detail=f"Metric {metric_data.name} already exists"
+        )
     except Exception as e:
         logger.error(f"Error creating metric: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e)) from e
@@ -195,9 +205,11 @@ async def update_metric(project_id: str, metric_name: str, metric_data: MetricUp
         )
         project.update_metric(metric)
         return {"message": f"Metric {metric_name} updated successfully"}
-    except ValueError as e:
-        logger.error(f"Invalid metric data: {str(e)}")
-        raise HTTPException(status_code=400, detail=str(e)) from e
+    except KeyError as e:
+        logger.error(
+            f"Project '{project_id}' or metric '{metric_name}' not found: {str(e)}"
+        )
+        raise HTTPException(status_code=404, detail=str(e)) from e
     except Exception as e:
         logger.error(f"Error updating metric: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e)) from e
@@ -214,12 +226,22 @@ async def create_version(project_id: str, version_data: VersionCreate):
             metadata=version_data.metadata,
         )
         return {"message": f"Version {version_data.name} created successfully"}
-    except ValueError as e:
+    except KeyError as e:
+        logger.error(f"Project '{project_id}' not found: {str(e)}")
+        raise HTTPException(status_code=404, detail=str(e)) from e
+    except FileExistsError as e:
         logger.error(
-            f"Error creating version '{version_data.name}' in project '{project_id}': {str(e)}"
+            f"Version '{version_data.name}' already exists in project '{project_id}': {str(e)}"
         )
         raise HTTPException(
-            status_code=400, detail=f"Version {version_data.name} already exists"
+            status_code=409, detail=f"Version {version_data.name} already exists"
+        ) from e
+    except ValueError as e:
+        logger.error(
+            f"Invalid version name '{version_data.name}' in project '{project_id}': {str(e)}"
+        )
+        raise HTTPException(
+            status_code=400, detail=f"Invalid version name {version_data.name}"
         ) from e
     except Exception as e:
         logger.error(
@@ -235,6 +257,9 @@ async def get_success_criteria(project_id: str):
     try:
         project = mixedvoices.load_project(project_id)
         return {"success_criteria": project.success_criteria}
+    except KeyError as e:
+        logger.error(f"Project '{project_id}' not found: {str(e)}")
+        raise HTTPException(status_code=404, detail=str(e)) from e
     except Exception as e:
         logger.error(
             f"Error getting success criteria for project '{project_id}': {str(e)}",
@@ -250,6 +275,9 @@ async def update_success_criteria(project_id: str, success_criteria: SuccessCrit
         project = mixedvoices.load_project(project_id)
         project.update_success_criteria(success_criteria.success_criteria)
         return {"message": "Success criteria updated successfully"}
+    except KeyError as e:
+        logger.error(f"Project '{project_id}' not found: {str(e)}")
+        raise HTTPException(status_code=404, detail=str(e)) from e
     except Exception as e:
         logger.error(
             f"Error updating success criteria for project '{project_id}': {str(e)}",
@@ -277,9 +305,9 @@ async def get_version_flow(project_id: str, version_id: str):
             for step_id, step in version.steps.items()
         ]
         return {"steps": steps_data}
-    except ValueError as e:
+    except KeyError as e:
         logger.error(
-            f"Version '{version_id}' not found in project '{project_id}': {str(e)}"
+            f"Version '{version_id}' or project '{project_id}' not found: {str(e)}"
         )
         raise HTTPException(status_code=404, detail=str(e)) from e
     except Exception as e:
@@ -310,9 +338,9 @@ async def get_recording_flow(project_id: str, version_id: str, recording_id: str
                 }
             )
         return {"steps": steps_data}
-    except ValueError as e:
+    except KeyError as e:
         logger.error(
-            f"Recording '{recording_id}' not found in version '{version_id}' of project '{project_id}': {str(e)}"
+            f"Recording '{recording_id}' or version '{version_id}' or project '{project_id}' not found: {str(e)}"
         )
         raise HTTPException(status_code=404, detail=str(e)) from e
     except Exception as e:
@@ -348,7 +376,7 @@ async def list_recordings(project_id: str, version_id: str):
             for recording_id, recording in version._recordings.items()
         ]
         return {"recordings": recordings_data}
-    except ValueError as e:
+    except KeyError as e:
         logger.error(
             f"Version '{version_id}' or project '{project_id}' does not exist: {str(e)}"
         )
@@ -386,8 +414,13 @@ async def add_recording(
         return {
             "message": "Recording is being processed",
         }
+    except KeyError as e:
+        logger.error(
+            f"Version '{version_id}' or project '{project_id}' does not exist: {str(e)}"
+        )
+        raise HTTPException(status_code=404, detail=str(e)) from e
     except ValueError as e:
-        logger.error(f"Invalid recording data: {str(e)}")
+        logger.error(f"Invalid input: {str(e)}", exc_info=True)
         raise HTTPException(status_code=400, detail=str(e)) from e
     except Exception as e:
         logger.error(f"Error adding recording: {str(e)}", exc_info=True)
@@ -405,7 +438,7 @@ async def list_step_recordings(project_id: str, version_id: str, step_id: str):
         version = project.load_version(version_id)
         step = version.steps.get(step_id, None)
         if step is None:
-            raise ValueError(f"Step {step_id} not found in version {version_id}")
+            raise KeyError(f"Step {step_id} not found in version {version_id}")
 
         recordings_data = []
         for recording_id in step.recording_ids:
@@ -429,7 +462,7 @@ async def list_step_recordings(project_id: str, version_id: str, step_id: str):
             )
 
         return {"recordings": recordings_data}
-    except ValueError as e:
+    except KeyError as e:
         logger.error(
             f"Step '{step_id}' or version '{version_id}' or project '{project_id}' not found: {str(e)}"
         )
@@ -451,6 +484,9 @@ async def handle_webhook(
         webhook_data = await request.json()
         logger.debug(f"Webhook data received: {webhook_data}")
 
+        project = mixedvoices.load_project(project_id)
+        version = project.load_version(version_id)
+
         if provider_name == "vapi":
             data = process_vapi_webhook(webhook_data)
             stereo_url = data["call_info"]["stereo_recording_url"]
@@ -461,9 +497,6 @@ async def handle_webhook(
         else:
             logger.error(f"Invalid provider name: {provider_name}")
             raise HTTPException(status_code=400, detail="Invalid provider name")
-
-        project = mixedvoices.load_project(project_id)
-        version = project.load_version(version_id)
 
         temp_path = Path(f"/tmp/{call_id}.wav")
         try:
@@ -499,8 +532,10 @@ async def handle_webhook(
                 temp_path.unlink()
                 logger.debug(f"Temporary file removed: {temp_path}")
 
-    except ValueError as e:
-        logger.error(f"Invalid webhook data: {str(e)}")
+    except KeyError as e:
+        logger.error(
+            f"Project '{project_id}' or version '{version_id}' not found: {str(e)}"
+        )
         raise HTTPException(status_code=404, detail=str(e)) from e
     except Exception as e:
         logger.error(f"Error processing webhook: {str(e)}", exc_info=True)
@@ -514,7 +549,7 @@ async def list_evaluators(project_id: str):
         evals = project.list_evaluators()
         eval_data = [cur_eval.info for cur_eval in evals]
         return {"evals": eval_data}
-    except ValueError as e:
+    except KeyError as e:
         logger.error(f"Project '{project_id}' not found: {str(e)}")
         raise HTTPException(status_code=404, detail=str(e)) from e
     except Exception as e:
@@ -530,7 +565,7 @@ async def create_evaluator(project_id: str, eval_data: EvalCreate):
             eval_data.test_cases, eval_data.metric_names
         )
         return {"eval_id": current_eval.id}
-    except ValueError as e:
+    except KeyError as e:
         logger.error(f"Project '{project_id}' not found: {str(e)}")
         raise HTTPException(status_code=404, detail=str(e)) from e
     except Exception as e:
@@ -548,10 +583,10 @@ async def get_evaluator_details(project_id: str, eval_id: str):
 
         return {
             "metrics": current_eval.metric_names,
-            "prompts": current_eval.test_cases,
+            "test_cases": current_eval.test_cases,
             "eval_runs": eval_run_data,
         }
-    except ValueError as e:
+    except KeyError as e:
         logger.error(
             f"Evaluator '{eval_id}' or project '{project_id}' not found: {str(e)}"
         )
@@ -571,10 +606,10 @@ async def get_version_evaluator_details(project_id: str, eval_id: str, version_i
 
         return {
             "metrics": current_eval.metric_names,
-            "prompts": current_eval.test_cases,
+            "test_cases": current_eval.test_cases,
             "eval_runs": eval_run_data,
         }
-    except ValueError as e:
+    except KeyError as e:
         logger.error(
             f"Eval '{eval_id}' or project '{project_id}' or version '{version_id}' not found: {str(e)}"
         )
@@ -591,7 +626,7 @@ async def get_eval_run_details(project_id: str, eval_id: str, run_id: str):
         current_eval = project.load_evaluator(eval_id)
         eval_run = current_eval.load_eval_run(run_id)
         return {"results": eval_run.results, "version": eval_run.version_id}
-    except ValueError as e:
+    except KeyError as e:
         logger.error(
             f"Run {run_id} or Eval '{eval_id}' or project '{project_id}' not found: {str(e)}"
         )
@@ -623,6 +658,10 @@ async def generate_prompt(
             test_case_generator.add_from_descriptions([description])
         elif edge_case_count:
             test_case_generator.add_edge_cases(edge_case_count)
+        else:
+            raise ValueError(
+                "Either transcript, file, description, or edge_case_count must be provided"
+            )
         prompts = test_case_generator.generate()
         return {"prompts": prompts}
     except Exception as e:

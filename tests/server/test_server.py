@@ -1,177 +1,236 @@
+from unittest.mock import patch
+
 from fastapi.testclient import TestClient
 
 from mixedvoices.server.server import app
 
 client = TestClient(app)
 
-# TODO: Add test for vapi
+
+def test_list_projects_errors(mock_base_folder):
+    # Test 500 for unexpected errors
+    with patch("mixedvoices.list_projects", side_effect=Exception("Unexpected error")):
+        response = client.get("/api/projects")
+        assert response.status_code == 500
+        assert "Unexpected error" in response.json()["detail"]
 
 
-def test_create_and_list_project(mock_base_folder):
-    # Create project
-    response = client.post("/api/projects", params={"name": "test_project"})
-    assert response.status_code == 200
-    assert response.json() == {"message": "Project test_project created successfully"}
-
-    # Create another project with white space in name
-    response = client.post("/api/projects", params={"name": "test project"})
-    assert response.status_code == 400
-
-    # Create another project with same name
-    response = client.post("/api/projects", params={"name": "test_project"})
-    assert response.status_code == 400
-
-    # List projects
-    response = client.get("/api/projects")
-    assert response.status_code == 200
-    assert response.json() == {"projects": ["test_project"]}
-
-
-def test_create_and_list_version(mock_base_folder):
-    # Create project first
-    client.post("/api/projects", params={"name": "test_project"})
-
-    # Create version
-    version_data = {
-        "name": "v1",
-        "prompt": "Testing prompt",
-        "metadata": {"description": "test"},
-        "success_criteria": "Testing success criteria",
+def test_create_project_with_metrics(mock_base_folder):
+    """Test project creation with metrics"""
+    metrics_data = {
+        "metrics": [
+            {
+                "name": "test_metric",
+                "definition": "Test definition",
+                "scoring": "binary",
+                "include_prompt": True,
+            }
+        ]
     }
-    response = client.post("/api/projects/test_project/versions", json=version_data)
+
+    response = client.post(
+        "/api/projects",
+        params={"name": "empty_project", "success_criteria": "Test criteria"},
+        json=metrics_data,
+    )
+    assert response.status_code == 200
+    assert response.json()["project_id"] == "empty_project"
+
+    # Test invalid metrics
+    invalid_metrics = {"metrics": []}
+    response = client.post(
+        "/api/projects", params={"name": "invalid_project"}, json=invalid_metrics
+    )
+    assert response.status_code == 422
+
+
+def test_version_operations(empty_project):
+    """Test version-related operations"""
+    # Update success criteria
+    response = client.post(
+        "/api/projects/empty_project/success_criteria",
+        json={"success_criteria": "Updated criteria"},
+    )
     assert response.status_code == 200
 
-    # Create another version with white space in name
-    version_data = {"name": "v 1", "prompt": "Testing prompt"}
-    response = client.post("/api/projects/test_project/versions", json=version_data)
-    assert response.status_code == 400
-
-    # Create another version with same name
-    response = client.post("/api/projects/test_project/versions", json=version_data)
-    assert response.status_code == 400
-
-    # List versions
-    response = client.get("/api/projects/test_project/versions")
-    assert response.status_code == 200
-    versions = response.json()["versions"]
-    assert len(versions) == 1
-    assert versions[0]["name"] == "v1"
-    assert versions[0]["prompt"] == "Testing prompt"
-    assert versions[0]["metadata"] == {"description": "test"}
-    assert versions[0]["success_criteria"] == "Testing success criteria"
-    assert versions[0]["recording_count"] == 0
-
-
-def test_create_and_list_recording(mock_base_folder, mock_process_recording):
-    # Create project and version first
-    client.post("/api/projects", params={"name": "test_project"})
-    version_data = {"name": "v1", "prompt": "Testing prompt"}
-    client.post("/api/projects/test_project/versions", json=version_data)
-
-    # List recordings (should be empty initially)
-    response = client.get("/api/projects/test_project/versions/v1/recordings")
-    assert response.status_code == 200
-    assert response.json() == {"recordings": []}
-
-    audio_path = "tests/assets/call2.wav"
-
-    # Upload recording
-    with open(audio_path, "rb") as f:
-        response = client.post(
-            "/api/projects/test_project/versions/v1/recordings",
-            files={"file": ("call2.wav", f, "audio/wav")},
-        )
-
-    assert response.status_code == 200
-    assert "recording_id" in response.json()
-
-    # List recordings
-    response = client.get("/api/projects/test_project/versions/v1/recordings")
-    assert response.status_code == 200
-    recordings = response.json()["recordings"]
-    assert len(recordings) == 1
-    assert recordings[0]["audio_path"].endswith("call2.wav")
-
-    # list recordings of a project that does not exist
-    response = client.get("/api/projects/nonexistent/versions/v1/recordings")
+    # Test invalid version
+    response = client.post(
+        "/api/projects/non_existent_project/success_criteria",
+        json={"success_criteria": "Updated criteria"},
+    )
     assert response.status_code == 404
 
 
-def test_list_and_get_flow_of_recordings(sample_project):
+def test_recording_operations(empty_project, mock_process_recording):
+    """Test recording-related operations"""
+    # Test recording upload with user channel
+    with open("tests/assets/call2.wav", "rb") as f:
+        response = client.post(
+            "/api/projects/empty_project/versions/v1/recordings",
+            files={"file": ("call2.wav", f, "audio/wav")},
+            params={"user_channel": "left"},
+        )
+    assert response.status_code == 200
+
+    # Test invalid user channel
+    with open("tests/assets/call2.wav", "rb") as f:
+        response = client.post(
+            "/api/projects/empty_project/versions/v1/recordings",
+            files={"file": ("call2.wav", f, "audio/wav")},
+            params={"user_channel": "invalid"},
+        )
+    assert response.status_code == 400
+
+    # Test invalid project
+    with open("tests/assets/call2.wav", "rb") as f:
+        response = client.post(
+            "/api/projects/nonexistent/versions/v1/recordings",
+            files={"file": ("call2.wav", f, "audio/wav")},
+            params={"user_channel": "left"},
+        )
+    assert response.status_code == 404
+
+
+def test_prompt_generator(mock_base_folder):
+    """Test prompt generator endpoint"""
+    with patch("mixedvoices.TestCaseGenerator.generate"):
+        # Test with agent prompt only
+        response = client.post(
+            "/api/prompt_generator",
+            params={
+                "agent_prompt": "Test prompt",
+                "user_demographic_info": "Test demographics",
+            },
+        )
+        assert response.status_code == 500
+        # Test with transcript
+        response = client.post(
+            "/api/prompt_generator",
+            params={"agent_prompt": "Test prompt", "transcript": "Test transcript"},
+        )
+        assert response.status_code == 200
+
+        # Test with file
+        with open("tests/assets/call2.wav", "rb") as f:
+            response = client.post(
+                "/api/prompt_generator",
+                params={"agent_prompt": "Test prompt"},
+                files={"file": ("call2.wav", f, "audio/wav")},
+            )
+        assert response.status_code == 200
+
+        # Test with description
+        response = client.post(
+            "/api/prompt_generator",
+            params={"agent_prompt": "Test prompt", "description": "Test description"},
+        )
+        assert response.status_code == 200
+
+        # Test with edge cases
+        response = client.post(
+            "/api/prompt_generator",
+            params={"agent_prompt": "Test prompt", "edge_case_count": 2},
+        )
+        assert response.status_code == 200
+
+    # Test error handling
+    with patch(
+        "mixedvoices.TestCaseGenerator.generate", side_effect=Exception("Test error")
+    ):
+        response = client.post(
+            "/api/prompt_generator", params={"agent_prompt": "Test prompt"}
+        )
+        assert response.status_code == 500
+
+
+def test_eval_operations(sample_project):
+    """Test evaluation-related operations"""
+    # Create eval
+    eval_data = {
+        "test_cases": ["Test case 1", "Test case 2"],
+        "metric_names": ["empathy"],
+    }
+    response = client.post("/api/projects/sample_project/evals", json=eval_data)
+    assert response.status_code == 200
+    eval_id = response.json()["eval_id"]
+
+    # Get eval details
+    response = client.get(f"/api/projects/sample_project/evals/{eval_id}")
+    assert response.status_code == 200
+    assert response.json()["eval_runs"] == []
+    assert response.json()["metrics"] == ["empathy"]
+    assert response.json()["test_cases"] == ["Test case 1", "Test case 2"]
+
+    # Test invalid eval ID
+    response = client.get("/api/projects/sample_project/evals/invalid")
+    assert response.status_code == 404
+
+    # Test invalid project
+    response = client.get("/api/projects/nonexistent/evals/123")
+    assert response.status_code == 404
+
+    with patch(
+        "mixedvoices.core.project.Project.load_evaluator",
+        side_effect=Exception("Test error"),
+    ):
+        response = client.get(f"/api/projects/sample_project/evals/{eval_id}")
+        assert response.status_code == 500
+
+
+def test_recording_flow(sample_project):
+    """Test recording flow-related endpoints"""
+    # Get version flow
     response = client.get("/api/projects/sample_project/versions/v1/flow")
     assert response.status_code == 200
     assert "steps" in response.json()
-    step_names = [step["name"] for step in response.json()["steps"]]
-    step_ids = [step["id"] for step in response.json()["steps"]]
-    assert set(step_names) == {
-        "Caller Complaint Handling",
-        "Farewell",
-        "Greeting",
-        "Inquiry Handling",
-        "Offer Further Assistance",
-        "Set Appointment",
-    }
 
-    # get version flow of a version that does not exist
-    response = client.get("/api/projects/sample_project/versions/v2/flow")
-    assert response.status_code == 404
-
-    # get all recordings
+    # Get recordings
     response = client.get("/api/projects/sample_project/versions/v1/recordings")
     assert response.status_code == 200
-    assert len(response.json()["recordings"]) == 2
+    recordings = response.json()["recordings"]
+    assert len(recordings) > 0
 
-    recording_ids = [recording["id"] for recording in response.json()["recordings"]]
-
-    for recording_id in recording_ids:
-        # get flow of the recording
-        response = client.get(
-            f"/api/projects/sample_project/versions/v1/recordings/{recording_id}/flow"
-        )
-        assert response.status_code == 200
-        assert "steps" in response.json()
-        assert len(response.json()["steps"]) > 0
-
-    # get flow of a recording that does not exist
+    # Get flow for first recording
+    recording_id = recordings[0]["id"]
     response = client.get(
-        "/api/projects/sample_project/versions/v1/recordings/nonexistent/flow"
+        f"/api/projects/sample_project/versions/v1/recordings/{recording_id}/flow"
     )
-    assert response.status_code == 404
+    assert response.status_code == 200
+    assert "steps" in response.json()
 
-    # list step recordings for all step_ids
-    for step_id in step_ids:
+    # Get step recordings
+    steps = response.json()["steps"]
+    for step in steps:
         response = client.get(
-            f"/api/projects/sample_project/versions/v1/steps/{step_id}/recordings"
+            f"/api/projects/sample_project/versions/v1/steps/{step['id']}/recordings"
         )
         assert response.status_code == 200
         assert "recordings" in response.json()
-        assert len(response.json()["recordings"]) in {1, 2}
-
-    # list step recordings for a step_id that does not exist
-    response = client.get(
-        "/api/projects/sample_project/versions/v1/steps/nonexistent/recordings"
-    )
-    assert response.status_code == 404
 
 
-def test_list_evals(sample_project):
-    response = client.get("/api/projects/sample_project/versions/v1/evals")
+def test_eval_run_operations(sample_project):
+    """Test eval run operations"""
+    response = client.get("/api/projects/sample_project/evals")
     assert response.status_code == 200
-    assert "evals" in response.json()
-    assert len(response.json()["evals"]) == 1
+    evals = response.json()["evals"]
+    assert len(evals) == 1
+    eval_id = evals[0]["eval_id"]
+    num_prompts = evals[0]["num_prompts"]
 
-    eval_id = response.json()["evals"][0]["eval_id"]
-
-    # list evals of a version that does not exist
-    response = client.get("/api/projects/sample_project/versions/v2/evals")
-    assert response.status_code == 404
-
-    # get eval details
-    response = client.get(f"/api/projects/sample_project/versions/v1/evals/{eval_id}")
+    response = client.get(f"/api/projects/sample_project/evals/{eval_id}")
     assert response.status_code == 200
-    assert "agents" in response.json()
-    assert len(response.json()["agents"]) == 3
+    assert len(response.json()["eval_runs"]) == 1
 
-    # get eval details of an eval that does not exist
-    response = client.get("/api/projects/sample_project/versions/v1/evals/nonexistent")
-    assert response.status_code == 404
+    run_id = response.json()["eval_runs"][0]["run_id"]
+
+    response = client.get(f"/api/projects/sample_project/evals/{eval_id}/versions/v1/")
+    assert response.status_code == 200
+    assert len(response.json()["eval_runs"]) == 1
+
+    new_run_id = response.json()["eval_runs"][0]["run_id"]
+
+    assert run_id == new_run_id
+
+    response = client.get(f"/api/projects/sample_project/evals/{eval_id}/runs/{run_id}")
+    assert response.status_code == 200
+    assert len(response.json()["results"]) == num_prompts

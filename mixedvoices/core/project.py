@@ -22,7 +22,7 @@ def create_project(
     validate_name(project_id, "project_id")
     check_metrics_while_adding(metrics)
     if project_id in os.listdir(constants.PROJECTS_FOLDER):
-        raise ValueError(f"Project {project_id} already exists")
+        raise FileExistsError(f"Project {project_id} already exists")
     os.makedirs(os.path.join(constants.PROJECTS_FOLDER, project_id))
     return Project(project_id, metrics, success_criteria)
 
@@ -30,7 +30,7 @@ def create_project(
 def load_project(project_id: str):
     """Load an existing project"""
     if project_id not in os.listdir(constants.PROJECTS_FOLDER):
-        raise ValueError(f"Project {project_id} does not exist")
+        raise KeyError(f"Project {project_id} does not exist")
     return Project._load(project_id)
 
 
@@ -42,7 +42,7 @@ def check_metrics_while_adding(
     if existing_metrics:
         for metric in metrics:
             if metric.name in existing_metrics:
-                raise ValueError(
+                raise FileExistsError(
                     f"Metric with name '{metric.name}' already exists in project"
                 )
     return metrics
@@ -196,7 +196,7 @@ class Project:
         """  # noqa E501
         validate_name(version_id, "version_id")
         if version_id in self.version_ids:
-            raise ValueError(f"Version {version_id} already exists")
+            raise FileExistsError(f"Version {version_id} already exists")
         version_folder = os.path.join(self._project_folder, "versions", version_id)
         os.makedirs(version_folder)
         os.makedirs(os.path.join(version_folder, "recordings"))
@@ -212,7 +212,7 @@ class Project:
             version_id (str): ID of the version to load
         """
         if version_id not in self.version_ids:
-            raise ValueError(f"Version {version_id} does not exist")
+            raise KeyError(f"Version {version_id} does not exist")
         return Version._load(self.id, version_id)
 
     # Evaluator methods
@@ -257,7 +257,7 @@ class Project:
             Evaluator: The loaded evaluator
         """
         if eval_id not in self._evals:
-            raise ValueError(f"Evaluator {eval_id} does not exist")
+            raise KeyError(f"Evaluator {eval_id} does not exist")
         return self._evals[eval_id]
 
     def list_evaluators(self) -> List[Evaluator]:

@@ -73,7 +73,7 @@ class Evaluator:
     def list_eval_runs(self, version_id: Optional[str] = None) -> List[EvalRun]:
         """List of eval runs"""
         if version_id and version_id not in self._project.version_ids:
-            raise ValueError(
+            raise KeyError(
                 f"Version {version_id} not found in project {self.project_id}"
             )
         all_runs = list(self._eval_runs.values())
@@ -83,6 +83,8 @@ class Evaluator:
 
     def load_eval_run(self, run_id: str) -> EvalRun:
         """Load an eval run from id"""
+        if run_id not in self._eval_runs:
+            raise KeyError(f"Eval run {run_id} not found")
         return self._eval_runs[run_id]
 
     def run(

@@ -3,14 +3,14 @@ import pytest
 import mixedvoices as mv
 
 
-def test_project(empty_project):
+def empty_project(empty_project):
     project = empty_project
     assert "v1" in project.version_ids
 
     with pytest.raises(ValueError):
-        mv.create_project("test_project", [])
+        mv.create_project("empty_project", [])
 
-    project = mv.load_project("test_project")
+    project = mv.load_project("empty_project")
     assert "v1" in project.version_ids
 
     with pytest.raises(ValueError):

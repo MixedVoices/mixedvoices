@@ -39,7 +39,7 @@ def test_add_recording(empty_project, mock_process_recording):
         check_recording(recording)
     version.add_recording("tests/assets/call2.wav", blocking=False, is_successful=True)
     sleep(0.5)
-    project = mv.load_project("test_project")
+    project = mv.load_project("empty_project")
     version = project.load_version("v1")
     assert version.recording_count == 2
     for recording in version._recordings.values():
