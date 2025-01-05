@@ -82,15 +82,15 @@ def eval_run_details_page():
             preview_cols = st.columns([3, 2, 2])
 
             with preview_cols[0]:
-                if agent.get("prompt"):
+                if agent.get("test_case"):
                     st.markdown("**Prompt**")
                     st.text_area(
-                        "Prompt",
-                        agent["prompt"],
+                        "Test Case",
+                        agent["test_case"],
                         height=200,
                         disabled=True,
                         label_visibility="collapsed",
-                        key=f"prompt_{idx}",
+                        key=f"test_case_{idx}",
                     )
 
             with preview_cols[1]:

@@ -129,7 +129,7 @@ class EvalAgent:
     def results(self):
         """Returns the results of the agent as a dictionary"""
         return {
-            "prompt": self._agent_prompt,
+            "test_case": self._test_case,
             "started": self._started,
             "ended": self._ended,
             "transcript": self._transcript,
