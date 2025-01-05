@@ -53,6 +53,17 @@ class Version:
         self._create_flowchart()
         self._all_step_names = None
         self._cached_project = None
+        self._all_paths: Optional[List[str]] = None
+
+    @property
+    def name(self):
+        """Get the name of the version"""
+        return self.version_id
+
+    @property
+    def project_name(self):
+        """Get the name of the project"""
+        return self._project.name
 
     @property
     def prompt(self):
@@ -244,12 +255,13 @@ class Version:
         Returns:
             List[str]: List of all possible paths through the conversation
         """
+        if self._all_paths is None:
+            all_paths = []
+            for start_step in self._starting_steps:
+                dfs(start_step, [], all_paths)
 
-        all_paths = []
-        for start_step in self._starting_steps:
-            dfs(start_step, [], all_paths)
-
-        return all_paths
+            self._all_paths = all_paths
+        return self._all_paths
 
     def _get_step_names(self) -> List[str]:
         return list({step.name for step in self.steps.values()})

@@ -1,6 +1,8 @@
 import tempfile
 from typing import TYPE_CHECKING, List, Literal, Optional
 
+from tqdm import tqdm
+
 from mixedvoices import models
 from mixedvoices.core.utils import get_transcript_and_duration
 from mixedvoices.utils import get_openai_client
@@ -126,51 +128,43 @@ def generate_test_cases_from_paths(
     paths: List[str],
     count_per_path=2,
     user_demographic_info: Optional[str] = None,
+    progress=None,
 ):
     test_cases = []
-    for path in paths:
+    progress.set_postfix({"progress": f"0/{len(paths)} paths processed"})
+    for idx, path in enumerate(paths, 1):
         part = get_prompt_part(count_per_path)
-        instruction = f"Generate {part} that follow this path: {path}"  # noqa E501
+        instruction = f"Generate {part} that follow this path: {path}"
         test_cases.extend(
             generate_test_cases(
                 agent_prompt, instruction, count_per_path, user_demographic_info
             )
         )
+        if progress:
+            progress.set_postfix({"progress": f"{idx}/{len(paths)} paths processed"})
+            progress.update(count_per_path)
     return test_cases
-
-
-def generate_test_cases_from_version(
-    agent_prompt: str,
-    version: "Version",
-    count_per_path=2,
-    user_demographic_info: Optional[str] = None,
-):
-    paths = version._get_paths()
-    return generate_test_cases_from_paths(
-        agent_prompt, paths, count_per_path, user_demographic_info
-    )
-
-
-def generate_test_cases_from_project(
-    agent_prompt: str,
-    project: "Project",
-    count_per_path=2,
-    user_demographic_info: Optional[str] = None,
-):
-    paths = project._get_paths()
-    return generate_test_cases_from_paths(
-        agent_prompt, paths, count_per_path, user_demographic_info
-    )
 
 
 def generate_test_cases_for_edge_cases(
     agent_prompt: str,
     count: int = 2,
     user_demographic_info: Optional[str] = None,
+    progress=None,
 ):
+    if progress:
+        progress.set_description("Generating Edge Cases")
+        progress.set_postfix({"progress": f"0/{count} cases processed"})
+
     part = get_prompt_part(count)
     instruction = f"Generate {part} that simulate tricky edge cases."
-    return generate_test_cases(agent_prompt, instruction, count, user_demographic_info)
+    result = generate_test_cases(
+        agent_prompt, instruction, count, user_demographic_info
+    )
+    if progress:
+        progress.set_postfix({"progress": f"{count}/{count} cases processed"})
+        progress.update(count)
+    return result
 
 
 def generate_test_cases_from_transcripts(
@@ -178,14 +172,26 @@ def generate_test_cases_from_transcripts(
     transcripts: List[str],
     count: int = 1,
     user_demographic_info: Optional[str] = None,
+    progress=None,
 ):
+    if progress:
+        progress.set_description("Generating from Transcripts")
+        progress.set_postfix(
+            {"progress": f"0/{len(transcripts)} transcripts processed"}
+        )
+
     test_cases = []
-    for transcript in transcripts:
+    for idx, transcript in enumerate(transcripts, 1):
         part = get_prompt_part(count)
-        instruction = f"Generate {part} that try to recreate this transcript: {transcript}. You will simulate the USER."  # noqa E501
+        instruction = f"Generate {part} that try to recreate this transcript: {transcript}. You will simulate the USER."
         test_cases.extend(
             generate_test_cases(agent_prompt, instruction, count, user_demographic_info)
         )
+        if progress:
+            progress.set_postfix(
+                {"progress": f"{idx}/{len(transcripts)} transcripts processed"}
+            )
+            progress.update(count)
     return test_cases
 
 
@@ -194,15 +200,31 @@ def generate_test_cases_from_recording(
     recording_paths: List[str],
     user_channels: List[str],
     user_demographic_info: Optional[str] = None,
+    progress=None,
 ):
+    if progress:
+        progress.set_description("Processing Recordings")
+        progress.set_postfix(
+            {"progress": f"0/{len(recording_paths)} recordings processed"}
+        )
+
     transcripts = []
     with tempfile.TemporaryDirectory() as temp_dir:
-        for path, user_channel in zip(recording_paths, user_channels):
+        for idx, (path, user_channel) in enumerate(
+            zip(recording_paths, user_channels), 1
+        ):
             out = get_transcript_and_duration(path, temp_dir, user_channel)
             transcripts.append(out[0])
+            if progress:
+                progress.set_postfix(
+                    {"progress": f"{idx}/{len(recording_paths)} recordings processed"}
+                )
 
     return generate_test_cases_from_transcripts(
-        agent_prompt, transcripts, user_demographic_info=user_demographic_info
+        agent_prompt,
+        transcripts,
+        user_demographic_info=user_demographic_info,
+        progress=progress,
     )
 
 
@@ -210,16 +232,26 @@ def generate_test_cases_from_descriptions(
     agent_prompt: str,
     descriptions: List[str],
     user_demographic_info: Optional[str] = None,
+    progress=None,
 ):
-    test_cases = []
-    for description in descriptions:
-        part = get_prompt_part(1)
-        instruction = (
-            f"Generate {part} according to this description: {description}"  # noqa E501
+    if progress:
+        progress.set_description("Generating from Descriptions")
+        progress.set_postfix(
+            {"progress": f"0/{len(descriptions)} descriptions processed"}
         )
+
+    test_cases = []
+    for idx, description in enumerate(descriptions, 1):
+        part = get_prompt_part(1)
+        instruction = f"Generate {part} according to this description: {description}"
         test_cases.extend(
             generate_test_cases(agent_prompt, instruction, 1, user_demographic_info)
         )
+        if progress:
+            progress.set_postfix(
+                {"progress": f"{idx}/{len(descriptions)} descriptions processed"}
+            )
+            progress.update(1)
     return test_cases
 
 
@@ -233,14 +265,16 @@ class TestCaseGenerator:
         """
         self.prompt = prompt
         self.user_demographic_info = user_demographic_info
-        self.transcripts = []
-        self.recordings = []
-        self.user_channels = []
-        self.versions = []
-        self.version_cases_per_path = 1
-        self.projects = []
-        self.project_cases_per_path = 1
-        self.descriptions = []
+        self.transcripts: List[str] = []
+        self.recordings: List[str] = []
+        self.user_channels: List[str] = []
+        self.versions: List["Version"] = []
+        self.versions_paths: List[List[str]] = []
+        self.version_cases_per_path: List[int] = []
+        self.projects: List["Project"] = []
+        self.projects_paths: List[List[str]] = []
+        self.project_cases_per_path: List[int] = []
+        self.descriptions: List[str] = []
         self.edge_cases_count = 0
         self.test_cases = []
 
@@ -277,7 +311,8 @@ class TestCaseGenerator:
         """
         self._check_generation()
         self.versions.append(version)
-        self.version_cases_per_path = cases_per_path
+        self.versions_paths.append(version._get_paths())
+        self.version_cases_per_path.append(cases_per_path)
         return self
 
     def add_from_project(self, project: "Project", cases_per_path: int = 1):
@@ -289,7 +324,8 @@ class TestCaseGenerator:
         """
         self._check_generation()
         self.projects.append(project)
-        self.project_cases_per_path = cases_per_path
+        self.projects_paths.append(project._get_paths())
+        self.project_cases_per_path.append(cases_per_path)
         return self
 
     def add_from_descriptions(self, descriptions: List[str]):
@@ -312,69 +348,33 @@ class TestCaseGenerator:
         self.edge_cases_count += count
         return self
 
-    def generate(self):
+    @property
+    def num_cases(self):
+        project_cases = sum(
+            len(paths) * c
+            for paths, c in zip(self.projects_paths, self.project_cases_per_path)
+        )
+        version_cases = sum(
+            len(paths) * c
+            for paths, c in zip(self.versions_paths, self.version_cases_per_path)
+        )
+        return sum(
+            [
+                len(self.transcripts),
+                len(self.recordings),
+                project_cases,
+                version_cases,
+                self.edge_cases_count,
+                len(self.descriptions),
+            ]
+        )
+
+    def generate(self, verbose=True):
         """Generate test cases from all the given inputs"""
         self._check_generation("generate")
 
-        test_cases = []
-        if self.recordings:
-            test_cases.extend(
-                generate_test_cases_from_recording(
-                    self.prompt,
-                    self.recordings,
-                    self.user_channels,
-                    user_demographic_info=self.user_demographic_info,
-                )
-            )
-
-        if self.transcripts:
-            test_cases.extend(
-                generate_test_cases_from_transcripts(
-                    self.prompt,
-                    self.transcripts,
-                    user_demographic_info=self.user_demographic_info,
-                )
-            )
-
-        if self.descriptions:
-            test_cases.extend(
-                generate_test_cases_from_descriptions(
-                    self.prompt,
-                    self.descriptions,
-                    user_demographic_info=self.user_demographic_info,
-                )
-            )
-
-        if self.edge_cases_count:
-            test_cases.extend(
-                generate_test_cases_for_edge_cases(
-                    self.prompt,
-                    self.edge_cases_count,
-                    user_demographic_info=self.user_demographic_info,
-                )
-            )
-
-        for version in self.versions:
-            test_cases.extend(
-                generate_test_cases_from_version(
-                    self.prompt,
-                    version,
-                    self.version_cases_per_path,
-                    user_demographic_info=self.user_demographic_info,
-                )
-            )
-
-        for project in self.projects:
-            test_cases.extend(
-                generate_test_cases_from_project(
-                    self.prompt,
-                    project,
-                    self.project_cases_per_path,
-                    user_demographic_info=self.user_demographic_info,
-                )
-            )
-
-        if not test_cases:
+        num_cases = self.num_cases
+        if num_cases == 0:
             raise ValueError(
                 "No test cases generated. "
                 "Use one or more of these methods before calling generate: "
@@ -382,8 +382,93 @@ class TestCaseGenerator:
                 "add_from_project, add_from_descriptions, add_edge_cases"
             )
 
-        self.test_cases = test_cases
-        return test_cases
+        try:
+
+            if verbose:
+                print(f"Generating test cases. Total cases: {num_cases}")
+                progress = tqdm(total=num_cases)
+                progress.set_description("Generating test cases")
+            else:
+                progress = None
+
+            test_cases = []
+
+            if self.recordings:
+                test_cases.extend(
+                    generate_test_cases_from_recording(
+                        self.prompt,
+                        self.recordings,
+                        self.user_channels,
+                        user_demographic_info=self.user_demographic_info,
+                        progress=progress,
+                    )
+                )
+
+            if self.transcripts:
+                test_cases.extend(
+                    generate_test_cases_from_transcripts(
+                        self.prompt,
+                        self.transcripts,
+                        user_demographic_info=self.user_demographic_info,
+                        progress=progress,
+                    )
+                )
+
+            if self.descriptions:
+                test_cases.extend(
+                    generate_test_cases_from_descriptions(
+                        self.prompt,
+                        self.descriptions,
+                        user_demographic_info=self.user_demographic_info,
+                        progress=progress,
+                    )
+                )
+
+            if self.edge_cases_count:
+                test_cases.extend(
+                    generate_test_cases_for_edge_cases(
+                        self.prompt,
+                        self.edge_cases_count,
+                        user_demographic_info=self.user_demographic_info,
+                        progress=progress,
+                    )
+                )
+
+            for version, version_paths, cases_per_path in zip(
+                self.versions, self.versions_paths, self.version_cases_per_path
+            ):
+                progress.set_description(
+                    f"Generating from {version.project_name}/{version.name}'s Paths"
+                )
+                test_cases.extend(
+                    generate_test_cases_from_paths(
+                        self.prompt,
+                        version_paths,
+                        cases_per_path,
+                        user_demographic_info=self.user_demographic_info,
+                        progress=progress,
+                    )
+                )
+
+            for project, project_paths, cases_per_path in zip(
+                self.projects, self.projects_paths, self.project_cases_per_path
+            ):
+                progress.set_description(f"Generating from {project.name}'s paths")
+                test_cases.extend(
+                    generate_test_cases_from_paths(
+                        self.prompt,
+                        project_paths,
+                        cases_per_path,
+                        user_demographic_info=self.user_demographic_info,
+                        progress=progress,
+                    )
+                )
+
+            self.test_cases = test_cases
+            return test_cases
+        finally:
+            if verbose:
+                progress.close()
 
     def _check_generation(self, operation="add"):
         if self.test_cases:
