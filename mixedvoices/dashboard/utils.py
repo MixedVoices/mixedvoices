@@ -147,7 +147,7 @@ def clear_session_state():
         "show_create_project",
         "show_success",
         "show_success_success_criteria",
-        "show_prompts",
+        "show_test_cases",
         "show_metrics",
         "test_cases",
         "user_demographic_info",

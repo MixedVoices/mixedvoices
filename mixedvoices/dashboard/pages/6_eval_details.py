@@ -15,12 +15,12 @@ def render_metrics_dialog(metrics):
         st.write(f"- {metric}")
 
 
-@st.dialog("Prompts", width="large")
-def render_prompts_dialog(prompts):
-    """Render prompts in a dialog."""
-    st.subheader("Prompts")
-    for i, prompt in enumerate(prompts):
-        st.text_area(f"Prompt {i+1}", prompt, height=200, disabled=True)
+@st.dialog("Test Cases", width="large")
+def render_test_cases_dialog(test_cases):
+    """Render test cases in a dialog."""
+    st.subheader("Test Cases")
+    for i, test_case in enumerate(test_cases):
+        st.text_area(f"Test Case {i+1}", test_case, height=200, disabled=True)
 
 
 def eval_details_page():
@@ -51,14 +51,13 @@ def eval_details_page():
         )
     )
 
-    # Metrics and Prompts buttons
     col1, col2 = st.columns(2)
     with col1:
         if st.button("View Metrics"):
             render_metrics_dialog(all_eval_details.get("metrics", []))
     with col2:
-        if st.button("View Prompts"):
-            render_prompts_dialog(all_eval_details.get("prompts", []))
+        if st.button("View Test Cases"):
+            render_test_cases_dialog(all_eval_details.get("test_cases", []))
 
     # Evaluator Runs section
     st.markdown("#### Evaluator Runs")
@@ -91,9 +90,9 @@ def eval_details_page():
         render_metrics_dialog(eval_details.get("metrics", []))
         st.session_state.show_metrics = False
 
-    if getattr(st.session_state, "show_prompts", False):
-        render_prompts_dialog(eval_details.get("prompts", []))
-        st.session_state.show_prompts = False
+    if getattr(st.session_state, "show_test_cases", False):
+        render_test_cases_dialog(eval_details.get("test_cases", []))
+        st.session_state.show_test_cases = False
 
     eval_runs = eval_details.get("eval_runs", [])
     if not eval_runs:
