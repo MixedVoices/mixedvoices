@@ -119,7 +119,7 @@ class TaskManager:
             version = params["version"]
             return {
                 "recording_data": {
-                    "recording_id": recording.recording_id,
+                    "recording_id": recording.id,
                     "audio_path": recording.audio_path,
                     "version_id": recording.version_id,
                     "project_id": recording.project_id,
@@ -129,7 +129,7 @@ class TaskManager:
                     "combined_transcript": recording.combined_transcript,
                 },
                 "version_data": {
-                    "version_id": version.version_id,
+                    "version_id": version.id,
                     "project_id": version.project_id,
                 },
                 "user_channel": params["user_channel"],
