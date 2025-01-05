@@ -37,25 +37,26 @@ def get_info_path(project_id, version_id, eval_id, run_id, agent_id):
 
 
 # TODO: Better logging
+# TODO: Show error in dashboard if there is one
 class EvalAgent:
     def __init__(
         self,
-        agent_id,
-        project_id,
-        version_id,
-        eval_id,
-        run_id,
-        prompt,
-        test_case,
-        metric_names,
-        history=None,
-        started=False,
-        ended=False,
-        transcript=None,
-        scores=None,
-        is_successful=None,
-        success_explanation=None,
-        error=None,
+        agent_id: str,
+        project_id: str,
+        version_id: str,
+        eval_id: str,
+        run_id: str,
+        prompt: str,
+        test_case: str,
+        metric_names: List[str],
+        history: Optional[List[dict]] = None,
+        started: bool = False,
+        ended: bool = False,
+        transcript: Optional[str] = None,
+        scores: Optional[dict] = None,
+        is_successful: Optional[bool] = None,
+        success_explanation: Optional[str] = None,
+        error: Optional[str] = None,
     ):
         self.agent_id = agent_id
         self.project_id = project_id
@@ -84,7 +85,7 @@ class EvalAgent:
             project._success_criteria,
         )
 
-    def respond(self, input):
+    def respond(self, input: Optional[str]):
         if not self.started:
             self.started = True
             self.save()
@@ -102,11 +103,11 @@ class EvalAgent:
         except Exception as e:
             self.handle_exception(e, "Conversation")
 
-    def add_agent_message(self, message):
+    def add_agent_message(self, message: str):
         self.history.append({"role": "user", "content": message})
         print(f"Agent: {message}")
 
-    def add_eval_agent_message(self, message):
+    def add_eval_agent_message(self, message: str):
         self.history.append({"role": "assistant", "content": message})
         print(f"Evaluator: {message}")
 
