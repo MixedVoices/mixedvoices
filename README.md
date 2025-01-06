@@ -114,9 +114,7 @@ This project is licensed under the Apache 2.0 License - see the [LICENSE](LICENS
 ## Roadmap
 - [ ] Support other APIs and Open Source LLMs
 - [ ] Team collaboration features
-- [ ] Custom analytics plugins
-- [ ] Advanced evaluation scenarios
-- [ ] Custom metric definitions for evaluation
+- [ ] Voice based evaluation
 
 ---
 Made with ❤️ by the MixedVoices Team
