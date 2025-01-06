@@ -92,3 +92,17 @@ def mock_process_recording():
         "mixedvoices.core.utils.process_recording", side_effect=side_effect
     ) as mock:
         yield mock
+
+
+@pytest.fixture
+def mock_generate_test_cases():
+    with patch(
+        "mixedvoices.evaluation.test_case_generator.generate_test_cases"
+    ) as mock:
+
+        def side_effect(*args, **kwargs):
+            num = args[2]  # Get the third argument
+            return ["dummy test cases"] * num
+
+        mock.side_effect = side_effect
+        yield mock
