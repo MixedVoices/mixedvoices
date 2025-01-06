@@ -10,7 +10,6 @@ os.makedirs(constants.PROJECTS_FOLDER, exist_ok=True)
 os.makedirs(constants.TASKS_FOLDER, exist_ok=True)
 
 
-# pragma: no cover
 def check_keys():
     exempt_commands = ["config"]
     if len(sys.argv) > 1 and any(cmd in sys.argv[1:] for cmd in exempt_commands):
