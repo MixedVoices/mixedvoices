@@ -29,21 +29,23 @@ pip install mixedvoices
 ### Using Python API to analyze recordings
 ```python
 import mixedvoices as mv
-from mixedvoices.metrics import Metric, empathy
+from mixedvoices.metrics import Metric, empathy # empathy is an inbuilt metric
 
-custom_metric = Metric(name="...", definition="...", scoring="binary")
-my_metrics = [empathy, custom_metric]
-project = mv.create_project("receptionist", metrics=my_metrics) # Create a new project
-project = mv.load_project("receptionist") # or load existing project
+# binary=>PASS/FAIL, continuous=>0-10
+custom_metric = Metric(name="custom", definition="....", scoring="binary") 
+
+# Create or load a project
+project = mv.create_project("dental_clinic", metrics=[empathy, custom_metric])
+project = mv.load_project("dental_clinic")  # or load existing project
 
 v1 = project.create_version("v1", prompt="You are a ...") # Create a version
 v1 = project.load_version("v1") # or load existing version
 
 # Analyze call, this is blocking, takes a few seconds
-v1.add_recording("path/to/call.wav") 
+v1.add_recording("path/to/call.wav")
 
 # non blocking mode in a separate thread, instantaneous
-v1.add_recording("path/to/call.wav", blocking=False) 
+v1.add_recording("path/to/call.wav", blocking=False)
 
 ```
 
@@ -51,14 +53,12 @@ v1.add_recording("path/to/call.wav", blocking=False)
 ### Evaluate custom agent
 ```python
 import mixedvoices as mv
+from typing import Tuple
 
-# inherits from `BaseAgent`. Must implement respond
-class ReceptionAgent(mv.BaseAgent):
-   def __init__(self, model="gpt-4", temperature=0.7):
-        self.agent = YourAgentImplementation(
-            model=model,
-            temperature=temperature
-        )
+# Create agent by inheriting from BaseAgent. Must implement respond
+class DentalAgent(mv.BaseAgent):
+    def __init__(self, model="gpt-4"):
+        self.agent = YourAgentImplementation(model=model)
 
     def respond(self, input_text: str) -> Tuple[str, bool]:
         response = self.agent.get_response(input_text)
@@ -68,13 +68,18 @@ class ReceptionAgent(mv.BaseAgent):
 project = mv.load_project("receptionist")
 v1 = project.load_version("v1")
 
-# Generate test cases
+# Generate test cases using multiple sources
 test_generator = mv.TestCaseGenerator(v1.prompt)
-test_generator.add_from_descriptions(["..."]).add_edge_cases(5).add_from_recordings(["call1.wav"]
+test_generator.add_from_transcripts([transcript])  # Add from conversation transcripts
+test_generator.add_edge_cases(2)  # Add edge cases
+test_generator.add_from_descriptions(["A man from New York, in a hurry"]) # Add from descriptions
+test_generator.add_from_project(project)  # Add based on project's recordings
+test_generator.add_from_version(v1)  # Add based on version's recordings
 test_cases = test_generator.generate()
 
-evaluator = project.create_evaluator(test_cases)
-evaluator.run(v1, ReceptionAgent, agent_starts=False, model="gpt-4-turbo", temperature=0.9)
+# Create and run evaluator, can use a subset of metrics
+evaluator = project.create_evaluator(test_cases, metric_names=["empathy"])
+evaluator.run(v1, DentalAgent, agent_starts=False, model="gpt-4o")
 ```
 
 ### Evaluate Bland AI Agent
