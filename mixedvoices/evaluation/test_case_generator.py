@@ -195,7 +195,7 @@ def generate_test_cases_from_transcripts(
     return test_cases
 
 
-def generate_test_cases_from_recording(
+def generate_test_cases_from_recordings(
     agent_prompt: str,
     recording_paths: List[str],
     user_channels: List[str],
@@ -256,13 +256,14 @@ def generate_test_cases_from_descriptions(
 
 
 class TestCaseGenerator:
-    def __init__(self, prompt: str, user_demographic_info: Optional[str] = None):
-        """Generate test cases for evaluation based on the prompt and user demographic info
+    """Generate test cases for evaluation based on the prompt and user demographic info
 
-        Args:
-            prompt (str): The prompt of the agent to generate test for
-            user_demographic_info (Optional[str]): The user demographic info. Include things like age group, country, accents etc
-        """
+    Args:
+        prompt (str): The prompt of the agent to generate test for
+        user_demographic_info (Optional[str]): The user demographic info. Include things like age group, country, accents etc
+    """
+
+    def __init__(self, prompt: str, user_demographic_info: Optional[str] = None):
         self.prompt = prompt
         self.user_demographic_info = user_demographic_info
         self.transcripts: List[str] = []
@@ -278,7 +279,7 @@ class TestCaseGenerator:
         self.edge_cases_count = 0
         self.test_cases = []
 
-    def add_from_transcripts(self, transcripts: List[str]):
+    def add_from_transcripts(self, transcripts: List[str]) -> "TestCaseGenerator":
         """Add test cases from transcripts. 1 test case will be generated for each transcript
 
         Args:
@@ -291,7 +292,7 @@ class TestCaseGenerator:
         self,
         recording_paths: List[str],
         user_channel: Literal["left", "right"] = "left",
-    ):
+    ) -> "TestCaseGenerator":
         """Add test cases from recordings. 1 test case will be generated for each recording
 
         Args:
@@ -302,7 +303,9 @@ class TestCaseGenerator:
         self.user_channels.extend([user_channel] * len(recording_paths))
         return self
 
-    def add_from_version(self, version: "Version", cases_per_path: int = 1):
+    def add_from_version(
+        self, version: "Version", cases_per_path: int = 1
+    ) -> "TestCaseGenerator":
         """Add test cases from a version. 1 test case will be generated for each path in the version
 
         Args:
@@ -315,7 +318,9 @@ class TestCaseGenerator:
         self.version_cases_per_path.append(cases_per_path)
         return self
 
-    def add_from_project(self, project: "Project", cases_per_path: int = 1):
+    def add_from_project(
+        self, project: "Project", cases_per_path: int = 1
+    ) -> "TestCaseGenerator":
         """Add test cases from a project. 1 test case will be generated for each path in the project
 
         Args:
@@ -328,7 +333,7 @@ class TestCaseGenerator:
         self.project_cases_per_path.append(cases_per_path)
         return self
 
-    def add_from_descriptions(self, descriptions: List[str]):
+    def add_from_descriptions(self, descriptions: List[str]) -> "TestCaseGenerator":
         """Add test cases from rough descriptions. 1 test case will be generated for each description
 
         Args:
@@ -338,7 +343,7 @@ class TestCaseGenerator:
         self.descriptions.extend(descriptions)
         return self
 
-    def add_edge_cases(self, count: int):
+    def add_edge_cases(self, count: int) -> "TestCaseGenerator":
         """Create test cases for edge cases where bot might fail or behave unexpectedly
 
         Args:
@@ -349,7 +354,7 @@ class TestCaseGenerator:
         return self
 
     @property
-    def num_cases(self):
+    def num_cases(self) -> int:
         project_cases = sum(
             len(paths) * c
             for paths, c in zip(self.projects_paths, self.project_cases_per_path)
@@ -394,7 +399,7 @@ class TestCaseGenerator:
 
             if self.recordings:
                 test_cases.extend(
-                    generate_test_cases_from_recording(
+                    generate_test_cases_from_recordings(
                         self.prompt,
                         self.recordings,
                         self.user_channels,

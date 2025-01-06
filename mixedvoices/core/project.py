@@ -84,7 +84,7 @@ class Project:
 
     def add_metrics(self, metrics: List[Metric]) -> None:
         """
-        Add a new metrics to the project.
+        Add new metrics to the project.
         """
         metrics = check_metrics_while_adding(metrics, self._metrics)
         for metric in metrics:
@@ -229,10 +229,19 @@ class Project:
         Returns:
             Evaluator: The newly created evaluator
         """  # noqa E501
+        if self.list_metric_names() == []:
+            raise ValueError(
+                "No metrics found in project. Add metrics during project creation or using add_metrics() before creating an evaluator."
+            )
         if metric_names is not None:
             self.get_metrics_by_names(metric_names)  # check for existence
         else:
             metric_names = self.list_metric_names()
+
+        if not metric_names:
+            raise ValueError("No metrics provided.")
+        if not test_cases:
+            raise ValueError("No test cases provided.")
 
         eval_id = uuid4().hex
         cur_eval = Evaluator(
@@ -261,6 +270,7 @@ class Project:
         return self._evals[eval_id]
 
     def list_evaluators(self) -> List[Evaluator]:
+        """Get all evaluators in the project"""
         return list(self._evals.values())
 
     # Internal Use Methods

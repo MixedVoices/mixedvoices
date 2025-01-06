@@ -29,6 +29,7 @@ def get_info_path(project_id, version_id, eval_id, run_id):
 
 
 class EvalRun:
+    """Tracks a single run of Evaluator"""
     def __init__(
         self,
         run_id: str,
@@ -77,19 +78,23 @@ class EvalRun:
         self._save()
 
     @property
-    def id(self):
+    def id(self) -> str:
+        """Get the id of the EvalRun"""
         return self._run_id
 
     @property
-    def project_id(self):
+    def project_id(self) -> str:
+        """Get the name of the Project"""
         return self._project_id
 
     @property
-    def version_id(self):
+    def version_id(self) -> str:
+        """Get the name of the Version"""
         return self._version_id
 
     @property
-    def eval_id(self):
+    def eval_id(self) -> str:
+        """Get the id of the Evaluator"""
         return self._eval_id
 
     def run(
@@ -126,6 +131,7 @@ class EvalRun:
             self._save()
         self._ended = True
 
+    @property
     def status(self):
         """Returns the status of the run as a string"""
         if self._error:
@@ -146,6 +152,7 @@ class EvalRun:
 
     @property
     def info(self):
+        """Get the info of the run as a dictionary"""
         return {
             "project_id": self.project_id,
             "version_id": self.version_id,

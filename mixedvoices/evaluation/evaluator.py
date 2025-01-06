@@ -1,6 +1,6 @@
 import os
 import time
-from typing import TYPE_CHECKING, List, Optional, Type
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type
 from uuid import uuid4
 
 import mixedvoices as mv
@@ -24,6 +24,10 @@ def get_info_path(project_id: str, eval_id: str):
 
 
 class Evaluator:
+    """Evaluator is a reusable collections of tests cases and metrics to test model performance.
+    These can be run multiple times across different versions to track performance.
+    """
+
     def __init__(
         self,
         eval_id: str,
@@ -43,11 +47,13 @@ class Evaluator:
         self._save()
 
     @property
-    def id(self):
+    def id(self) -> str:
+        """Get the id of the Evaluator"""
         return self._eval_id
 
     @property
-    def project_id(self):
+    def project_id(self) -> str:
+        """Get the name of the Project"""
         return self._project_id
 
     @property
@@ -61,7 +67,8 @@ class Evaluator:
         return self._test_cases
 
     @property
-    def info(self):
+    def info(self) -> Dict[str, Any]:
+        """Get the info of the evaluator as a dictionary"""
         return {
             "eval_id": self.id,
             "created_at": self._created_at,
@@ -82,7 +89,11 @@ class Evaluator:
         return all_runs
 
     def load_eval_run(self, run_id: str) -> EvalRun:
-        """Load an eval run from id"""
+        """Load an eval run from id
+
+        Args:
+            run_id (str): The id of the eval run
+        """
         if run_id not in self._eval_runs:
             raise KeyError(f"Eval run {run_id} not found")
         return self._eval_runs[run_id]

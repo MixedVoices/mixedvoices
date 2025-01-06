@@ -56,27 +56,28 @@ class Version:
         self._all_paths: Optional[List[str]] = None
 
     @property
-    def id(self):
+    def id(self) -> str:
         """Get the name of the version"""
         return self._version_id
 
     @property
-    def project_id(self):
+    def project_id(self) -> str:
         """Get the name of the project"""
         return self._project_id
 
     @property
-    def prompt(self):
+    def prompt(self) -> str:
         """Get the prompt of the version"""
         return self._prompt
 
     @property
-    def recording_count(self):
+    def recording_count(self) -> int:
         """Get the number of recordings in the version"""
         return len(self._recordings)
 
     @property
-    def info(self):
+    def info(self) -> Dict[str, Any]:
+        """Get the info of the version as a dictionary"""
         return {
             "name": self.id,
             "prompt": self.prompt,
@@ -84,28 +85,47 @@ class Version:
             "recording_count": self.recording_count,
         }
 
-    def get_recording(self, recording_id: str):
+    def get_recording(self, recording_id: str) -> Recording:
+        """Get a recording by id
+
+        Args:
+            recording_id (str): The id of the recording
+        """
         if recording_id not in self._recordings:
             raise KeyError(f"Recording {recording_id} not found in version {self.id}")
         return self._recordings[recording_id]
 
-    def get_step(self, step_id: str):
+    def get_step(self, step_id: str) -> Step:
+        """Get a step by id
+        
+        Args:
+            step_id (str): The id of the step
+        """
         if step_id not in self._steps:
             raise KeyError(f"Step {step_id} not found in version {self.id}")
         return self._steps[step_id]
 
-    def update_prompt(self, prompt: str):
-        """Update the prompt of the version"""
+    def update_prompt(self, prompt: str) -> None:
+        """Update the prompt of the version
+
+        Args:
+            prompt (str): The new prompt
+        
+        """
         self._prompt = prompt
         self._save()
 
     @property
-    def metadata(self):
+    def metadata(self) -> Optional[Dict[str, Any]]:
         """Get the metadata of the version"""
         return self._metadata
 
-    def update_metadata(self, metadata: Dict[str, Any]):
-        """Update the metadata of the version"""
+    def update_metadata(self, metadata: Dict[str, Any]) -> None:
+        """Update the metadata of the version
+
+        Args:
+            metadata (Dict[str, Any]): The new metadata
+        """
         self._metadata = metadata
         self._save()
 
