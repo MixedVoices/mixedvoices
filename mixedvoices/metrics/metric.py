@@ -19,9 +19,13 @@ class Metric:
     """
 
     name: str
+    "The name of the metric."
     definition: str
+    "The definition of the metric."
     scoring: Literal["binary", "continuous"]
+    "The scoring range of the metric. Can be 'binary' or 'continuous'."
     include_prompt: bool = False
+    "Whether to include the agent prompt when evaluating the metric."
 
     def __post_init__(self):
         if self.scoring not in ["binary", "continuous"]:
@@ -30,21 +34,23 @@ class Metric:
 
     @property
     def expected_values(self):
+        """Returns the expected values for the metric based on the scoring type."""
         if self.scoring == "binary":
             return ["PASS", "FAIL", "N/A"]
         elif self.scoring == "continuous":
             return list(range(11)) + ["N/A"]
 
-    def __str__(self) -> str:
-        return self.name
-
-    def __repr__(self) -> str:
-        return f"Metric(name='{self.name}', definition='{self.definition}', scoring_range={self.scoring}), include_prompt={self.include_prompt})"
-
     def to_dict(self):
+        """Returns a dictionary representation of the metric."""
         return {
             "name": self.name,
             "definition": self.definition,
             "scoring": self.scoring,
             "include_prompt": self.include_prompt,
         }
+
+    def __str__(self) -> str:
+        return self.name
+
+    def __repr__(self) -> str:
+        return f"Metric(name='{self.name}', definition='{self.definition}', scoring_range={self.scoring}), include_prompt={self.include_prompt})"

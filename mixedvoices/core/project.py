@@ -84,7 +84,7 @@ class Project:
 
     def add_metrics(self, metrics: List[Metric]) -> None:
         """
-        Add a new metrics to the project.
+        Add new metrics to the project.
         """
         metrics = check_metrics_while_adding(metrics, self._metrics)
         for metric in metrics:
@@ -261,6 +261,7 @@ class Project:
         return self._evals[eval_id]
 
     def list_evaluators(self) -> List[Evaluator]:
+        """Get all evaluators in the project"""
         return list(self._evals.values())
 
     # Internal Use Methods
