@@ -1,8 +1,6 @@
 import logging
-import os
-import shutil
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 import aiohttp
 import uvicorn
@@ -11,8 +9,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 import mixedvoices
-from mixedvoices import constants
-from mixedvoices.server.utils import process_vapi_webhook
+from mixedvoices import TestCaseGenerator
+from mixedvoices.metrics.metric import Metric
+from mixedvoices.server.utils import copy_file_content, process_vapi_webhook
 
 # Configure logging
 logging.basicConfig(
@@ -38,14 +37,33 @@ app.add_middleware(
 class VersionCreate(BaseModel):
     name: str
     prompt: str
-    success_criteria: Optional[str] = None
     metadata: Optional[Dict[str, Any]] = None
 
 
-class RecordingUpload(BaseModel):
-    url: Optional[str] = None
-    is_successful: Optional[bool] = None
-    user_channel: Optional[str] = None
+class ProjectCreate(BaseModel):
+    metrics: List[Dict]
+
+
+class MetricCreate(BaseModel):
+    name: str
+    definition: str
+    scoring: str
+    include_prompt: bool
+
+
+class MetricUpdate(BaseModel):
+    definition: str
+    scoring: str
+    include_prompt: bool
+
+
+class EvalCreate(BaseModel):
+    test_cases: List[str]
+    metric_names: List[str]
+
+
+class SuccessCriteria(BaseModel):
+    success_criteria: str
 
 
 # API Routes
@@ -53,118 +71,227 @@ class RecordingUpload(BaseModel):
 async def list_projects():
     """List all available projects"""
     try:
-        if not os.path.exists(constants.ALL_PROJECTS_FOLDER):
-            return {"projects": []}
-        projects = os.listdir(constants.ALL_PROJECTS_FOLDER)
-        if "_tasks" in projects:
-            projects.remove("_tasks")
-        return {"projects": projects}
+        return {"projects": mixedvoices.list_projects()}
     except Exception as e:
         logger.error(f"Error listing projects: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @app.post("/api/projects")
-async def create_project(name: str):
+async def create_project(
+    name: str, success_criteria: Optional[str], metrics_data: ProjectCreate
+):
+    # here the dict will have name, definition and scoring (which can be binary(PASS/FAIL) or continuous (0-10))
     """Create a new project"""
     try:
-        mixedvoices.create_project(name)
-        logger.info(f"Project '{name}' created successfully")
-        return {"message": f"Project {name} created successfully"}
+        metrics = [Metric(**metric) for metric in metrics_data.metrics]
+        mixedvoices.create_project(name, metrics, success_criteria)
+        return {"message": f"Project {name} created successfully", "project_id": name}
     except ValueError as e:
         logger.error(f"Invalid project name '{name}': {str(e)}")
         raise HTTPException(status_code=400, detail=str(e)) from e
+    except FileExistsError as e:
+        logger.error(f"Project '{name}' already exists: {str(e)}")
+        raise HTTPException(status_code=409, detail=str(e)) from e
     except Exception as e:
         logger.error(f"Error creating project '{name}': {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e)) from e
 
 
-@app.get("/api/projects/{project_name}/versions")
-async def list_versions(project_name: str):
+@app.get("/api/projects/{project_id}/versions")
+async def list_versions(project_id: str):
     """List all versions for a project"""
     try:
-        project = mixedvoices.load_project(project_name)
+        project = mixedvoices.load_project(project_id)
         versions_data = []
-        for version_id in project.versions:
+        for version_id in project.version_ids:
             version = project.load_version(version_id)
-            versions_data.append(
-                {
-                    "name": version_id,
-                    "prompt": version.prompt,
-                    "metadata": version.metadata,
-                    "success_criteria": version.success_criteria,
-                    "recording_count": len(version.recordings),
-                }
-            )
+            versions_data.append(version.info)
         return {"versions": versions_data}
-    except ValueError as e:
-        logger.error(f"Project '{project_name}' not found: {str(e)}")
+    except KeyError as e:
+        logger.error(f"Project '{project_id}' not found: {str(e)}")
         raise HTTPException(status_code=404, detail=str(e)) from e
     except Exception as e:
         logger.error(
-            f"Error listing versions for project '{project_name}': {str(e)}",
+            f"Error listing versions for project '{project_id}': {str(e)}",
             exc_info=True,
         )
         raise HTTPException(status_code=500, detail=str(e)) from e
 
 
-@app.post("/api/projects/{project_name}/versions")
-async def create_version(project_name: str, version_data: VersionCreate):
+@app.get("/api/projects/{project_id}/versions/{version_id}")
+async def get_version(project_id: str, version_id: str):
+    try:
+        project = mixedvoices.load_project(project_id)
+        version = project.load_version(version_id)
+        return version.info
+    except KeyError as e:
+        logger.error(
+            f"Project '{project_id}' or version '{version_id}' not found: {str(e)}"
+        )
+        raise HTTPException(status_code=404, detail=str(e)) from e
+    except Exception as e:
+        logger.error(
+            f"Error getting version '{version_id}' for project '{project_id}': {str(e)}",
+            exc_info=True,
+        )
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+@app.get("/api/default_metrics")
+async def list_default_metrics():
+    try:
+        metrics = mixedvoices.metrics.get_all_default_metrics()
+        metrics = [metric.to_dict() for metric in metrics]
+        return {"metrics": metrics}
+    except Exception as e:
+        logger.error(f"Error listing default metrics: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+@app.get("/api/projects/{project_id}/metrics")
+async def list_metrics(project_id: str):
+    """List all metrics for a project"""
+    try:
+        project = mixedvoices.load_project(project_id)
+        return {"metrics": [metric.to_dict() for metric in project.metrics]}
+    except KeyError as e:
+        logger.error(f"Project '{project_id}' not found: {str(e)}")
+        raise HTTPException(status_code=404, detail=str(e)) from e
+    except Exception as e:
+        logger.error(
+            f"Error listing metrics for project '{project_id}': {str(e)}",
+            exc_info=True,
+        )
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+@app.post("/api/projects/{project_id}/metrics")
+async def add_metric(project_id: str, metric_data: MetricCreate):
+    try:
+        project = mixedvoices.load_project(project_id)
+        metric = Metric(
+            name=metric_data.name,
+            definition=metric_data.definition,
+            scoring=metric_data.scoring,
+            include_prompt=metric_data.include_prompt,
+        )
+        project.add_metrics([metric])
+        return {"message": f"Metric {metric.name} created successfully"}
+    except KeyError as e:
+        logger.error(f"Project '{project_id}' not found: {str(e)}")
+        raise HTTPException(status_code=404, detail=str(e)) from e
+    except FileExistsError as e:
+        logger.error(
+            f"Metric with name '{metric_data.name}' already exists in project '{project_id}': {str(e)}"
+        )
+        raise HTTPException(
+            status_code=409, detail=f"Metric {metric_data.name} already exists"
+        )
+    except Exception as e:
+        logger.error(f"Error creating metric: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+@app.post("/api/projects/{project_id}/metrics/{metric_name}")
+async def update_metric(project_id: str, metric_name: str, metric_data: MetricUpdate):
+    try:
+        project = mixedvoices.load_project(project_id)
+        metric = Metric(
+            name=metric_name,
+            definition=metric_data.definition,
+            scoring=metric_data.scoring,
+            include_prompt=metric_data.include_prompt,
+        )
+        project.update_metric(metric)
+        return {"message": f"Metric {metric_name} updated successfully"}
+    except KeyError as e:
+        logger.error(
+            f"Project '{project_id}' or metric '{metric_name}' not found: {str(e)}"
+        )
+        raise HTTPException(status_code=404, detail=str(e)) from e
+    except Exception as e:
+        logger.error(f"Error updating metric: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+@app.post("/api/projects/{project_id}/versions")
+async def create_version(project_id: str, version_data: VersionCreate):
     """Create a new version in a project"""
     try:
-        project = mixedvoices.load_project(project_name)
+        project = mixedvoices.load_project(project_id)
         project.create_version(
             version_data.name,
             prompt=version_data.prompt,
-            success_criteria=version_data.success_criteria,
             metadata=version_data.metadata,
         )
-        logger.info(
-            f"Version '{version_data.name}' created successfully in project '{project_name}'"
-        )
         return {"message": f"Version {version_data.name} created successfully"}
-    except ValueError as e:
+    except KeyError as e:
+        logger.error(f"Project '{project_id}' not found: {str(e)}")
+        raise HTTPException(status_code=404, detail=str(e)) from e
+    except FileExistsError as e:
         logger.error(
-            f"Error creating version '{version_data.name}' in project '{project_name}': {str(e)}"
+            f"Version '{version_data.name}' already exists in project '{project_id}': {str(e)}"
         )
         raise HTTPException(
-            status_code=400, detail=f"Version {version_data.name} already exists"
+            status_code=409, detail=f"Version {version_data.name} already exists"
+        ) from e
+    except ValueError as e:
+        logger.error(
+            f"Invalid version name '{version_data.name}' in project '{project_id}': {str(e)}"
+        )
+        raise HTTPException(
+            status_code=400, detail=f"Invalid version name {version_data.name}"
         ) from e
     except Exception as e:
         logger.error(
-            f"Error creating version '{version_data.name}' in project '{project_name}': {str(e)}",
+            f"Error creating version '{version_data.name}' in project '{project_id}': {str(e)}",
             exc_info=True,
         )
         raise HTTPException(status_code=500, detail=str(e)) from e
 
 
-@app.get("/api/projects/{project_name}/versions/{version_name}/success_criteria")
-async def get_success_criteria(project_name: str, version_name: str):
+@app.get("/api/projects/{project_id}/success_criteria")
+async def get_success_criteria(project_id: str):
     """Get the success criteria for a version"""
     try:
-        project = mixedvoices.load_project(project_name)
-        version = project.load_version(version_name)
-        return {"success_criteria": version.success_criteria}
-    except ValueError as e:
-        logger.error(
-            f"Version '{version_name}' not found in project '{project_name}': {str(e)}"
-        )
+        project = mixedvoices.load_project(project_id)
+        return {"success_criteria": project.success_criteria}
+    except KeyError as e:
+        logger.error(f"Project '{project_id}' not found: {str(e)}")
         raise HTTPException(status_code=404, detail=str(e)) from e
     except Exception as e:
         logger.error(
-            f"Error getting success criteria for version '{version_name}' in project '{project_name}': {str(e)}",
+            f"Error getting success criteria for project '{project_id}': {str(e)}",
             exc_info=True,
         )
         raise HTTPException(status_code=500, detail=str(e)) from e
 
 
-@app.get("/api/projects/{project_name}/versions/{version_name}/flow")
-async def get_version_flow(project_name: str, version_name: str):
+@app.post("/api/projects/{project_id}/success_criteria")
+async def update_success_criteria(project_id: str, success_criteria: SuccessCriteria):
+    """Update the success criteria for a version"""
+    try:
+        project = mixedvoices.load_project(project_id)
+        project.update_success_criteria(success_criteria.success_criteria)
+        return {"message": "Success criteria updated successfully"}
+    except KeyError as e:
+        logger.error(f"Project '{project_id}' not found: {str(e)}")
+        raise HTTPException(status_code=404, detail=str(e)) from e
+    except Exception as e:
+        logger.error(
+            f"Error updating success criteria for project '{project_id}': {str(e)}",
+            exc_info=True,
+        )
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+@app.get("/api/projects/{project_id}/versions/{version_id}/flow")
+async def get_version_flow(project_id: str, version_id: str):
     """Get the flow chart data for a version"""
     try:
-        project = mixedvoices.load_project(project_name)
-        version = project.load_version(version_name)
-
+        project = mixedvoices.load_project(project_id)
+        version = project.load_version(version_id)
         steps_data = [
             {
                 "id": step_id,
@@ -175,39 +302,35 @@ async def get_version_flow(project_name: str, version_name: str):
                 "previous_step_id": step.previous_step_id,
                 "next_step_ids": step.next_step_ids,
             }
-            for step_id, step in version.steps.items()
+            for step_id, step in version._steps.items()
         ]
         return {"steps": steps_data}
-    except ValueError as e:
+    except KeyError as e:
         logger.error(
-            f"Version '{version_name}' not found in project '{project_name}': {str(e)}"
+            f"Version '{version_id}' or project '{project_id}' not found: {str(e)}"
         )
         raise HTTPException(status_code=404, detail=str(e)) from e
     except Exception as e:
         logger.error(
-            f"Error getting flow data for version '{version_name}' in project '{project_name}': {str(e)}",
+            f"Error getting flow data for version '{version_id}' in project '{project_id}': {str(e)}",
             exc_info=True,
         )
         raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @app.get(
-    "/api/projects/{project_name}/versions/{version_name}/recordings/{recording_id}/flow"
+    "/api/projects/{project_id}/versions/{version_id}/recordings/{recording_id}/flow"
 )
-async def get_recording_flow(project_name: str, version_name: str, recording_id: str):
+async def get_recording_flow(project_id: str, version_id: str, recording_id: str):
     """Get the flow chart data for a recording"""
     try:
-        project = mixedvoices.load_project(project_name)
-        version = project.load_version(version_name)
-        recording = version.recordings.get(recording_id, None)
-        if recording is None:
-            raise ValueError(
-                f"Recording {recording_id} not found in version {version_name}"
-            )
+        project = mixedvoices.load_project(project_id)
+        version = project.load_version(version_id)
+        recording = version.get_recording(recording_id)
 
         steps_data = []
         for step_id in recording.step_ids:
-            step = version.steps[step_id]
+            step = version._steps[step_id]
             steps_data.append(
                 {
                     "id": step.step_id,
@@ -215,25 +338,25 @@ async def get_recording_flow(project_name: str, version_name: str, recording_id:
                 }
             )
         return {"steps": steps_data}
-    except ValueError as e:
+    except KeyError as e:
         logger.error(
-            f"Recording '{recording_id}' not found in version '{version_name}' of project '{project_name}': {str(e)}"
+            f"Recording '{recording_id}' or version '{version_id}' or project '{project_id}' not found: {str(e)}"
         )
         raise HTTPException(status_code=404, detail=str(e)) from e
     except Exception as e:
         logger.error(
-            f"Error getting flow data for recording '{recording_id}' in version '{version_name}' of project '{project_name}': {str(e)}",
+            f"Error getting flow data for recording '{recording_id}' in version '{version_id}' of project '{project_id}': {str(e)}",
             exc_info=True,
         )
         raise HTTPException(status_code=500, detail=str(e)) from e
 
 
-@app.get("/api/projects/{project_name}/versions/{version_name}/recordings")
-async def list_recordings(project_name: str, version_name: str):
+@app.get("/api/projects/{project_id}/versions/{version_id}/recordings")
+async def list_recordings(project_id: str, version_id: str):
     """List all recordings in a version"""
     try:
-        project = mixedvoices.load_project(project_name)
-        version = project.load_version(version_name)
+        project = mixedvoices.load_project(project_id)
+        version = project.load_version(version_id)
         recordings_data = [
             {
                 "id": recording_id,
@@ -250,100 +373,76 @@ async def list_recordings(project_name: str, version_name: str):
                 "llm_metrics": recording.llm_metrics,
                 "call_metrics": recording.call_metrics,
             }
-            for recording_id, recording in version.recordings.items()
+            for recording_id, recording in version._recordings.items()
         ]
         return {"recordings": recordings_data}
-    except ValueError as e:
+    except KeyError as e:
         logger.error(
-            f"Version '{version_name}' or project '{project_name}' does not exist: {str(e)}"
+            f"Version '{version_id}' or project '{project_id}' does not exist: {str(e)}"
         )
         raise HTTPException(status_code=404, detail=str(e)) from e
     except Exception as e:
         logger.error(
-            f"Error listing recordings for version '{version_name}' in project '{project_name}': {str(e)}",
+            f"Error listing recordings for version '{version_id}' in project '{project_id}': {str(e)}",
             exc_info=True,
         )
         raise HTTPException(status_code=500, detail=str(e)) from e
 
 
-@app.post("/api/projects/{project_name}/versions/{version_name}/recordings")
+@app.post("/api/projects/{project_id}/versions/{version_id}/recordings")
 async def add_recording(
-    project_name: str,
-    version_name: str,
+    project_id: str,
+    version_id: str,
+    file: UploadFile,
+    user_channel: str = "left",
     is_successful: Optional[bool] = None,
-    user_channel: Optional[str] = None,
-    file: Optional[UploadFile] = None,
-    recording_data: Optional[RecordingUpload] = None,
 ):
     """Add a new recording to a version"""
-    logger.info(
-        f"Adding recording to version '{version_name}' in project '{project_name}'"
-    )
     logger.debug(f"is_successful: {is_successful}")
-    logger.debug(f"recording_data: {recording_data}")
 
+    temp_dir = None
     try:
-        project = mixedvoices.load_project(project_name)
-        version = project.load_version(version_name)
-
-        if file:
-            temp_path = Path(f"/tmp/{file.filename}")
-            try:
-                with temp_path.open("wb") as buffer:
-                    shutil.copyfileobj(file.file, buffer)
-
-                recording = version.add_recording(
-                    str(temp_path),
-                    blocking=False,
-                    is_successful=is_successful,
-                    user_channel=user_channel,
-                )
-                logger.info(f"Recording is being processed: {recording.recording_id}")
-                return {
-                    "message": "Recording is being processed",
-                    "recording_id": recording.recording_id,
-                }
-            finally:
-                if temp_path.exists():
-                    temp_path.unlink()
-                    logger.debug(f"Temporary file removed: {temp_path}")
-
-        elif recording_data and recording_data.url:
-            # TODO: Implement URL upload and processing
-            logger.error("URL upload not implemented yet")
-            raise HTTPException(
-                status_code=501, detail="URL upload not implemented yet"
-            )
-        else:
-            logger.error("No file or URL provided")
-            raise HTTPException(status_code=400, detail="No file or URL provided")
-
+        project = mixedvoices.load_project(project_id)
+        version = project.load_version(version_id)
+        temp_path, temp_dir = copy_file_content(file)
+        version.add_recording(
+            str(temp_path),
+            blocking=False,
+            is_successful=is_successful,
+            user_channel=user_channel,
+        )
+        return {
+            "message": "Recording is being processed",
+        }
+    except KeyError as e:
+        logger.error(
+            f"Version '{version_id}' or project '{project_id}' does not exist: {str(e)}"
+        )
+        raise HTTPException(status_code=404, detail=str(e)) from e
     except ValueError as e:
-        logger.error(f"Invalid recording data: {str(e)}")
+        logger.error(f"Invalid input: {str(e)}", exc_info=True)
         raise HTTPException(status_code=400, detail=str(e)) from e
     except Exception as e:
         logger.error(f"Error adding recording: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e)) from e
+    finally:
+        if temp_dir:
+            temp_dir.cleanup()
 
 
-@app.get(
-    "/api/projects/{project_name}/versions/{version_name}/steps/{step_id}/recordings"
-)
-async def list_step_recordings(project_name: str, version_name: str, step_id: str):
+@app.get("/api/projects/{project_id}/versions/{version_id}/steps/{step_id}/recordings")
+async def list_step_recordings(project_id: str, version_id: str, step_id: str):
     """Get all recordings that reached a specific step"""
     try:
-        project = mixedvoices.load_project(project_name)
-        version = project.load_version(version_name)
-        step = version.steps.get(step_id, None)
-        if step is None:
-            raise ValueError(f"Step {step_id} not found in version {version_name}")
-
+        project = mixedvoices.load_project(project_id)
+        version = project.load_version(version_id)
+        step = version.get_step(step_id)
         recordings_data = []
         for recording_id in step.recording_ids:
-            recording = version.recordings[recording_id]
+            recording = version._recordings[recording_id]
             recordings_data.append(
                 {
-                    "id": recording.recording_id,
+                    "id": recording.id,
                     "audio_path": recording.audio_path,
                     "created_at": recording.created_at,
                     "combined_transcript": recording.combined_transcript,
@@ -360,31 +459,30 @@ async def list_step_recordings(project_name: str, version_name: str, step_id: st
             )
 
         return {"recordings": recordings_data}
-    except ValueError as e:
+    except KeyError as e:
         logger.error(
-            f"Step '{step_id}' or version '{version_name}' or project '{project_name}' not found: {str(e)}"
+            f"Step '{step_id}' or version '{version_id}' or project '{project_id}' not found: {str(e)}"
         )
         raise HTTPException(status_code=404, detail=str(e)) from e
     except Exception as e:
         logger.error(
-            f"Error getting recordings for step '{step_id}' in version '{version_name}' of project '{project_name}': {str(e)}",
+            f"Error getting recordings for step '{step_id}' in version '{version_id}' of project '{project_id}': {str(e)}",
             exc_info=True,
         )
         raise HTTPException(status_code=500, detail=str(e)) from e
 
 
-@app.post("/api/{project_name}/{version_name}/{provider_name}")
+@app.post("/webhook/{project_id}/{version_id}/{provider_name}")
 async def handle_webhook(
-    project_name: str, version_name: str, provider_name: str, request: Request
+    project_id: str, version_id: str, provider_name: str, request: Request
 ):
     """Handle incoming webhook, download the recording, and add it to the version"""
-    logger.info(
-        f"Received webhook for provider '{provider_name}' - project: '{project_name}', version: '{version_name}'"
-    )
-
     try:
         webhook_data = await request.json()
         logger.debug(f"Webhook data received: {webhook_data}")
+
+        project = mixedvoices.load_project(project_id)
+        version = project.load_version(version_id)
 
         if provider_name == "vapi":
             data = process_vapi_webhook(webhook_data)
@@ -397,9 +495,6 @@ async def handle_webhook(
             logger.error(f"Invalid provider name: {provider_name}")
             raise HTTPException(status_code=400, detail="Invalid provider name")
 
-        project = mixedvoices.load_project(project_name)
-        version = project.load_version(version_name)
-
         temp_path = Path(f"/tmp/{call_id}.wav")
         try:
             async with aiohttp.ClientSession() as session:
@@ -407,9 +502,6 @@ async def handle_webhook(
                     if response.status == 200:
                         with open(temp_path, "wb") as f:
                             f.write(await response.read())
-                            logger.info(
-                                f"Audio file downloaded successfully: {call_id}.wav"
-                            )
                     else:
                         logger.error(
                             f"Failed to download audio file: {response.status}"
@@ -419,7 +511,7 @@ async def handle_webhook(
                             detail="Failed to download audio file",
                         )
 
-            recording = version.add_recording(
+            version.add_recording(
                 str(temp_path),
                 blocking=True,
                 is_successful=is_successful,
@@ -427,11 +519,9 @@ async def handle_webhook(
                 summary=summary,
                 transcript=transcript,
             )
-            logger.info(f"Recording processed successfully: {recording.recording_id}")
 
             return {
                 "message": "Webhook processed and recording added successfully",
-                "recording_id": recording.recording_id,
             }
 
         finally:
@@ -439,73 +529,146 @@ async def handle_webhook(
                 temp_path.unlink()
                 logger.debug(f"Temporary file removed: {temp_path}")
 
-    except ValueError as e:
-        logger.error(f"Invalid webhook data: {str(e)}")
+    except KeyError as e:
+        logger.error(
+            f"Project '{project_id}' or version '{version_id}' not found: {str(e)}"
+        )
         raise HTTPException(status_code=404, detail=str(e)) from e
     except Exception as e:
         logger.error(f"Error processing webhook: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e)) from e
 
 
-@app.get("/api/projects/{project_name}/versions/{version_name}/evals")
-async def list_evals(project_name: str, version_name: str):
+@app.get("/api/projects/{project_id}/evals")
+async def list_evaluators(project_id: str):
     try:
-        project = mixedvoices.load_project(project_name)
-        version = project.load_version(version_name)
-        evals = version.evals
-        eval_data = []
-        for eval_id, cur_eval in evals.items():
-            eval_data.append(
-                {
-                    "eval_id": eval_id,
-                    "created_at": cur_eval.created_at,
-                }
-            )
+        project = mixedvoices.load_project(project_id)
+        evals = project.list_evaluators()
+        eval_data = [cur_eval.info for cur_eval in evals]
         return {"evals": eval_data}
-    except ValueError as e:
-        logger.error(
-            f"Version '{version_name}' or project '{project_name}' not found: {str(e)}"
-        )
+    except KeyError as e:
+        logger.error(f"Project '{project_id}' not found: {str(e)}")
         raise HTTPException(status_code=404, detail=str(e)) from e
     except Exception as e:
-        logger.error(f"Error listing evals: {str(e)}", exc_info=True)
+        logger.error(f"Error listing evaluators: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e)) from e
 
 
-@app.get("/api/projects/{project_name}/versions/{version_name}/evals/{eval_id}")
-async def get_eval_details(project_name: str, version_name: str, eval_id: str):
+@app.post("/api/projects/{project_id}/evals")
+async def create_evaluator(project_id: str, eval_data: EvalCreate):
     try:
-        project = mixedvoices.load_project(project_name)
-        version = project.load_version(version_name)
-        current_eval = version.evals.get(eval_id, None)
-        if current_eval is None:
-            raise ValueError(f"Eval {eval_id} not found in version {version_name}")
-        agents = current_eval.eval_agents
-        agent_data = []
-        for agent in agents:
-            agent_data.append(
-                {
-                    "prompt": agent.eval_prompt,
-                    "started": agent.started,
-                    "ended": agent.ended,
-                    "transcript": agent.transcript,
-                    "scores": agent.scores,
-                    "error": agent.error,
-                }
-            )
+        project = mixedvoices.load_project(project_id)
+        current_eval = project.create_evaluator(
+            eval_data.test_cases, eval_data.metric_names
+        )
+        return {"eval_id": current_eval.id}
+    except KeyError as e:
+        logger.error(f"Project '{project_id}' not found: {str(e)}")
+        raise HTTPException(status_code=404, detail=str(e)) from e
+    except Exception as e:
+        logger.error(f"Error creating evaluator: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
-        return {"agents": agent_data}
-    except ValueError as e:
+
+@app.get("/api/projects/{project_id}/evals/{eval_id}")
+async def get_evaluator_details(project_id: str, eval_id: str):
+    try:
+        project = mixedvoices.load_project(project_id)
+        current_eval = project.load_evaluator(eval_id)
+        eval_runs = current_eval.list_eval_runs()
+        eval_run_data = [eval_run.info for eval_run in eval_runs]
+
+        return {
+            "metrics": current_eval.metric_names,
+            "test_cases": current_eval.test_cases,
+            "eval_runs": eval_run_data,
+        }
+    except KeyError as e:
         logger.error(
-            f"Eval '{eval_id}' or version '{version_name}' or project '{project_name}' not found: {str(e)}"
+            f"Evaluator '{eval_id}' or project '{project_id}' not found: {str(e)}"
         )
         raise HTTPException(status_code=404, detail=str(e)) from e
     except Exception as e:
-        logger.error(f"Error getting eval details: {str(e)}", exc_info=True)
+        logger.error(f"Error getting evaluator details: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+@app.get("/api/projects/{project_id}/evals/{eval_id}/versions/{version_id}")
+async def get_version_evaluator_details(project_id: str, eval_id: str, version_id: str):
+    try:
+        project = mixedvoices.load_project(project_id)
+        current_eval = project.load_evaluator(eval_id)
+        eval_runs = current_eval.list_eval_runs(version_id)
+        eval_run_data = [eval_run.info for eval_run in eval_runs]
+
+        return {
+            "metrics": current_eval.metric_names,
+            "test_cases": current_eval.test_cases,
+            "eval_runs": eval_run_data,
+        }
+    except KeyError as e:
+        logger.error(
+            f"Eval '{eval_id}' or project '{project_id}' or version '{version_id}' not found: {str(e)}"
+        )
+        raise HTTPException(status_code=404, detail=str(e)) from e
+    except Exception as e:
+        logger.error(f"Error listing version evals: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+@app.get("/api/projects/{project_id}/evals/{eval_id}/runs/{run_id}")
+async def get_eval_run_details(project_id: str, eval_id: str, run_id: str):
+    try:
+        project = mixedvoices.load_project(project_id)
+        current_eval = project.load_evaluator(eval_id)
+        eval_run = current_eval.load_eval_run(run_id)
+        return {"results": eval_run.results, "version": eval_run.version_id}
+    except KeyError as e:
+        logger.error(
+            f"Run {run_id} or Eval '{eval_id}' or project '{project_id}' not found: {str(e)}"
+        )
+        raise HTTPException(status_code=404, detail=str(e)) from e
+    except Exception as e:
+        logger.error(f"Error getting eval run details: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+@app.post("/api/prompt_generator")
+async def generate_prompt(
+    agent_prompt: str,
+    user_demographic_info: Optional[str] = None,
+    transcript: Optional[str] = None,
+    user_channel: Optional[str] = "left",
+    description: Optional[str] = None,
+    edge_case_count: Optional[int] = None,
+    file: Optional[UploadFile] = None,
+):
+    try:
+        temp_dir = None
+        test_case_generator = TestCaseGenerator(agent_prompt, user_demographic_info)
+        if transcript:
+            test_case_generator.add_from_transcripts([transcript])
+        elif file:
+            temp_path, temp_dir = copy_file_content(file)
+            test_case_generator.add_from_recordings([temp_path], user_channel)
+        elif description:
+            test_case_generator.add_from_descriptions([description])
+        elif edge_case_count:
+            test_case_generator.add_edge_cases(edge_case_count)
+        else:
+            raise ValueError(
+                "Either transcript, file, description, or edge_case_count must be provided"
+            )
+        prompts = test_case_generator.generate()
+        return {"prompts": prompts}
+    except Exception as e:
+        logger.error(f"Error generating prompt: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e)) from e
+    finally:
+        if temp_dir:
+            temp_dir.cleanup()
 
 
 def run_server(port: int = 7760):
     """Run the FastAPI server"""
-    logger.info(f"Starting server on port {port}")
-    uvicorn.run(app, host="0.0.0.0", port=port)
+    uvicorn.run(app, host="0.0.0.0", port=port, log_level="error")

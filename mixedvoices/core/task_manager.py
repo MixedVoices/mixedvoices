@@ -66,7 +66,7 @@ class TaskManager:
         self.monitor_thread = None
         self.is_processing = False
 
-        self.tasks_root = os.path.join(constants.ALL_PROJECTS_FOLDER, "_tasks")
+        self.tasks_root = os.path.join(constants.MIXEDVOICES_FOLDER, "_tasks")
         self.create_folders()
 
         self._load_pending_tasks()
@@ -119,7 +119,7 @@ class TaskManager:
             version = params["version"]
             return {
                 "recording_data": {
-                    "recording_id": recording.recording_id,
+                    "recording_id": recording.id,
                     "audio_path": recording.audio_path,
                     "version_id": recording.version_id,
                     "project_id": recording.project_id,
@@ -129,7 +129,7 @@ class TaskManager:
                     "combined_transcript": recording.combined_transcript,
                 },
                 "version_data": {
-                    "version_id": version.version_id,
+                    "version_id": version.id,
                     "project_id": version.project_id,
                 },
                 "user_channel": params["user_channel"],
@@ -140,36 +140,36 @@ class TaskManager:
         self, task_type: str, params: Dict[str, Any]
     ) -> Dict[str, Any]:
         """Convert serialized parameters back into required objects."""
-        if task_type == "process_recording":
-            from mixedvoices.core.recording import Recording
-            from mixedvoices.core.version import Version
+        if task_type != "process_recording":
+            return params
+        from mixedvoices.core.recording import Recording
+        from mixedvoices.core.version import Version
 
-            recording_data = params["recording_data"]
-            version_data = params["version_data"]
-            user_channel = params["user_channel"]
+        recording_data = params["recording_data"]
+        version_data = params["version_data"]
+        user_channel = params["user_channel"]
 
-            recording = Recording(
-                recording_id=recording_data["recording_id"],
-                audio_path=recording_data["audio_path"],
-                version_id=recording_data["version_id"],
-                project_id=recording_data["project_id"],
-                is_successful=recording_data["is_successful"],
-                metadata=recording_data["metadata"],
-                summary=recording_data["summary"],
-                combined_transcript=recording_data["combined_transcript"],
-            )
+        recording = Recording(
+            recording_id=recording_data["recording_id"],
+            audio_path=recording_data["audio_path"],
+            version_id=recording_data["version_id"],
+            project_id=recording_data["project_id"],
+            is_successful=recording_data["is_successful"],
+            metadata=recording_data["metadata"],
+            summary=recording_data["summary"],
+            combined_transcript=recording_data["combined_transcript"],
+        )
 
-            version = Version.load(
-                project_id=version_data["project_id"],
-                version_id=version_data["version_id"],
-            )
+        version = Version._load(
+            project_id=version_data["project_id"],
+            version_id=version_data["version_id"],
+        )
 
-            return {
-                "recording": recording,
-                "version": version,
-                "user_channel": user_channel,
-            }
-        return params
+        return {
+            "recording": recording,
+            "version": version,
+            "user_channel": user_channel,
+        }
 
     def _save_task(self, task: Task):
         """Save task state to appropriate folder based on status."""
@@ -244,14 +244,11 @@ class TaskManager:
     def _process_queue(self):
         main_thread = threading.main_thread()
 
-        while True:
-            if (
-                not main_thread.is_alive()
-                and self.task_queue.empty()
-                and not self.is_processing
-            ):
-                break
-
+        while not (
+            not main_thread.is_alive()
+            and self.task_queue.empty()
+            and not self.is_processing
+        ):
             try:
                 try:
                     task_id = self.task_queue.get(timeout=1.0)
@@ -318,3 +315,6 @@ class TaskManager:
     def get_pending_task_count(self) -> int:
         """Get the number of pending and in-progress tasks."""
         return self.task_queue.unfinished_tasks
+
+
+TASK_MANAGER = TaskManager()

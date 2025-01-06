@@ -91,7 +91,7 @@ class APIClient:
     @staticmethod
     def post_data(
         endpoint: str,
-        json_data: Optional[Dict] = None,
+        json: Optional[Dict] = None,
         files: Optional[Dict] = None,
         params: Optional[Dict] = None,
     ) -> Dict:
@@ -99,7 +99,7 @@ class APIClient:
 
         Args:
             endpoint: API endpoint to post to
-            json_data: JSON payload to send
+            json: JSON payload to send
             files: Files to upload
             params: Query parameters to include
 
@@ -112,7 +112,7 @@ class APIClient:
         try:
             response = requests.post(
                 f"{API_BASE_URL}/{endpoint}",
-                json=json_data or None,
+                json=json or None,
                 files=files or None,
                 params=params or None,
                 timeout=30,  # Add reasonable timeout

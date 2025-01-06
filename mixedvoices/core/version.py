@@ -8,8 +8,7 @@ import mixedvoices.constants as constants
 from mixedvoices.core import utils
 from mixedvoices.core.recording import Recording
 from mixedvoices.core.step import Step
-from mixedvoices.evaluation.eval_case_generation import get_eval_prompts
-from mixedvoices.evaluation.evaluator import Evaluator
+from mixedvoices.core.task_manager import TASK_MANAGER
 from mixedvoices.utils import load_json, save_json
 
 
@@ -31,74 +30,84 @@ def dfs(
     current_path.pop()  # Backtrack
 
 
+def get_info_path(project_id, version_id):
+    return os.path.join(
+        constants.PROJECTS_FOLDER, project_id, "versions", version_id, "info.json"
+    )
+
+
 class Version:
     def __init__(
         self,
         version_id: str,
         project_id: str,
         prompt: str,
-        success_criteria: Optional[str] = None,
         metadata: Optional[Dict[str, Any]] = None,
-        evals: Optional[Dict[str, Evaluator]] = None,
     ):
-        self.version_id = version_id
-        self.project_id = project_id
-        self.prompt = prompt
-        self.success_criteria = success_criteria
-        self.metadata = metadata
-        self.evals = evals or {}
-        self.load_recordings()
-        self.load_steps()
-        self.create_flowchart()
+        self._version_id = version_id
+        self._project_id = project_id
+        self._prompt = prompt
+        self._metadata = metadata
+        self._load_recordings()
+        self._load_steps()
+        self._create_flowchart()
+        self._all_step_names = None
+        self._cached_project = None
+        self._all_paths: Optional[List[str]] = None
 
     @property
-    def path(self):
-        return os.path.join(
-            constants.ALL_PROJECTS_FOLDER, self.project_id, self.version_id
-        )
-
-    def load_recordings(self):
-        self.recordings: Dict[str, Recording] = {}
-        recordings_path = os.path.join(self.path, "recordings")
-        recording_files = os.listdir(recordings_path)
-        for recording_file in recording_files:
-            try:
-                filename = os.path.basename(recording_file)
-                recording_id = os.path.splitext(filename)[0]
-                self.recordings[recording_id] = Recording.load(
-                    self.project_id, self.version_id, recording_id
-                )
-            except Exception as e:
-                print(f"Error loading recording {recording_file}: {e}")
-
-    def load_steps(self):
-        self.steps: Dict[str, Step] = {}
-        steps_path = os.path.join(self.path, "steps")
-        step_files = os.listdir(steps_path)
-        for step_file in step_files:
-            filename = os.path.basename(step_file)
-            step_id = os.path.splitext(filename)[0]
-            self.steps[step_id] = Step.load(self.project_id, self.version_id, step_id)
+    def id(self):
+        """Get the name of the version"""
+        return self._version_id
 
     @property
-    def starting_steps(self):
-        return [step for step in self.steps.values() if step.previous_step_id is None]
+    def project_id(self):
+        """Get the name of the project"""
+        return self._project_id
 
-    def create_flowchart(self):
-        for starting_step in self.starting_steps:
-            self.recursively_assign_steps(starting_step)
+    @property
+    def prompt(self):
+        """Get the prompt of the version"""
+        return self._prompt
 
-    def recursively_assign_steps(self, step: Step):
-        step.next_steps = [
-            self.steps[next_step_id] for next_step_id in step.next_step_ids
-        ]
-        step.previous_step = (
-            self.steps[step.previous_step_id]
-            if step.previous_step_id is not None
-            else None
-        )
-        for next_step in step.next_steps:
-            self.recursively_assign_steps(next_step)
+    @property
+    def recording_count(self):
+        """Get the number of recordings in the version"""
+        return len(self._recordings)
+
+    @property
+    def info(self):
+        return {
+            "name": self.id,
+            "prompt": self.prompt,
+            "metadata": self.metadata,
+            "recording_count": self.recording_count,
+        }
+
+    def get_recording(self, recording_id: str):
+        if recording_id not in self._recordings:
+            raise KeyError(f"Recording {recording_id} not found in version {self.id}")
+        return self._recordings[recording_id]
+
+    def get_step(self, step_id: str):
+        if step_id not in self._steps:
+            raise KeyError(f"Step {step_id} not found in version {self.id}")
+        return self._steps[step_id]
+
+    def update_prompt(self, prompt: str):
+        """Update the prompt of the version"""
+        self._prompt = prompt
+        self._save()
+
+    @property
+    def metadata(self):
+        """Get the metadata of the version"""
+        return self._metadata
+
+    def update_metadata(self, metadata: Dict[str, Any]):
+        """Update the metadata of the version"""
+        self._metadata = metadata
+        self._save()
 
     def add_recording(
         self,
@@ -117,7 +126,7 @@ class Version:
             audio_path (str): Path to the audio file, should be a stereo recording with user and agent on separate channels
             user_channel (str): Audio channel of the user, either "left" or "right". Defaults to "left".
             is_successful (Optional[bool]): If the recording is successful or not Defaults to None.
-              This will override the automatic successs classification if version has success criteria
+              This will override the automatic successs classification if project has success criteria
             blocking (bool): If True, block until recording is processed, otherwise adds to queue and processes in the background. Defaults to True.
             transcript (Optional[str]): Transcript of the recording, this overrides the transcript generated during analysis. Defaults to None.
               This doesn't stop the transcription, as that generates more granular transcript with timestamps.
@@ -125,9 +134,9 @@ class Version:
               This prevents summary from being generated during analysis.
             metadata (Optional[Dict[str, Any]]): Metadata to be associated with the recording. Defaults to None.
         """  # noqa E501
-        if self.success_criteria and is_successful is not None:
+        if self._project._success_criteria and is_successful is not None:
             warn(
-                "is_successful specified for a version with success criteria set. Overriding automatic success classification.",
+                "is_successful specified for a project with success criteria set. Overriding automatic success classification.",
                 UserWarning,
                 stacklevel=2,
             )
@@ -144,7 +153,7 @@ class Version:
         if extension not in [".mp3", ".wav"]:
             raise ValueError(f"Audio path {audio_path} is not an mp3 or wav file")
 
-        output_folder = os.path.join(self.path, "recordings", recording_id)
+        output_folder = os.path.join(self._recordings_path, recording_id)
         output_audio_path = os.path.join(output_folder, file_name)
         os.makedirs(output_folder)
         os.system(f"cp {audio_path} {output_audio_path}")
@@ -152,66 +161,106 @@ class Version:
         recording = Recording(
             recording_id,
             output_audio_path,
-            self.version_id,
+            self.id,
             self.project_id,
             is_successful=is_successful,
             combined_transcript=transcript,
             summary=summary,
             metadata=metadata,
         )
-        self.recordings[recording.recording_id] = recording
-        recording.save()
+        self._recordings[recording_id] = recording
+        recording._save()
 
         if blocking:
             utils.process_recording(recording, self, user_channel)
         else:
-            recording.processing_task_id = mixedvoices.TASK_MANAGER.add_task(
+            recording.processing_task_id = TASK_MANAGER.add_task(
                 "process_recording",
                 recording=recording,
                 version=self,
                 user_channel=user_channel,
             )
 
-        return recording
-
-    def get_eval_ids(self):
-        return list(self.evals.keys())
-
-    def save(self):
-        save_path = os.path.join(self.path, "info.json")
+    def _save(self):
         d = {
-            "prompt": self.prompt,
-            "success_criteria": self.success_criteria,
-            "metadata": self.metadata,
-            "eval_ids": self.get_eval_ids(),
+            "prompt": self._prompt,
+            "metadata": self._metadata,
         }
-        save_json(d, save_path)
+        save_json(d, self._path)
 
     @classmethod
-    def load(cls, project_id, version_id):
-        load_path = os.path.join(
-            constants.ALL_PROJECTS_FOLDER, project_id, version_id, "info.json"
-        )
+    def _load(cls, project_id, version_id):
+        load_path = get_info_path(project_id, version_id)
         d = load_json(load_path)
         prompt = d["prompt"]
-        success_criteria = d.get("success_criteria", None)
         metadata = d.get("metadata", None)
-        eval_ids = d.get("eval_ids", [])
-        evals = {
-            eval_id: Evaluator.load(project_id, version_id, eval_id)
-            for eval_id in eval_ids
-        }
-        evals = {k: v for k, v in evals.items() if v}
         return cls(
             version_id,
             project_id,
             prompt,
-            success_criteria,
             metadata,
-            evals,
         )
 
-    def get_paths(self):
+    @property
+    def _project(self):
+        if self._cached_project is None:
+            self._cached_project = mixedvoices.load_project(self.project_id)
+        return self._cached_project
+
+    @property
+    def _path(self):
+        return get_info_path(self.project_id, self.id)
+
+    @property
+    def _recordings_path(self):
+        return os.path.join(os.path.dirname(self._path), "recordings")
+
+    @property
+    def _steps_path(self):
+        return os.path.join(os.path.dirname(self._path), "steps")
+
+    def _load_recordings(self):
+        self._recordings: Dict[str, Recording] = {}
+        recording_files = os.listdir(self._recordings_path)
+        for recording_file in recording_files:
+            try:
+                filename = os.path.basename(recording_file)
+                recording_id = os.path.splitext(filename)[0]
+                self._recordings[recording_id] = Recording._load(
+                    self.project_id, self.id, recording_id
+                )
+            except Exception as e:
+                print(f"Error loading recording {recording_file}: {e}")
+
+    def _load_steps(self):
+        self._steps: Dict[str, Step] = {}
+        step_files = os.listdir(self._steps_path)
+        for step_file in step_files:
+            filename = os.path.basename(step_file)
+            step_id = os.path.splitext(filename)[0]
+            self._steps[step_id] = Step.load(self.project_id, self.id, step_id)
+
+    @property
+    def _starting_steps(self):
+        return [step for step in self._steps.values() if step.previous_step_id is None]
+
+    def _create_flowchart(self):
+        for starting_step in self._starting_steps:
+            self._recursively_assign_steps(starting_step)
+
+    def _recursively_assign_steps(self, step: Step):
+        step.next_steps = [
+            self._steps[next_step_id] for next_step_id in step.next_step_ids
+        ]
+        step.previous_step = (
+            self._steps[step.previous_step_id]
+            if step.previous_step_id is not None
+            else None
+        )
+        for next_step in step.next_steps:
+            self._recursively_assign_steps(next_step)
+
+    def _get_paths(self) -> List[str]:
         """
         Returns all possible paths through the conversation flow using DFS.
         Each path is a list of Step objects representing a complete conversation path.
@@ -219,93 +268,13 @@ class Version:
         Returns:
             List[str]: List of all possible paths through the conversation
         """
+        if self._all_paths is None:
+            all_paths = []
+            for start_step in self._starting_steps:
+                dfs(start_step, [], all_paths)
 
-        all_paths = []
-        for start_step in self.starting_steps:
-            dfs(start_step, [], all_paths)
+            self._all_paths = all_paths
+        return self._all_paths
 
-        return all_paths
-
-    def get_failure_reasons(self):
-        # TODO implement
-        return []
-
-    def create_evaluator(
-        self,
-        test_cases_per_path: int = 2,
-        test_cases_per_failure_reason: int = 2,
-        total_test_cases_for_edge_scenarios: int = 4,
-        empathy: bool = True,
-        verbatim_repetition: bool = True,
-        conciseness: bool = True,
-        hallucination: bool = True,
-        context_awareness: bool = True,
-        scheduling: bool = True,
-        adaptive_qa: bool = True,
-        objection_handling: bool = True,
-    ) -> Evaluator:
-        """
-        Create a new evaluator for this version.
-
-        Args:
-            test_cases_per_path (int, optional): Number of test cases to generate per path. Defaults to 2.
-            test_cases_per_failure_reason (int, optional): Number of test cases to generate per failure reason. Defaults to 2.
-            total_test_cases_for_edge_scenarios (int, optional): Total number of test cases to generate for edge scenarios. Defaults to 4.
-            empathy (bool, optional): Whether to include empathy metric.
-                Returns score from 0 to 10. Defaults to True.
-            verbatim_repetition (bool, optional): Whether to include verbatim repetition metric.
-                This metric fails if the repeat itself verbatim when asked the same/similar question.
-                Returns PASS/FAIL/N/A. Defaults to True.
-            conciseness (bool, optional): Whether to include conciseness metric.
-                Returns score from 0 to 10. Defaults to True.
-            hallucination (bool, optional): Whether to include hallucination metric.
-                Returns PASS/FAIL. Defaults to True.
-            context_awareness (bool, optional): Whether to include context awareness metric.
-                Returns PASS/FAIL. Defaults to True.
-            scheduling (bool, optional): Whether to include scheduling metric.
-                Returns score from 0 to 10 or N/A. Defaults to True.
-            adaptive_qa (bool, optional): Whether to include adaptive qa metric.
-                This metric measures whether the bot only asks questions that are relevant to the topic of the conversation.
-                The bot should also not ask questions that have already been answered by the user.
-                Returns score from 0 to 10. Defaults to True.
-            objection_handling (bool, optional): Whether to include objection handling metric.
-                This metric measures whether the bot acknowledges the objections, relates to the user's concern in a way that sympathizes with their pain, and offers relevant solutions.
-                Returns score from 0 to 10 or N/A. Defaults to True.
-
-        Returns:
-            Evaluator: The newly created evaluator
-        """  # noqa E501
-        metrics_dict = {
-            "empathy": empathy,
-            "verbatim_repetition": verbatim_repetition,
-            "conciseness": conciseness,
-            "hallucination": hallucination,
-            "context_awareness": context_awareness,
-            "scheduling": scheduling,
-            "adaptive_qa": adaptive_qa,
-            "objection_handling": objection_handling,
-        }
-        all_paths = self.get_paths()
-        all_failure_reasons = self.get_failure_reasons()
-        print("Generating Evaluation Prompts")
-        prompts = get_eval_prompts(
-            self.prompt,
-            all_failure_reasons,
-            all_paths,
-            test_cases_per_path,
-            test_cases_per_failure_reason,
-            total_test_cases_for_edge_scenarios,
-        )
-        eval_id = uuid4().hex
-        cur_eval = Evaluator(
-            eval_id,
-            self.project_id,
-            self.version_id,
-            self.prompt,
-            metrics_dict,
-            prompts,
-        )
-
-        self.evals[eval_id] = cur_eval
-        self.save()
-        return cur_eval
+    def _get_step_names(self) -> List[str]:
+        return list({step.name for step in self._steps.values()})

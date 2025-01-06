@@ -19,8 +19,8 @@ class MyDentalAgent(BaseAgent):
 
 @needs_openai_key
 @needs_deepgram_key
-@patch("mixedvoices.constants.TRANSCRIPTION_PROVIDER", "deepgram")
-def test_full(temp_project_folder):
+@patch("mixedvoices.models.TRANSCRIPTION_MODEL", "deepgram/nova-2")
+def test_full(mock_base_folder):
     project = mv.create_project("test_project")
     with open("tests/assets/prompt.txt", "r") as f:
         prompt = f.read()

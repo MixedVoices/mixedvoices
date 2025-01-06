@@ -1,3 +1,10 @@
+import os
+import shutil
+import tempfile
+
+from fastapi import UploadFile
+
+
 def process_vapi_webhook(webhook_data):
     message_data = webhook_data["message"]
     return {
@@ -34,3 +41,13 @@ def process_vapi_webhook(webhook_data):
             "cost_breakdown": message_data["costBreakdown"],
         },
     }
+
+
+def copy_file_content(file: UploadFile):
+    temp_dir = tempfile.TemporaryDirectory()
+    temp_dir_str = temp_dir.name
+    temp_path = os.path.join(temp_dir_str, file.filename)
+    with open(temp_path, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+
+    return temp_path, temp_dir

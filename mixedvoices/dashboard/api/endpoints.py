@@ -1,38 +1,64 @@
-def get_projects_endpoint() -> str:
+def projects_ep() -> str:
     return "projects"
 
 
-def get_project_versions_endpoint(project_id: str) -> str:
+def project_success_criteria_ep(project_id: str) -> str:
+    return f"projects/{project_id}/success_criteria"
+
+
+def project_metrics_ep(project_id: str) -> str:
+    return f"projects/{project_id}/metrics"
+
+
+def default_metrics_ep() -> str:
+    return "default_metrics"
+
+
+def metric_ep(project_id: str, metric_name: str) -> str:
+    return f"projects/{project_id}/metrics/{metric_name}"
+
+
+def project_versions_ep(project_id: str) -> str:
     return f"projects/{project_id}/versions"
 
 
-def get_version_success_criteria_endpoint(project_id: str, version: str) -> str:
-    return f"projects/{project_id}/versions/{version}/success_criteria"
+def version_ep(project_id: str, version_id: str) -> str:
+    return f"projects/{project_id}/versions/{version_id}"
 
 
-def get_version_flow_endpoint(project_id: str, version: str) -> str:
-    return f"projects/{project_id}/versions/{version}/flow"
+def version_flow_ep(project_id: str, version_id: str) -> str:
+    return f"projects/{project_id}/versions/{version_id}/flow"
 
 
-def get_version_recordings_endpoint(project_id: str, version: str) -> str:
-    return f"projects/{project_id}/versions/{version}/recordings"
+def version_recordings_ep(project_id: str, version_id: str) -> str:
+    return f"projects/{project_id}/versions/{version_id}/recordings"
 
 
-def get_step_recordings_endpoint(project_id: str, version: str, step_id: str) -> str:
-    return f"projects/{project_id}/versions/{version}/steps/{step_id}/recordings"
+def step_recordings_ep(project_id: str, version_id: str, step_id: str) -> str:
+    return f"projects/{project_id}/versions/{version_id}/steps/{step_id}/recordings"
 
 
-def get_recording_flow_endpoint(
-    project_id: str, version: str, recording_id: str
-) -> str:
-    return f"projects/{project_id}/versions/{version}/recordings/{recording_id}/flow"
+def recording_flow_ep(project_id: str, version_id: str, recording_id: str) -> str:
+    return f"projects/{project_id}/versions/{version_id}/recordings/{recording_id}/flow"
 
 
-def list_evals_endpoint(project_name: str, version_name: str) -> str:
-    """Get endpoint for listing evaluations"""
-    return f"projects/{project_name}/versions/{version_name}/evals"
+def evals_ep(project_id: str) -> str:
+    return f"projects/{project_id}/evals"
 
 
-def get_eval_details_endpoint(project_name: str, version_name: str, eval_id: str) -> str:
+def eval_details_ep(project_id: str, eval_id: str) -> str:
     """Get endpoint for getting evaluation details"""
-    return f"projects/{project_name}/versions/{version_name}/evals/{eval_id}"
+    return f"projects/{project_id}/evals/{eval_id}"
+
+
+def version_eval_details_ep(project_id: str, version_id: str, eval_id: str) -> str:
+    return f"projects/{project_id}/evals/{eval_id}/versions/{version_id}"
+
+
+def eval_run_details_ep(project_id: str, eval_id: str, run_id: str) -> str:
+    """Get endpoint for getting evaluation run details"""
+    return f"projects/{project_id}/evals/{eval_id}/runs/{run_id}"
+
+
+def prompt_generator_ep() -> str:
+    return "prompt_generator"

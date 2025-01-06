@@ -1,77 +1,69 @@
 import streamlit as st
 
-from mixedvoices.dashboard.api.client import APIClient
-from mixedvoices.dashboard.api.endpoints import (
-    get_project_versions_endpoint,
-    get_projects_endpoint,
-)
+from mixedvoices.dashboard.api.endpoints import projects_ep
+from mixedvoices.dashboard.utils import clear_session_state
 
 
 class Sidebar:
-    def __init__(self, api_client: APIClient):
+    def __init__(self, api_client):
         self.api_client = api_client
+        if "current_project" not in st.session_state:
+            st.session_state.current_project = None
 
-    def render(self) -> None:
-        """Render the sidebar"""
+    def render(self):
         with st.sidebar:
-            st.title("🎙️ MixedVoices")
-            self._handle_project_selection()
+            # Logo and Title
+            st.page_link("app.py", label="MixedVoices Home", icon=":material/home:")
+            self._render_project_selection()
+
+            # Create Project Button
+            if st.button(
+                "Create New Project", use_container_width=True, icon=":material/add:"
+            ):
+                st.session_state.show_create_project = True
+                st.switch_page("app.py")
 
             st.divider()
 
-            with st.expander("Create New Project"):
-                self._handle_project_creation()
+            st.page_link("pages/0_versions.py", label="Versions")
+            st.page_link("pages/1_metrics.py", label="Metrics")
+            st.page_link("pages/1_success_criteria.py", label="Success Criteria")
 
-    def _handle_project_selection(self) -> None:
-        """Handle project and version selection"""
+            st.markdown("### Analytics")
+            st.page_link("pages/3_view_recordings.py", label="View Call Details")
+            st.page_link("pages/2_view_flow.py", label="View Call Flows")
+            st.page_link("pages/4_upload_recording.py", label="Upload Calls")
+
+            st.markdown("### Evaluations")
+            st.page_link("pages/5_evals_list.py", label="View Evaluators")
+            st.page_link(
+                "pages/8_create_evaluator_agent_prompt.py", label="Create Evaluator"
+            )
+
+    def _render_project_selection(self):
         # Fetch projects
-        projects_data = self.api_client.fetch_data(get_projects_endpoint())
+        projects_data = self.api_client.fetch_data(projects_ep())
         projects = projects_data.get("projects", [])
 
         # Project selection
-        st.session_state.current_project = st.selectbox(
-            "Select Project", [""] + projects, key="project_selector"
+        selected_project = st.selectbox(
+            "selected project",
+            [""] + projects,
+            index=(
+                None
+                if not st.session_state.current_project
+                else projects.index(st.session_state.current_project) + 1
+            ),
+            label_visibility="hidden",
+            placeholder="Select a project",
         )
 
-        # Version selection if project is selected
-        if st.session_state.current_project:
-            versions_data = self.api_client.fetch_data(
-                get_project_versions_endpoint(st.session_state.current_project)
-            )
-            versions = versions_data.get("versions", [])
-            st.session_state.current_version = st.selectbox(
-                "Select Version",
-                [""] + [v["name"] for v in versions],
-                key="version_selector",
-            )
-
-    def _handle_project_creation(self) -> None:
-        """Handle new project creation"""
-        # Initialize states if they don't exist
-        if "show_project_success" not in st.session_state:
-            st.session_state.show_project_success = False
-
-        # Key for project name input to force re-render when needed
-        if "project_input_key" not in st.session_state:
-            st.session_state.project_input_key = 0
-
-        # Show success message if needed
-        if st.session_state.show_project_success:
-            st.success("Project created successfully!")
-            st.session_state.show_project_success = False
-
-        # Project creation form
-        new_project_name = st.text_input(
-            "Project Name",
-            key=f"project_name_input_{st.session_state.project_input_key}",
-        )
-
-        if st.button("Create Project") and new_project_name:
-            response = self.api_client.post_data(
-                f"projects?name={new_project_name}", {}
-            )
-            if response.get("message"):
-                # Increment the input key to force a fresh input field
-                st.session_state.project_input_key += 1
-                st.session_state.show_project_success = True
-                st.rerun()
+        if selected_project != st.session_state.current_project:
+            clear_session_state()
+            st.session_state.current_project = selected_project
+            st.session_state.current_version = None
+            if selected_project:
+                st.switch_page("pages/0_versions.py")
+            else:
+                st.switch_page("app.py")
+            st.rerun()

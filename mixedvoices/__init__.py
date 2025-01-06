@@ -1,27 +1,35 @@
 import os
+import sys
 
-import mixedvoices.constants as constants
-from mixedvoices.core.project import Project
-from mixedvoices.core.task_manager import TaskManager
+from mixedvoices import constants, metrics, models
+from mixedvoices.core.project import create_project, load_project
 from mixedvoices.evaluation.agents.base_agent import BaseAgent
-from mixedvoices.utils import validate_name
+from mixedvoices.evaluation.test_case_generator import TestCaseGenerator
 
-os.makedirs(constants.ALL_PROJECTS_FOLDER, exist_ok=True)
+os.makedirs(constants.PROJECTS_FOLDER, exist_ok=True)
+os.makedirs(constants.TASKS_FOLDER, exist_ok=True)
+
+
+def check_keys():
+    exempt_commands = ["config"]
+    if len(sys.argv) > 1 and any(cmd in sys.argv[1:] for cmd in exempt_commands):
+        return
+    required_keys = ["OPENAI_API_KEY"]
+    if models.TRANSCRIPTION_MODEL == "deepgram/nova-2":
+        required_keys.append("DEEPGRAM_API_KEY")
+
+    missing_keys = [key for key in required_keys if key not in os.environ]
+    if missing_keys:
+        raise ValueError(
+            f"Missing required environment variables: {', '.join(missing_keys)}. \nThese keys reflect models being used currently. You can change the models by running 'mixedvoices config'."
+        )
+
+
+def list_projects():
+    if not os.path.exists(constants.PROJECTS_FOLDER):
+        return []
+    return os.listdir(constants.PROJECTS_FOLDER)
+
+
+check_keys()
 OPEN_AI_CLIENT = None
-TASK_MANAGER = TaskManager()
-
-
-def create_project(project_name: str):
-    """Create a new project"""
-    validate_name(project_name, "project_name")
-    if project_name in os.listdir(constants.ALL_PROJECTS_FOLDER):
-        raise ValueError(f"Project {project_name} already exists")
-    os.makedirs(os.path.join(constants.ALL_PROJECTS_FOLDER, project_name))
-    return Project(project_name)
-
-
-def load_project(project_name: str):
-    """Load an existing project"""
-    if project_name not in os.listdir(constants.ALL_PROJECTS_FOLDER):
-        raise ValueError(f"Project {project_name} does not exist")
-    return Project(project_name)

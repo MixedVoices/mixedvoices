@@ -9,8 +9,6 @@ import mixedvoices as mv
 from mixedvoices.core.utils import create_steps_from_names
 
 if TYPE_CHECKING:
-    import os
-
     from mixedvoices.core.recording import Recording  # pragma: no cover
     from mixedvoices.core.version import Version  # pragma: no cover
 from functools import wraps
@@ -34,29 +32,40 @@ needs_deepgram_key = needs_api_key("DEEPGRAM_API_KEY")
 
 
 @pytest.fixture
-def temp_project_folder(tmp_path):
-    """Create a temporary project folder for testing"""
-    test_folder = str(tmp_path / "test_projects")
-    os.makedirs(test_folder)
+def mock_base_folder(tmp_path, monkeypatch):
+    """Create temporary folder and patch all folder constants."""
+    # Create required subdirectories
+    (tmp_path / "projects").mkdir()
+    (tmp_path / "tasks").mkdir()
 
-    # Mock the ALL_PROJECTS_FOLDER constant
-    with patch("mixedvoices.constants.ALL_PROJECTS_FOLDER", test_folder):
-        yield test_folder
+    # Patch all constants directly
+    monkeypatch.setattr("mixedvoices.constants.MIXEDVOICES_FOLDER", str(tmp_path))
+    monkeypatch.setattr(
+        "mixedvoices.constants.PROJECTS_FOLDER", str(tmp_path / "projects")
+    )
+    monkeypatch.setattr("mixedvoices.constants.TASKS_FOLDER", str(tmp_path / "tasks"))
+    monkeypatch.setattr(
+        "mixedvoices.constants.METRICS_FILE", str(tmp_path / "metrics.json")
+    )
 
-    shutil.rmtree(test_folder)
+    yield tmp_path
 
 
 @pytest.fixture
-def empty_project(temp_project_folder):
-    project = mv.create_project("test_project")
+def empty_project(mock_base_folder):
+    project = mv.create_project(
+        "empty_project", [], success_criteria="Testing success criteria"
+    )
     project.create_version("v1", prompt="Testing prompt")
     return project
 
 
 @pytest.fixture
-def sample_project(temp_project_folder):
+def sample_project(mock_base_folder):
     project_path = os.path.join("tests", "assets", "sample_project")
-    shutil.copytree(project_path, os.path.join(temp_project_folder, "sample_project"))
+    shutil.copytree(
+        project_path, os.path.join(mock_base_folder, "projects", "sample_project")
+    )
     return mv.load_project("sample_project")
 
 
@@ -65,7 +74,7 @@ def mock_process_recording():
     def side_effect(recording: "Recording", version: "Version", user_channel):
         recording.combined_transcript = "Test transcript"
         recording.duration = 10
-        if version.success_criteria and recording.is_successful is None:
+        if version._project.success_criteria and recording.is_successful is None:
             recording.is_successful = True
             recording.success_explanation = "Test success explanation"
         step_names = ["Testing A", "Testing B", "Testing C"]
@@ -77,7 +86,7 @@ def mock_process_recording():
         }
         recording.call_metrics = {"wpm": 100}
         recording.task_status = "COMPLETED"
-        recording.save()
+        recording._save()
 
     with patch(
         "mixedvoices.core.utils.process_recording", side_effect=side_effect

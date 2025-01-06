@@ -1,11 +1,14 @@
 from datetime import datetime, timezone
 
-import pandas as pd
 import streamlit as st
 
 from mixedvoices.dashboard.api.client import APIClient
-from mixedvoices.dashboard.api.endpoints import get_recording_flow_endpoint
-from mixedvoices.dashboard.utils import display_llm_metrics, display_llm_metrics_preview
+from mixedvoices.dashboard.api.endpoints import recording_flow_ep
+from mixedvoices.dashboard.utils import (
+    data_to_df_with_dates,
+    display_llm_metrics,
+    display_llm_metrics_preview,
+)
 from mixedvoices.dashboard.visualizations.flow_chart import FlowChart
 
 
@@ -17,23 +20,7 @@ class RecordingViewer:
 
     def display_recordings_list(self, recordings: list) -> None:
         """Display list of recordings with details"""
-        # Header row with refresh button
-        header_row = st.columns([8, 1])
-        with header_row[0]:
-            st.write("## Recordings")
-        with header_row[1]:
-            if st.button("Refresh", help="Refresh recordings"):
-                st.rerun()
-
-        # Create DataFrame and format dates
-        display_df = pd.DataFrame(recordings)
-        local_tz = datetime.now().astimezone().tzinfo
-        display_df["created_at"] = pd.to_datetime(
-            display_df["created_at"], unit="s", utc=True
-        ).dt.tz_convert(local_tz)
-        display_df["created_at"] = display_df["created_at"].dt.strftime(
-            "%-I:%M%p %-d %b %y"
-        )
+        display_df = data_to_df_with_dates(recordings)
 
         # Table header
         header_cols = st.columns([0.7, 0.7, 0.7, 0.5, 1.5, 2])
@@ -194,7 +181,7 @@ class RecordingViewer:
     def display_recording_flow(self, recording_id: str) -> None:
         """Display flow visualization for a recording"""
         recording_flow = self.api_client.fetch_data(
-            get_recording_flow_endpoint(self.project_id, self.version, recording_id)
+            recording_flow_ep(self.project_id, self.version, recording_id)
         )
         if recording_flow and recording_flow.get("steps"):
             flow_chart = FlowChart(recording_flow, is_recording_flow=True)
