@@ -131,6 +131,7 @@ class EvalRun:
             self._save()
         self._ended = True
 
+    @property
     def status(self):
         """Returns the status of the run as a string"""
         if self._error:
