@@ -167,7 +167,7 @@ async def list_metrics(project_id: str):
 
 
 @app.post("/api/projects/{project_id}/metrics")
-async def create_metric(project_id: str, metric_data: MetricCreate):
+async def add_metric(project_id: str, metric_data: MetricCreate):
     try:
         project = mixedvoices.load_project(project_id)
         metric = Metric(
@@ -302,7 +302,7 @@ async def get_version_flow(project_id: str, version_id: str):
                 "previous_step_id": step.previous_step_id,
                 "next_step_ids": step.next_step_ids,
             }
-            for step_id, step in version.steps.items()
+            for step_id, step in version._steps.items()
         ]
         return {"steps": steps_data}
     except KeyError as e:
@@ -330,7 +330,7 @@ async def get_recording_flow(project_id: str, version_id: str, recording_id: str
 
         steps_data = []
         for step_id in recording.step_ids:
-            step = version.steps[step_id]
+            step = version._steps[step_id]
             steps_data.append(
                 {
                     "id": step.step_id,
@@ -436,10 +436,7 @@ async def list_step_recordings(project_id: str, version_id: str, step_id: str):
     try:
         project = mixedvoices.load_project(project_id)
         version = project.load_version(version_id)
-        step = version.steps.get(step_id, None)
-        if step is None:
-            raise KeyError(f"Step {step_id} not found in version {version_id}")
-
+        step = version.get_step(step_id)
         recordings_data = []
         for recording_id in step.recording_ids:
             recording = version._recordings[recording_id]

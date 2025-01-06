@@ -86,8 +86,13 @@ class Version:
 
     def get_recording(self, recording_id: str):
         if recording_id not in self._recordings:
-            raise ValueError(f"Recording {recording_id} not found in version {self.id}")
+            raise KeyError(f"Recording {recording_id} not found in version {self.id}")
         return self._recordings[recording_id]
+
+    def get_step(self, step_id: str):
+        if step_id not in self._steps:
+            raise KeyError(f"Step {step_id} not found in version {self.id}")
+        return self._steps[step_id]
 
     def update_prompt(self, prompt: str):
         """Update the prompt of the version"""
@@ -228,16 +233,16 @@ class Version:
                 print(f"Error loading recording {recording_file}: {e}")
 
     def _load_steps(self):
-        self.steps: Dict[str, Step] = {}
+        self._steps: Dict[str, Step] = {}
         step_files = os.listdir(self._steps_path)
         for step_file in step_files:
             filename = os.path.basename(step_file)
             step_id = os.path.splitext(filename)[0]
-            self.steps[step_id] = Step.load(self.project_id, self.id, step_id)
+            self._steps[step_id] = Step.load(self.project_id, self.id, step_id)
 
     @property
     def _starting_steps(self):
-        return [step for step in self.steps.values() if step.previous_step_id is None]
+        return [step for step in self._steps.values() if step.previous_step_id is None]
 
     def _create_flowchart(self):
         for starting_step in self._starting_steps:
@@ -245,10 +250,10 @@ class Version:
 
     def _recursively_assign_steps(self, step: Step):
         step.next_steps = [
-            self.steps[next_step_id] for next_step_id in step.next_step_ids
+            self._steps[next_step_id] for next_step_id in step.next_step_ids
         ]
         step.previous_step = (
-            self.steps[step.previous_step_id]
+            self._steps[step.previous_step_id]
             if step.previous_step_id is not None
             else None
         )
@@ -272,4 +277,4 @@ class Version:
         return self._all_paths
 
     def _get_step_names(self) -> List[str]:
-        return list({step.name for step in self.steps.values()})
+        return list({step.name for step in self._steps.values()})
