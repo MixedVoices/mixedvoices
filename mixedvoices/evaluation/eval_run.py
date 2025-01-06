@@ -3,8 +3,6 @@ import time
 from typing import TYPE_CHECKING, List, Optional, Type
 from uuid import uuid4
 
-from tqdm import tqdm
-
 import mixedvoices.constants as constants
 from mixedvoices.evaluation.eval_agent import EvalAgent
 from mixedvoices.utils import load_json, save_json
@@ -40,7 +38,6 @@ class EvalRun:
         agent_prompt: str,
         metric_names: List[str],
         test_cases: List[str],
-        show_progress: bool = True,
         verbose: bool = True,
         created_at: Optional[int] = None,
         eval_agents: Optional[List[EvalAgent]] = None,
@@ -57,7 +54,7 @@ class EvalRun:
         self._agent_prompt = agent_prompt
         self._metric_names = metric_names
         self._test_cases = test_cases
-        self._show_progress = show_progress
+        self._verbose = verbose
         self._created_at = created_at or int(time.time())
         self._eval_agents = eval_agents or [
             EvalAgent(
@@ -116,15 +113,12 @@ class EvalRun:
                 "This run was already started. Create a new run to test again."
             )
 
-        if self._show_progress:
-            progress = tqdm(total=len(self._test_cases))
-            progress.set_description("Evaluating Test Cases")
+        if self._verbose:
+            print(f"Starting Evaluation of {len(self._test_cases)} Test Cases")
         self._started = True
         for i, eval_agent in enumerate(self._eval_agents):
             try:
                 eval_agent.evaluate(agent_class, agent_starts, i + 1, **kwargs)
-                if self._show_progress:
-                    progress.update(1)
             except Exception as e:
                 self._error = f"Error Source: EvalRun Run \nError: {str(e)}"
                 self._save()

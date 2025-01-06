@@ -92,7 +92,6 @@ class Evaluator:
         version: "Version",
         agent_class: Type["BaseAgent"],
         agent_starts: Optional[bool],
-        show_progress: bool = True,
         verbose: bool = True,
         **kwargs,
     ) -> EvalRun:
@@ -105,7 +104,6 @@ class Evaluator:
                 If True, the agent starts the conversation
                 If False, the evaluator starts the conversation
                 If None, random choice
-            show_progress (bool): Whether to show progress bar or not. Defaults to True
             verbose (bool): Whether to print testing conversation and scores. Defaults to True
             **kwargs: Keyword arguments to pass to the agent class
         """
@@ -124,7 +122,6 @@ class Evaluator:
             prompt,
             self._metric_names,
             self._test_cases,
-            show_progress,
             verbose,
         )
         self._eval_runs[run_id] = run
