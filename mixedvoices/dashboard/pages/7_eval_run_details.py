@@ -99,11 +99,11 @@ def eval_run_details_page():
                 st.markdown("**Success**")
                 if is_successful is None:
                     st.write("N/A")
+                else:
+                    st.write("✅" if is_successful else "❌")
                     if success_explanation:
                         st.markdown("**Explanation:**")
                         st.write(success_explanation)
-                else:
-                    st.write("✅" if is_successful else "❌")
 
             with preview_cols[2]:
                 if agent.get("scores"):
