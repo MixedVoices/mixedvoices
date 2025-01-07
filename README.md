@@ -31,6 +31,18 @@ pip install mixedvoices
 
 # Quick Start
 
+
+## Configure
+Before using MixedVoices, configure the models used for various operations by using mixedvoices config.
+
+By default all analytics and transcription happens using OpenAI models.
+Currently analytics supports all OpenAI GPT models from gpt-3.5 onwards.
+Transcription supports OpenAI whisper and Deepgram nova-2
+```bash
+mixedvoices config
+```
+
+According to the chosen models, set the environment keys: OPENAI_API_KEY, DEEPGRAM_API_KEY (if nova-2 selected for transcription)
 ## Analytics
 ### Using Python API to analyze recordings
 ```python
@@ -54,6 +66,13 @@ v1.add_recording("path/to/call.wav")
 v1.add_recording("path/to/call.wav", blocking=False)
 
 ```
+All recordings added go through the following analysis:-
+- Transcription with word level timestamps
+- Summarization of transcript
+- Classification as Successful/Failed (If success criteria set) 
+- Breakdown into flow steps
+- Metric analysis and scoring
+- Call quality analysis (noise, words per minute, latency, interruptions)
 
 ## Evaluation
 ### Evaluate custom agent
@@ -100,11 +119,6 @@ Launch the interactive dashboard from the Command Line:
 mixedvoices dashboard
 ```
 
-### Choosing Models
-You can configure the models being used for different tasks from the Command Line
-```bash
-mixedvoices config
-```
 
 ## Development Setup
 ```bash
