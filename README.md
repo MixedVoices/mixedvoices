@@ -124,6 +124,7 @@ mixedvoices dashboard
 ## Development Setup
 ```bash
 git clone https://github.com/MixedVoices/MixedVoices.git
+cd MixedVoices
 pip install -e ".[dev]"
 ```
 
