@@ -20,6 +20,10 @@ def run_dashboard(port: int = DASHBOARD_PORT):
             str(port),
             "--server.address",
             "localhost",
+            "--client.showSidebarNavigation",
+            "false",
+            "--client.toolbarMode",
+            "viewer",
         ]
         sys.exit(stcli.main())
 

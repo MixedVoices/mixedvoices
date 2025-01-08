@@ -1,4 +1,3 @@
-# mixedvoices/cli.py (updated)
 import threading
 import webbrowser
 
