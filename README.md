@@ -1,6 +1,7 @@
 <h1 align="center">MixedVoices: Analytics and Evals for Voice Agents</h1>
 <p align="center">
-<a href="https://pypi.org/project/mixedvoices/"><img src="https://img.shields.io/badge/pypi%20package-1.0.0-brightgreen" alt="PyPI version"></a>
+<a href="https://pypi.org/project/mixedvoices/"><img src="https://badge.fury.io/py/mixedvoices.svg" alt="PyPI version"></a>
+<a href="https://pepy.tech/project/mixedvoices"><img src="https://static.pepy.tech/badge/mixedvoices" alt="Downloads"></a>
 <a href="https://mixedvoices.gitbook.io/docs"><img src="https://img.shields.io/badge/📚%20docs-GitBook-blue" alt="Documentation"></a>
 <a href="https://mixedvoices.readthedocs.io/"><img src="https://img.shields.io/badge/🔍%20API-Reference-lightblue" alt="API Reference"></a>
 </p>
