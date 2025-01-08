@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "mixedvoices"
-version = "1.0.1"
+version = "1.0.2"
 description = "Analytics and Evaluation Tool for Voice Agents"
 authors = [
     {name = "Abhinav", email = "abhinav@mixedvoices.xyz"}
